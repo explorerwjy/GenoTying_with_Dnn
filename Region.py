@@ -7,11 +7,14 @@
 
 from optparse import OptionParser
 import random
+from utils import *
+import gzip
 
 WIDTH = 101
 HEIGHT = 50
 INDEL_ANCHORING_BASE = 'X'
 BASE = {'A':'1', 'T':'2', 'G':'3', 'C':'4', 'X':'5', 'N':'6'}
+BASE2= {'0':'0', '1':'A', '2':'T', '3':'G', '4':'C', '5':'X', '6':'N'}
 
 def get_full_cigar(cigartuples):
 	res = []
@@ -60,7 +63,7 @@ class Region():
 		self.pos = pos
 		self.start = start
 		self.end = end
-		self.Y = Y
+		self.label = Y
 		self.base = []
 		self.qual = []
 		self.strand = []
@@ -81,20 +84,20 @@ class Region():
 			print ''.join(row)
 		"""
 	def write(self):
-		Align = '#Alignment\t' + self.chrom+':'+str(self.pos) + '\t' + str(self.start) + '\t' + str(self.end) + '\t' + self.Y
+		Align = self.label + Chrom2Byte(self.chrom) + Pos2Byte(self.pos) # 13 Byte Meta 
 		tmp = []
 		for row in self.base:
 			tmp.append(''.join(row))
-		bases = '\n'.join(tmp)
+		bases = ''.join(tmp)
 		tmp = []
 		for row in self.qual:
 			tmp.append(''.join(row))
-		quals = '\n'.join(tmp)
+		quals = ''.join(tmp)
 		tmp = []
 		for row in self.strand:
 			tmp.append(''.join(row))
-		strands = '\n'.join(tmp)
-		return '\n'.join([Align, bases, '#QUAL', quals, '#Strand', strands])
+		strands = ''.join(tmp)
+		return ''.join([Align, bases, quals, strands])
 	def fill_ref(self,ref):
 		for row in xrange(1):
 			for col in xrange(WIDTH):
@@ -175,12 +178,45 @@ def is_usable_read(read):
 
 def GetOptions():
 	parser = OptionParser()
-	parser.add_option('-','--',dest = '', metavar = '', help = '')
+	parser.add_option('-i','--input',dest = 'InpFil', metavar = 'InpFil', help = 'InpFile Read From')
 	(options,args) = parser.parse_args()
 	
-	return
+	return options.InpFil
+
+# Convert a line into readable window
+def Line2Window(l):
+	flag = l[:13]
+	data = l[13:]
+	print 'Label: %s\tChrom: %s\tPos: %s'%(flag[0],Byte2Chrom(flag[1:3]),Byte2Pos(flag[3:13]))
+	start = 13
+	height = 0
+	depth = 0
+	while depth < 3:
+		if height > HEIGHT:
+			depth += 1
+			height = 0
+		if depth == 0:
+			print ''.join(map(lambda x:BASE2[x],list(l[start:start+WIDTH])))
+		else:
+			print l[start:start+WIDTH]
+		start += WIDTH 
+		height += 1
+
+
+def Dump(InpFil):
+	if InpFil.endswith('.gz'):
+		fin = gzip.open(InpFil)
+	else:
+		fin = open(InpFil)
+	
+	for l in fin:
+		Line2Window(l)
+	fin.close()
+
 
 def main():
+	InpFil = GetOptions()
+	Dump(InpFil)
 	return
 
 if __name__=='__main__':

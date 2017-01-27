@@ -12,6 +12,7 @@ CHROMOSOMES = ['chr%s' % x for x in range(1,23)]
 CHROMOSOMES.extend(['chrX', 'chrY', 'chrM'])
 CHROMSOME2CODE = {item: i+1 for i ,item in enumerate(CHROMOSOMES)}
 
+
 def get_xpos(chrom, pos):
 	if not chrom.startswith('chr'):
 		chrom = 'chr{}'.format(chrom)
@@ -34,6 +35,26 @@ def get_Genotype(llist):
 		return 1 # Hetrozygous
 	else:
 		return 2 # Homozygous Alt
+
+def Chrom2Byte(chrom):
+	chrom = str(chrom)
+	encode = {'1':'01', '2':'02', '3':'03', '4':'04', '5':'05', '6':'06', '7':'07', '8':'08', '9':'09', '10':'10', '11':'11', '12':'12', '13':'13', '14':'14', '15':'15', '16':'16', '17':'17', '18':'18', '19':'19', '20':'20', '21':'21', '22':'22', 'X':'23', 'Y':'24'}
+	return encode[chrom]
+def Byte2Chrom(Byte):
+	decode = {'01':'1', '02':'2', '03':'3', '04':'4', '05':'5', '06':'6', '07':'7', '08':'8', '09':'9','10':'10', '11':'11', '12':'12', '13':'13', '14':'14', '15':'15', '16':'16', '17':'17', '18':'18', '19':'19', '20':'20', '21':'21', '22':'22', '23':'X', '24':'Y'}
+	return decode[Byte]
+
+def Pos2Byte(pos):
+	pos = str(pos)
+	if len(pos) < 10:
+		return '0'*(10-len(pos))+pos
+	elif len(pos) > 10:
+		print pos
+		exit()
+	else:
+		return pos
+def Byte2Pos(pos):
+	return str(int(pos))
 
 def GetOptions():
 	parser = OptionParser()
