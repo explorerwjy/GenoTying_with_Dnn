@@ -15,7 +15,7 @@ import Window2Tensor
 import Models
 import os
 
-BATCH_SIZE = 64
+BATCH_SIZE = 32
 
 Window_Size = (WIDTH * (HEIGHT+1) * 3)
 
@@ -52,39 +52,43 @@ def do_eval(sess, eval_correct, tensor_placeholder, labels_placeholder, data_set
 
 def do_eval_on_Testing(sess, eval_correct, testing_tensor_pl, testing_label_pl, Testing_tensor, Testing_labels):
 	true_count = 0
-	steps_per_epoch = 2000 // BATCH_SIZE
+	steps_per_epoch = 3000 // BATCH_SIZE
 	num_examples = steps_per_epoch * BATCH_SIZE
 	for step in xrange(steps_per_epoch):
 		tensor = Testing_tensor[step*BATCH_SIZE : (step+1)*BATCH_SIZE]
 		label = Testing_labels[step*BATCH_SIZE : (step+1)*BATCH_SIZE]
 		feed_dict = {testing_tensor_pl: tensor, testing_label_pl: label}
 		true_count += sess.run(eval_correct, feed_dict = feed_dict)
-	precision = float(true_count) / 2000 
-	print '\tNum examples: %d\tNum correct: %d\tPrecision @ 1: %.04f' % (2000, true_count, precision)
+	precision = float(true_count) / 3000 
+	print '\tNum examples: %d\tNum correct: %d\tPrecision @ 1: %.04f' % (3000, true_count, precision)
 	
 
 
 def runTraining(TrainingData,TestingData):
-	max_steps = 10000
+	max_steps = 200000
 	print 'Open Training Data set at %s ....' % TrainingData
 	TrainingData = gzip.open(TrainingData,'rb')
 	print 'Open Testing Data set at %s ....' % TestingData
 	TestingData = gzip.open(TestingData,'rb')
 	data_sets_training = Window2Tensor.Data_Reader(TrainingData,batch_size=BATCH_SIZE)
-	data_sets_testing = Window2Tensor.Data_Reader(TestingData,batch_size=2000) 
+	data_sets_testing = Window2Tensor.Data_Reader(TestingData,batch_size=3000) 
 	
 	print '\nLaunch Tensorflow and Training\n'
 	with tf.Graph().as_default():
-		tensor_placeholder, labels_placeholder = Window2Tensor.placeholder_inputs(BATCH_SIZE)
 		
+		tensor_placeholder, labels_placeholder = Window2Tensor.placeholder_inputs(BATCH_SIZE)
+		print "Reading Testing Data ..."
 		testing_tensor_pl, testing_label_pl = Window2Tensor.placeholder_inputs(BATCH_SIZE) 
 		
 		Testing_tensor, Testing_label = data_sets_testing.read_batch()
-		
-		
-		logits = Models.FullyConnectNN(tensor_placeholder, 10000, 5000, 3000, 1000, 500, 200, 50, 10)
-		loss = Loss(logits, labels_placeholder)
-		train_op = training(loss, learning_rate=0.005)
+		print "Finish Reading Testing Data"
+
+		#logits = Models.FullyConnectNN(tensor_placeholder, 10000, 5000, 3000, 1000, 500, 200, 50, 10)
+		convnets = Models.ConvNets()
+		#tensor_placeholder = tf.reshape(tensor_placeholder, [-1, WIDTH, HEIGHT+1, 3])
+		logits = convnets.Inference(tensor_placeholder)
+		loss = convnets.loss(logits, labels_placeholder)
+		train_op = training(loss, learning_rate=0.001)
 		eval_correct = evaluation(logits, labels_placeholder)
 		summary = tf.summary.merge_all()
 
@@ -97,7 +101,6 @@ def runTraining(TrainingData,TestingData):
 		for step in xrange(max_steps):
 			start_time = time.time()
 			feed_dict = Window2Tensor.fill_feed_dict(data_sets_training, tensor_placeholder, labels_placeholder)
-
 			_, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
 			duration = time.time() - start_time
 			if step % 10 == 0:
@@ -120,10 +123,10 @@ def runTraining(TrainingData,TestingData):
 
 def GetOptions():
 	parser = OptionParser()
-	parser.add_option('-','--',dest = '', metavar = '', help = '')
+	parser.add_option('-m','--model',dest = 'Model', metavar = 'Model', help = 'Model to be selected ([1:ConvNets, 2:FullyConnect])')
 	(options,args) = parser.parse_args()
 	
-	return
+	return options.Model
 
 def main(_):
 	TrainingData = '/home/local/users/jw/TensorFlowCaller/Nebraska_NA12878_HG001_TruSeq_Exome/sample_1/windows_training.txt.gz'

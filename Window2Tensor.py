@@ -12,11 +12,9 @@ import gzip
 import time
 import math
 
-BATCH_SIZE = 100
+BATCH_SIZE = 32
 
 # ==========================================================================
-# Encode Rule for window tensor
-BASE = {'A':1, 'T':2, 'G':3, 'C':4, 'N':5, 'X':6, '.':0}
 def base2code(base):
 	try:
 		#return tf.cast(BASE[base],tf.float32)
@@ -36,56 +34,15 @@ def strand2code(ch):
 
 
 class window_tensor():
-	def __init__(self,header):
-		tmp = header.strip().split('\t')
-		self.Alignment = []
-		self.Qual = []
-		self.Strand = []
-		self.chrom,self.pos = tmp[1].split(':')
-		self.label = tmp[4]
-	def read_data(self,handle,which):
-		for i in xrange(HEIGHT+1):
-			l = handle.readline().strip()
-			if which == 'Alignment':
-				self.Alignment.append(l)		
-			elif which == 'Qual':
-				self.Qual.append(l)
-			elif which == 'Strand':
-				self.Strand.append(l)
-			else:
-				print "Error window Attribute. Check the Window2Tensor.py"
-	def read_data_2(self,handle,which):
-		for i in xrange(HEIGHT+1):
-			l = list(handle.readline().strip())
-			if which == 'Alignment':
-				self.Alignment.append([base2code(base) for base in l ])		
-				#self.Qual.append(l)
-			elif which == 'Qual':
-				self.Qual.append([qual2code(ch) for ch in l ])
-				#self.Qual.append(l)
-			elif which == 'Strand':
-				self.Strand.append([strand2code(ch) for ch in l ])
-				#self.Strand.append(l)
-			else:
-				print "Error window Attribute. Check the Window2Tensor.py"
+	def __init__(self,line):
+		self.label = line[0]
+		self.Alignment = line[ 13 : 13 + WIDTH * (HEIGHT+1) ]
+		self.Qual = line[ 13 + WIDTH * (HEIGHT+1) : 13 + WIDTH * (HEIGHT+1)*2]
+		self.Strand = line[13 + WIDTH * (HEIGHT+1)*2 : 13 + WIDTH * (HEIGHT+1)*3]
 
 	def encode(self):
 		# This func encode elements in window tensor into tf.float32
-		res = []
-		# Encode bases
-		Alignment = []
-		Qual = []
-		Strand = []
-		for seq in self.Alignment:
-			Alignment.extend(seq)
-		#print 'Encode Read Finish'
-		for seq in self.Qual:
-			Qual.extend(seq)
-		#print 'Encode qual Finish'
-		for seq in self.Strand:
-			Strand.extend(seq)
-		#print 'Encode strand Finish'
-		return Alignment + Qual + Strand
+		return map(float, list(self.Alignment)) + map(lambda x:qual2code(x), list(self.Qual)) + map(float, list(self.Strand))
 
 class Data_Reader():
 	def __init__(self,handle,batch_size=BATCH_SIZE):
@@ -100,36 +57,15 @@ class Data_Reader():
 			l = self.handle.readline()
 			if l == '':
 				self.handle.seek(0)
-			elif l.startswith('#Alignment'): # start of a new window tensor
-				one_tensor = window_tensor(l)
-				#one_tensor.read_data(self.handle,'Alignment')
-				one_tensor.read_data_2(self.handle,'Alignment')
-				#print len(one_tensor.Alignment)
-			elif l.startswith('#QUAL'):
-				#one_tensor.read_data(self.handle,'Qual')
-				one_tensor.read_data_2(self.handle,'Qual')
-			elif l.startswith('#Strand'):
-				#one_tensor.read_data(self.handle,'Strand')
-				one_tensor.read_data_2(self.handle,'Strand')
-				i += 1
-				#print 'Read findish'
-
-				# A window tensor loaded complete.
+				continue
+			else: 
+				one_tensor = window_tensor(l.strip())
 				res_window.append(one_tensor.encode())
 				res_label.append(one_tensor.label)
-				#print 'Encode finish'
-			else:
-				print l
-				print "Window Shape Error, check input shape and HEIGHT"
-				exit()
+				i += 1
 		#print "Finish Reading"
 		return res_window, res_label
-	def read_batch_2(self):
-		res_window = []
-		res_label = []
-		i = 0
-		while i < self.batch_size:
-			self.handle.readline()
+
 # ARG: batch_size: The batch size will be baked into both placeholders.
 # Return: Tensors placeholder, Labels placeholder.
 def placeholder_inputs(batch_size):

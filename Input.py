@@ -64,7 +64,24 @@ class Record():
 		self.label = lineRecord[0]
 		self.data = lineRecord[13:]
 		
+		x = tf.placeholder(tf.float32, shape=(self.width * self.height * self.depth))
+		y = tf.placeholder(tf.int64, shape=(1))
 		
+		
+
+def Generate_Tensor_and_label_batch(tensor, label, min_queue_examples, batch_size=BatchSize):
+	Tensors, Labels_batch = tf.train.batch([tensor, label], batch_size = batch_size, num_threads = num_preprocess_threads, capacity = min_queue_examples + 3*batch_size)
+	tf.image_summary('tensors',Tensors)
+	return Tensors, tf.reshape(Label_batch, [batch_size])
+
+def Inputs_training(Training_fname, batch_size=BatchSize):
+	
+	
+	return
+
+def Inputs_validation_testing():
+
+	return
 def GetOptions():
 	parser = OptionParser()
 	parser.add_option('-','--',dest = '', metavar = '', help = '')
