@@ -65,7 +65,7 @@ def do_eval_on_Testing(sess, eval_correct, testing_tensor_pl, testing_label_pl, 
 
 
 def runTraining(TrainingData,TestingData):
-	max_steps = 200000
+	max_steps = 500000
 	print 'Open Training Data set at %s ....' % TrainingData
 	TrainingData = gzip.open(TrainingData,'rb')
 	print 'Open Testing Data set at %s ....' % TestingData
@@ -88,8 +88,9 @@ def runTraining(TrainingData,TestingData):
 		#tensor_placeholder = tf.reshape(tensor_placeholder, [-1, WIDTH, HEIGHT+1, 3])
 		logits = convnets.Inference(tensor_placeholder)
 		loss = convnets.loss(logits, labels_placeholder)
-		train_op = training(loss, learning_rate=0.001)
+		train_op = training(loss, learning_rate=0.01)
 		eval_correct = evaluation(logits, labels_placeholder)
+		#Testing_eval_correct = evaluation(logits, testing_label_placeholder)
 		summary = tf.summary.merge_all()
 
 		init = tf.global_variables_initializer()
@@ -101,15 +102,17 @@ def runTraining(TrainingData,TestingData):
 		for step in xrange(max_steps):
 			start_time = time.time()
 			feed_dict = Window2Tensor.fill_feed_dict(data_sets_training, tensor_placeholder, labels_placeholder)
+			
 			_, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
+			
 			duration = time.time() - start_time
-			if step % 10 == 0:
+			if step % 100 == 0:
 				print 'Step %d loss = %.3f (%.3f sec)' % (step, loss_value, duration)
 				summary_str = sess.run(summary, feed_dict = feed_dict)
 				summary_writer.add_summary(summary_str, step)
 				summary_writer.flush()
 
-			if (step + 1) % 100 == 0 or (step + 1) == max_steps:
+			if (step + 1) % 1000 == 0 or (step + 1) == max_steps:
 				checkpoint_file = os.path.join(log_dir, 'model.ckpt')
 				saver.save(sess, checkpoint_file, global_step = step)
 				print 'Training Data Eval:'
@@ -119,6 +122,41 @@ def runTraining(TrainingData,TestingData):
 				print 'Testing Data Eval:'
 			#	do_eval_on_Testing(sess, eval_correct, testing_tensor_pl, testing_label_pl, Testing_tensor, Testing_label)
 				do_eval_on_Testing(sess, eval_correct, tensor_placeholder, labels_placeholder, Testing_tensor, Testing_label)
+
+def runTesting(TrainingData, TestingData, ModelCKPT):
+	with tf.Graph().as_default() as g:
+		TrainingData = gzip.open(TrainingData,'rb') 
+		TestingData = gzip.open(TestingData,'rb')
+		dataset_training = Window2Tensor.Data_Reader(TrainingData, batch_size=300)
+		dataset_testing = Window2Tensor.Data_Reader(TestingData, batch_size=300)
+		TrainingPL, TrainingLabelPL = Window2Tensor.placeholder_inputs(BATCH_SIZE)
+		TestingPL, TestingLabelPL = Window2Tensor.placeholder_inputs(BATCH_SIZE)
+		stime = time.time()
+		print "Reading Training Dataset 3000 windows"
+		TrainingTensor, TrainingLabel = dataset_training.read_batch()
+		tmp1time = time.time()
+		print "Finish Reading Training Dataset. %.3f"%(tmp1time-stime)
+		print "Reading Testing Dataset 3000 windows"
+		TestingTensor, TestingLabel = dataset_testing.read_batch()
+		tmp2time = time.time()
+		print "Finish Reading Testing Dataset. %.3f"%(tmp2time-tmp1time)
+
+		convnets = Models.ConvNets()
+		# Testing on Training
+		Training_logits = convnets.Inference(TrainingPL)
+		print Training_logits,TrainingLabelPL
+		Training_correct = evaluation(Training_logits, TrainingLabelPL)
+		# Testing on Testing
+		Testing_logits = convnets.Inference(TestingPL)
+		Testing_correct = evaluation(Testing_logits, TestingLabelPL)
+		saver = tf.train.Saver()	
+		sess = tf.Session()
+		saver.restore(sess, ModelCKPT)
+		
+		#sess.run()
+		do_eval_on_Testing(sess, Training_correct, TrainingPL, TrainingLabelPL, TrainingTensor, TrainingLabel)
+		do_eval_on_Testing(sess, Testing_correct, TestingTensor, TestingLabelPL, TestingTensor, TestingLabel)
+
 
 
 def GetOptions():
@@ -131,7 +169,9 @@ def GetOptions():
 def main(_):
 	TrainingData = '/home/local/users/jw/TensorFlowCaller/Nebraska_NA12878_HG001_TruSeq_Exome/sample_1/windows_training.txt.gz'
 	TestingData = '/home/local/users/jw/TensorFlowCaller/Nebraska_NA12878_HG001_TruSeq_Exome/sample_1/windows_testing.txt.gz'
-	runTraining(TrainingData, TestingData)
+	#runTraining(TrainingData, TestingData)
+	ModelCKPT = './CKPT/'
+	runTesting(TrainingData, TestingData, ModelCKPT)
 	return
 
 if __name__=='__main__':

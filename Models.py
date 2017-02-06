@@ -17,7 +17,7 @@ import Input
 FLAGS = tf.app.flags.FLAGS
 
 # Basic model parameters.
-tf.app.flags.DEFINE_integer('batch_size', 64,
+tf.app.flags.DEFINE_integer('batch_size', 32,
                             """Number of images to process in a batch.""")
 tf.app.flags.DEFINE_string('data_file', './windows_training.txt',
                            """Path to the CIFAR-10 data directory.""")
@@ -83,7 +83,7 @@ class ConvNets():
 		InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT+1, 3]) 
 		#exit()
 		#print InputTensor.get_shape()
-		with tf.variable_scope('conv1') as scope:
+		with tf.variable_scope('conv1', reuse=True) as scope:
 			kernel = _variable_with_weight_decay('weights', shape=[5,5,3,64], stddev=5e-2, wd=0.0)
 			conv = tf.nn.conv2d(InputTensor, kernel, [1,1,1,1], padding='SAME')
 			biases = _variable_on_cpu('biases', [64], tf.constant_initializer(0.0))
