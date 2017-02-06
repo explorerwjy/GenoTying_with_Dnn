@@ -12,13 +12,39 @@ from Window2Tensor import *
 NUM_CLASSES = 3
 Window_Size = (WIDTH * (HEIGHT+1) * 3)
 
-class flags():
-	def __init__(self):
-		self.use_fl16 = False
-		self.batch_size = BATCH_SIZE
-FLAGS = flags()
+import Input
+
+FLAGS = tf.app.flags.FLAGS
+
+# Basic model parameters.
+tf.app.flags.DEFINE_integer('batch_size', 64,
+                            """Number of images to process in a batch.""")
+tf.app.flags.DEFINE_string('data_file', './Window_Training',
+                           """Path to the CIFAR-10 data directory.""")
+tf.app.flags.DEFINE_boolean('use_fp16', False,
+                            """Train the model using fp16.""")
+
+# Global constants describing the CIFAR-10 data set.
+IMAGE_SIZE = Input.IMAGE_SIZE
+NUM_CLASSES = Input.NUM_CLASSES
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = Input.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
+NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = Input.NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
 
 
+# Constants describing the training process.
+MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
+NUM_EPOCHS_PER_DECAY = 350.0      # Epochs after which learning rate decays.
+LEARNING_RATE_DECAY_FACTOR = 0.1  # Learning rate decay factor.
+INITIAL_LEARNING_RATE = 0.1       # Initial learning rate.
+
+def inputs(data_file):
+	images, labels = Input.inputs(DataFile=data_file, batch_size=FLAGS.batch_size)
+	if FLAGS.use_fp16:
+		tensors = tf.cast(images, tf.float16)
+		labels = tf.cast(labels, tf.float16)
+	return tensors, labels
+
+# This Class is not in used now
 class FullyConnectNN():
 	def __init__(self):
 		pass
