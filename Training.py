@@ -106,13 +106,13 @@ def runTraining(TrainingData,TestingData):
 			_, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
 			
 			duration = time.time() - start_time
-			if step % 100 == 0:
+			if step % 10 == 0:
 				print 'Step %d loss = %.3f (%.3f sec)' % (step, loss_value, duration)
 				summary_str = sess.run(summary, feed_dict = feed_dict)
 				summary_writer.add_summary(summary_str, step)
 				summary_writer.flush()
 
-			if (step + 1) % 1000 == 0 or (step + 1) == max_steps:
+			if (step + 1) % 100 == 0 or (step + 1) == max_steps:
 				checkpoint_file = os.path.join(log_dir, 'model.ckpt')
 				saver.save(sess, checkpoint_file, global_step = step)
 				print 'Training Data Eval:'
@@ -167,11 +167,14 @@ def GetOptions():
 	return options.Model
 
 def main(_):
-	TrainingData = '/home/local/users/jw/TensorFlowCaller/Nebraska_NA12878_HG001_TruSeq_Exome/sample_1/windows_training.txt.gz'
-	TestingData = '/home/local/users/jw/TensorFlowCaller/Nebraska_NA12878_HG001_TruSeq_Exome/sample_1/windows_testing.txt.gz'
-	#runTraining(TrainingData, TestingData)
-	ModelCKPT = './CKPT/'
-	runTesting(TrainingData, TestingData, ModelCKPT)
+	#TrainingData = '/home/local/users/jw/TensorFlowCaller/Nebraska_NA12878_HG001_TruSeq_Exome/sample_1/windows_training.txt.gz'
+	#TestingData = '/home/local/users/jw/TensorFlowCaller/Nebraska_NA12878_HG001_TruSeq_Exome/sample_1/windows_testing.txt.gz'
+	TrainingData = '/home/yufengshen/TensorFlowCaller/data/ExomeSample_Two/windows_training.txt.gz'
+	TestingData = '/home/yufengshen/TensorFlowCaller/data/ExomeSample_Two/windows_testing.txt.gz'
+	
+	runTraining(TrainingData, TestingData)
+	#ModelCKPT = './CKPT/'
+	#runTesting(TrainingData, TestingData, ModelCKPT)
 	return
 
 if __name__=='__main__':
