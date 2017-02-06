@@ -19,13 +19,12 @@ FLAGS = tf.app.flags.FLAGS
 # Basic model parameters.
 tf.app.flags.DEFINE_integer('batch_size', 64,
                             """Number of images to process in a batch.""")
-tf.app.flags.DEFINE_string('data_file', './Window_Training',
+tf.app.flags.DEFINE_string('data_file', './windows_training.txt',
                            """Path to the CIFAR-10 data directory.""")
 tf.app.flags.DEFINE_boolean('use_fp16', False,
                             """Train the model using fp16.""")
 
 # Global constants describing the CIFAR-10 data set.
-IMAGE_SIZE = Input.IMAGE_SIZE
 NUM_CLASSES = Input.NUM_CLASSES
 NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = Input.NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
 NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = Input.NUM_EXAMPLES_PER_EPOCH_FOR_EVAL

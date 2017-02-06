@@ -10,11 +10,11 @@ import os
 import Region
 import time
 import gzip
-
+import tensorflow as tf
 import Region
 
 WIDTH = Region.WIDTH
-HEIGHT = Region.HEIGHT
+HEIGHT = Region.HEIGHT + 1
 
 # Global constants describing the CIFAR-10 data set.
 NUM_CLASSES = 3
@@ -50,20 +50,23 @@ def read_window(filename_queue):
 	one_tensor = tmp.encode()
 	one_label = tmp.label
 	"""
-	reader = tf.TextLineReader()
-	result.key, value = reader.read(filename_queue)
-
 	class Record(object):
 		pass
 	result = Record()
+	
+	reader = tf.TextLineReader()
+	result.key, value = reader.read(filename_queue)
+
 	# Convert from a string to a vector of uint8 that is record_bytes long.
 	record_bytes = tf.decode_raw(value, tf.uint8)
-	tensor_bytes = (HEIGHT + 1) * WIDTH * 3
+	tensor_bytes = (HEIGHT) * WIDTH * 3
+	print record_bytes
 	# The first bytes represent the label, which we convert from uint8->int32.
 	result.label = tf.cast(tf.slice(record_bytes, [0], [1]), tf.int32)
 	result.pos = tf.cast(tf.slice(record_bytes, [1], [13]), tf.int32)
 	# The remaining bytes after the label represent the image, which we reshape
 	# from [depth * height * width] to [depth, height, width].
+	print tensor_bytes
 	depth_major = tf.reshape(
     	tf.slice(record_bytes, [13], [13 + tensor_bytes]), [3, HEIGHT, WIDTH])
 	# Convert from [depth, height, width] to [height, width, depth].
@@ -162,7 +165,7 @@ class Data():
 			self.Testing.append(tensor)
 			self.TestingLabels.append(labels)
 		return self.Testing, self.TestingLabels
-def Inputs_training(Training_fname, batch_size=BatchSize):
+def Inputs_training(Training_fname, batch_size):
 	
 	
 	return
