@@ -46,7 +46,7 @@ def train():
     # Build a Graph that computes the logits predictions from the
     # inference model.
     convnets = Models.ConvNets()
-    logits = convnets.inference(tensors)
+    logits = convnets.Inference(tensors)
 
     # Calculate loss.
     loss = convnets.loss(logits, labels)

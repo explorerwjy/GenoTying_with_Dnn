@@ -56,22 +56,27 @@ def read_window(filename_queue):
 	
 	reader = tf.TextLineReader()
 	result.key, value = reader.read(filename_queue)
+	
+	print value	
+	sess = tf.Session()
+	with sess.as_default():   # or `with sess:` to close on exit
+		assert sess is tf.get_default_session()
+		assert value.eval() == sess.run(value)
+	exit()
 
 	# Convert from a string to a vector of uint8 that is record_bytes long.
 	record_bytes = tf.decode_raw(value, tf.uint8)
 	tensor_bytes = (HEIGHT) * WIDTH * 3
-	print record_bytes
 	# The first bytes represent the label, which we convert from uint8->int32.
 	result.label = tf.cast(tf.slice(record_bytes, [0], [1]), tf.int32)
-	result.pos = tf.cast(tf.slice(record_bytes, [1], [13]), tf.int32)
+	result.pos = tf.cast(tf.slice(record_bytes, [1], [12]), tf.int32)
 	# The remaining bytes after the label represent the image, which we reshape
 	# from [depth * height * width] to [depth, height, width].
-	print tensor_bytes
 	depth_major = tf.reshape(
-    	tf.slice(record_bytes, [13], [13 + tensor_bytes]), [3, HEIGHT, WIDTH])
+    	tf.slice(record_bytes, [13], [tensor_bytes]), [3, HEIGHT, WIDTH])
 	# Convert from [depth, height, width] to [height, width, depth].
 	result.tensor = tf.transpose(depth_major, [1, 2, 0])
-
+	#print result.tensor
 	return result
 
 #  Construct a queued batch of images and labels.
@@ -93,10 +98,10 @@ def Generate_Tensor_and_label_batch(tensor, label, min_queue_examples, batch_siz
 	else:
 		Tensors, Labels_batch = tf.train.batch([tensor, label], batch_size = batch_size, num_threads = num_preprocess_threads, capacity = min_queue_examples + 3*batch_size)
 	# How this work? Display the training Tensor as image?
-	tf.image_summary('tensors',Tensors)
-	return Tensors, tf.reshape(Label_batch, [batch_size])
+	# tf.image_summary('tensors',Tensors)
+	return Tensors, tf.reshape(Labels_batch, [batch_size])
 
-def inputs(DataFile, batch_size):
+def inputs(Eval, DataFile, batch_size):
 	"""Construct input for CIFAR evaluation using the Reader ops.
 	Args:
 	DataFile: Input File contains window tensor.
@@ -105,15 +110,19 @@ def inputs(DataFile, batch_size):
     tensors: Tensors. 4D tensor of [batch_size, WIDTH, HEIGHT, 3] size.
     labels: Labels. 1D tensor of [batch_size] size.
 	"""
+	if not Eval:
+		num_examples_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN
+	else:
+		num_examples_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_EVAL
 	# Create a queue that produces the buffer to read.
 	filename_queue = tf.train.string_input_producer([DataFile])
 
 	# Read examples from buffers in the buffer queue.
 	read_input = read_window(filename_queue)
-	reshaped_image = tf.cast(read_input.tensor, tf.float32)
+	reshaped_tensor = tf.cast(read_input.tensor, tf.float32)
 
 	# Set the shapes of tensors.
-	float_image.set_shape([HEIGHT, WIDTH, 3])
+	reshaped_tensor.set_shape([HEIGHT, WIDTH, 3])
 	read_input.label.set_shape([1])
 
 	# Ensure that the random shuffling has good mixing properties.
@@ -122,7 +131,7 @@ def inputs(DataFile, batch_size):
                            min_fraction_of_examples_in_queue)
 
 	# Generate a batch of images and labels by building up a queue of examples.
-	return Generate_Tensor_and_label_batch(float_image, read_input.label,
+	return Generate_Tensor_and_label_batch(reshaped_tensor, read_input.label,
                                          min_queue_examples, batch_size,
                                          shuffle=False)
 

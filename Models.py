@@ -21,7 +21,7 @@ tf.app.flags.DEFINE_integer('batch_size', 64,
                             """Number of images to process in a batch.""")
 tf.app.flags.DEFINE_string('data_file', './windows_training.txt',
                            """Path to the CIFAR-10 data directory.""")
-tf.app.flags.DEFINE_boolean('use_fp16', False,
+tf.app.flags.DEFINE_boolean('use_fl16', False,
                             """Train the model using fp16.""")
 
 # Global constants describing the CIFAR-10 data set.
@@ -37,8 +37,8 @@ LEARNING_RATE_DECAY_FACTOR = 0.1  # Learning rate decay factor.
 INITIAL_LEARNING_RATE = 0.1       # Initial learning rate.
 
 def inputs(data_file):
-	images, labels = Input.inputs(DataFile=data_file, batch_size=FLAGS.batch_size)
-	if FLAGS.use_fp16:
+	tensors, labels = Input.inputs(False, DataFile=data_file, batch_size=FLAGS.batch_size)
+	if FLAGS.use_fl16:
 		tensors = tf.cast(images, tf.float16)
 		labels = tf.cast(labels, tf.float16)
 	return tensors, labels
@@ -140,12 +140,22 @@ class ConvNets():
 		tf.add_to_collection('losses', cross_entropy_mean)
 		return tf.add_n(tf.get_collection('losses'), name='total_loss')
 
-	def Train(total_loss, global_step):
+	def add_loss_summaries(self, total_loss):
+		loss_averages = tf.train.ExponentialMovingAverage(0.9, name='avg')
+		losses = tf.get_collection('losses')
+		loss_averages_op = loss_averages.apply(losses + [total_loss])
+
+		for l in losses + [total_loss]:
+			tf.summary.scalar(l.op.name + ' (raw) ', l)
+			tf.summary.scalar(l.op.name , loss_averages.average(l))
+		return loss_averages_op
+
+	def Train(self, total_loss, global_step):
 		num_batches_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
 		decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
 		lr = tf.train.exponential_decay(INITIAL_LEARNING_RATE, global_step, decay_steps, LEARNING_RATE_DECAY_FACTOR, staircase=True)
-		tf.scalar_summary('learning_rate', lr)
-		loss_averages_op = _add_loss_summaries(total_loss)
+		tf.summary.scalar('learning_rate', lr)
+		loss_averages_op = self.add_loss_summaries(total_loss)
 
 		with tf.control_dependencies([loss_averages_op]):
 			opt = tf.train.GradientDescentOptimizer(lr)
@@ -155,7 +165,7 @@ class ConvNets():
 
 		for grad, var in grads:
 			if grad is not None:
-				tf.histogram_summary(var.op.name + '/gradients', grad)
+				tf.summary.histogram(var.op.name + '/gradients', grad)
 		variable_averages = tf.train.ExponentialMovingAverage(MOVING_AVERAGE_DECAY, global_step)
 		variable_averages_op = variable_averages.apply(tf.trainable_variables())
 
@@ -172,8 +182,8 @@ def _variable_on_cpu(name, shape, initializer):
 def _activation_summary(x):
 	TOWER_NAME = 'Tower'
 	tensor_name = re.sub('%s_[0-9]/' % TOWER_NAME, '', x.op.name)
-	tf.histogram_summary(tensor_name + '/activations', x)
-	tf.scalar_summary(tensor_name + '/sparsity', tf.nn.zero_fraction(x))
+	tf.summary.histogram(tensor_name + '/activations', x)
+	tf.summary.scalar(tensor_name + '/sparsity', tf.nn.zero_fraction(x))
 
 def _variable_with_weight_decay(name, shape, stddev, wd):
 	dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
