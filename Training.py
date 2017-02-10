@@ -43,24 +43,24 @@ def do_eval(sess, eval_correct, tensor_placeholder, labels_placeholder, data_set
 	steps_per_epoch = BATCH_SIZE // BATCH_SIZE
 	num_examples = steps_per_epoch * BATCH_SIZE
 	for step in xrange(steps_per_epoch):
-		
 		tensor_feed, labels_feed = data_set.read_batch()
 		feed_dict = {tensor_placeholder: tensor_feed, labels_placeholder: labels_feed}
 		true_count += sess.run(eval_correct, feed_dict = feed_dict)
 	precision = float(true_count) / num_examples
 	print '\tNum examples: %d\tNum correct: %d\tPrecision @ 1: %.04f' % (num_examples, true_count, precision)
 
-def do_eval_on_Testing(sess, eval_correct, testing_tensor_pl, testing_label_pl, Testing_tensor, Testing_labels):
+def do_eval_on_Testing(sess, eval_correct, testing_tensor_pl, testing_label_pl, Testing_tensor, Testing_labels, Total):
 	true_count = 0
-	steps_per_epoch = 3000 // BATCH_SIZE
+	steps_per_epoch = Total // BATCH_SIZE
 	num_examples = steps_per_epoch * BATCH_SIZE
 	for step in xrange(steps_per_epoch):
 		tensor = Testing_tensor[step*BATCH_SIZE : (step+1)*BATCH_SIZE]
 		label = Testing_labels[step*BATCH_SIZE : (step+1)*BATCH_SIZE]
+		#print label	
 		feed_dict = {testing_tensor_pl: tensor, testing_label_pl: label}
 		true_count += sess.run(eval_correct, feed_dict = feed_dict)
-	precision = float(true_count) / 3000 
-	print '\tNum examples: %d\tNum correct: %d\tPrecision @ 1: %.04f' % (3000, true_count, precision)
+	precision = float(true_count) / Total 
+	print '\tNum examples: %d\tNum correct: %d\tPrecision @ 1: %.04f' % (Total, true_count, precision)
 	
 
 
@@ -124,19 +124,20 @@ def runTraining(TrainingData,TestingData):
 				do_eval_on_Testing(sess, eval_correct, tensor_placeholder, labels_placeholder, Testing_tensor, Testing_label)
 
 def runTesting(TrainingData, TestingData, ModelCKPT):
+	Total = 30000
 	with tf.Graph().as_default() as g:
 		TrainingData = gzip.open(TrainingData,'rb') 
 		TestingData = gzip.open(TestingData,'rb')
-		dataset_training = Window2Tensor.Data_Reader(TrainingData, batch_size=300)
-		dataset_testing = Window2Tensor.Data_Reader(TestingData, batch_size=300)
+		dataset_training = Window2Tensor.Data_Reader(TrainingData, batch_size=Total)
+		dataset_testing = Window2Tensor.Data_Reader(TestingData, batch_size=Total)
 		TrainingPL, TrainingLabelPL = Window2Tensor.placeholder_inputs(BATCH_SIZE)
 		TestingPL, TestingLabelPL = Window2Tensor.placeholder_inputs(BATCH_SIZE)
 		stime = time.time()
-		print "Reading Training Dataset 3000 windows"
+		print "Reading Training Dataset %d windows"%Total
 		TrainingTensor, TrainingLabel = dataset_training.read_batch()
 		tmp1time = time.time()
 		print "Finish Reading Training Dataset. %.3f"%(tmp1time-stime)
-		print "Reading Testing Dataset 3000 windows"
+		print "Reading Testing Dataset %d windows"%Total
 		TestingTensor, TestingLabel = dataset_testing.read_batch()
 		tmp2time = time.time()
 		print "Finish Reading Testing Dataset. %.3f"%(tmp2time-tmp1time)
@@ -144,18 +145,19 @@ def runTesting(TrainingData, TestingData, ModelCKPT):
 		convnets = Models.ConvNets()
 		# Testing on Training
 		Training_logits = convnets.Inference(TrainingPL)
-		print Training_logits,TrainingLabelPL
 		Training_correct = evaluation(Training_logits, TrainingLabelPL)
-		# Testing on Testing
-		Testing_logits = convnets.Inference(TestingPL)
-		Testing_correct = evaluation(Testing_logits, TestingLabelPL)
-		saver = tf.train.Saver()	
-		sess = tf.Session()
-		saver.restore(sess, ModelCKPT)
 		
-		#sess.run()
-		do_eval_on_Testing(sess, Training_correct, TrainingPL, TrainingLabelPL, TrainingTensor, TrainingLabel)
-		do_eval_on_Testing(sess, Testing_correct, TestingTensor, TestingLabelPL, TestingTensor, TestingLabel)
+		# Testing on Testing
+		#Testing_logits = convnets.Inference(TestingPL)
+		#Testing_correct = evaluation(Testing_logits, TestingLabelPL)
+		
+		saver = tf.train.Saver()	
+		with tf.Session() as sess:
+			saver.restore(sess, ModelCKPT)
+		
+			#sess.run()
+			do_eval_on_Testing(sess, Training_correct, TrainingPL, TrainingLabelPL, TrainingTensor, TrainingLabel, Total)
+			#do_eval_on_Testing(sess, Testing_correct, TestingPL, TestingLabelPL, TestingTensor, TestingLabel, Total)
 
 
 
@@ -167,14 +169,18 @@ def GetOptions():
 	return options.Model
 
 def main(_):
-	#TrainingData = '/home/local/users/jw/TensorFlowCaller/Nebraska_NA12878_HG001_TruSeq_Exome/sample_1/windows_training.txt.gz'
-	#TestingData = '/home/local/users/jw/TensorFlowCaller/Nebraska_NA12878_HG001_TruSeq_Exome/sample_1/windows_testing.txt.gz'
-	TrainingData = '/home/yufengshen/TensorFlowCaller/data/ExomeSample_Two/windows_training.txt.gz'
-	TestingData = '/home/yufengshen/TensorFlowCaller/data/ExomeSample_Two/windows_testing.txt.gz'
+	TrainingData = '/home/local/users/jw/TensorFlowCaller/Nebraska_NA12878_HG001_TruSeq_Exome/sample_1/windows_training.txt.gz'
+	TestingData = '/home/local/users/jw/TensorFlowCaller/Nebraska_NA12878_HG001_TruSeq_Exome/sample_1/windows_testing.txt.gz'
+	#TrainingData = '/home/yufengshen/TensorFlowCaller/data/ExomeSample_Two/windows_training.txt.gz'
+	#TestingData = '/home/yufengshen/TensorFlowCaller/data/ExomeSample_Two/windows_testing.txt.gz'
 	
-	runTraining(TrainingData, TestingData)
-	#ModelCKPT = './CKPT/'
-	#runTesting(TrainingData, TestingData, ModelCKPT)
+	TrainingData = '/home/local/users/jw/TensorFlowCaller/Nebraska_NA12878_HG001_TruSeq_Exome/sample_0/windows_training.txt.gz'
+
+	#runTraining(TrainingData, TestingData)
+	ModelCKPT = './CKPT/'
+	ModelCKPT = '/home/local/users/jw/TensorFlowCaller/TensorCaller/CKPT/model.ckpt-199999'
+
+	runTesting(TrainingData, TestingData, ModelCKPT)
 	return
 
 if __name__=='__main__':

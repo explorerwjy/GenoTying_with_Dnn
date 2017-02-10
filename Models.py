@@ -79,10 +79,10 @@ class ConvNets():
 	def __init__(self):
 		pass
 	def Inference(self, RawTensor):
-		# conv1
 		InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT+1, 3]) 
-		#exit()
 		#print InputTensor.get_shape()
+		#exit()
+		# conv1
 		with tf.variable_scope('conv1') as scope:
 			kernel = _variable_with_weight_decay('weights', shape=[5,5,3,64], stddev=5e-2, wd=0.0)
 			conv = tf.nn.conv2d(InputTensor, kernel, [1,1,1,1], padding='SAME')
