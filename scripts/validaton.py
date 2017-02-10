@@ -7,7 +7,7 @@
 
 from optparse import OptionParser
 import union_candidates as uc
-
+import gzip
 
 def GetOptions():
 	parser = OptionParser()

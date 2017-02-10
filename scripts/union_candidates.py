@@ -6,7 +6,7 @@
 #========================================================================================================
 
 from optparse import OptionParser
-
+import gzip
 
 
 def GetOptions():
@@ -14,8 +14,10 @@ def GetOptions():
 	parser.add_option('-v','--vcf',dest = 'VCFs', metavar = 'VCFs', help = 'vcf files to union together')
 	(options,args) = parser.parse_args()
 	vcflist = [ vcf.strip() for vcf in options.VCFs.split(',') ]
-	outname = 'union_'+'-'.join([ vcf.split('/')[-1].strip('.vcf') for vcf in vcflist])+'.vcf'
+	print vcflist
+	outname = 'union_'+'-'.join([ vcf.split('/')[-1].lstrip('.vcf') for vcf in vcflist])+'.vcf'
 	return vcflist, outname
+
 # Return a uniq pos according to chrom and pos that easy to sort
 CHROMOSOMES = ['chr%s' % x for x in range(1,23)]
 CHROMOSOMES.extend(['chrX', 'chrY', 'chrM'])
@@ -32,12 +34,16 @@ def var2kv(l):
 	p = chrom+'-'+pos
 	k = get_xpos(chrom,pos)
 	return k,p,l
+
 # Parse one vcf file into meta, header, and a dictionary of variants.
 def Parse_one(vcf):
 	meta = []
 	header = None
 	variants = {}
-	fin = open(vcf,'rb')
+	if vcf.endswith('.gz'):
+		fin = gzip.open(vcf,'rb')
+	else:
+		fin = open(vcf,'rb')
 	for l in fin:
 		if l.startswith('##'):
 			meta.append(l)
@@ -51,6 +57,7 @@ def Parse_one(vcf):
 				#raise KeyError("Multiple record in %s has same position: %s"%(vcf,p))
 				print "Multiple record in %s has same position: %s"%(vcf,p)
 	return meta,header,variants
+
 # Take Union of multiple vcf file
 def Union(vcflist,outname):
 	TMP = []
