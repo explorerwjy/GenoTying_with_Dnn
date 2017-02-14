@@ -15,7 +15,7 @@ import Window2Tensor
 import Models
 import os
 
-BATCH_SIZE = 32
+BATCH_SIZE = 128
 
 Window_Size = (WIDTH * (HEIGHT+1) * 3)
 
