@@ -117,7 +117,8 @@ def main():
 		OneVar(bam)
 	else:
 		if T_vcf == None:
-			T_vcf = '/home/local/users/jw/TensorFlowCaller/Nebraska_NA12878_HG001_TruSeq_Exome/Positive.norm.vcf'
+			#T_vcf = '/home/local/users/jw/TensorFlowCaller/Nebraska_NA12878_HG001_TruSeq_Exome/Positive.norm.vcf'
+			print "Please provide Positive Data"
 		Positives = Get_Positives(T_vcf)
 		VarScan(bam,vcf,Positives)
 	

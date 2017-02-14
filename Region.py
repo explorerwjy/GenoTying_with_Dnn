@@ -11,7 +11,7 @@ from utils import *
 import gzip
 
 WIDTH = 101
-HEIGHT = 50
+HEIGHT = 100
 INDEL_ANCHORING_BASE = 'X'
 BASE = {'A':'1', 'T':'2', 'G':'3', 'C':'4', 'X':'5', 'N':'6'}
 BASE2= {'0':'0', '1':'A', '2':'T', '3':'G', '4':'C', '5':'X', '6':'N'}
@@ -39,7 +39,7 @@ def per_base_alignment(start,end,pos,ref,read):
 	while 1:
 		if (p_ref >= end) or (p_read - read.reference_start >= read.query_length): # pointer exceed the region or read used up
 			break 
-		elif cigars[p_cigar - read.reference_start ] == 0 or cigars[p_cigar - read.reference_start] == 4: # Match
+		elif cigars[p_cigar - read.reference_start ] == 0 or cigars[p_cigar - read.reference_start] == 4 or cigars[p_cigar - read.reference_start] == 5: # Match
 			yield p_ref - start, p_read - read.reference_start, cigars[p_cigar - read.reference_start] 
 			p_ref += 1
 			p_read += 1
@@ -174,7 +174,7 @@ def get_overlapping(SamFile,chrom,pos,start,end):
 	return res 
 
 def is_usable_read(read):
-	return (not read.is_unmapped) and (not read.is_duplicate) and ('S' not in read.cigarstring)
+	return (not read.is_unmapped) and (not read.is_duplicate) and ('S' not in read.cigarstring) and ('H' not in read.cigarstring)
 
 def GetOptions():
 	parser = OptionParser()
