@@ -11,15 +11,45 @@ import Region
 import time
 import gzip
 import tensorflow as tf
-import Region
 
 WIDTH = Region.WIDTH
 HEIGHT = Region.HEIGHT + 1
-
-# Global constants describing the CIFAR-10 data set.
 NUM_CLASSES = 3
 NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 30000
 NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 3000
+
+# Global constants describing the data set & Model.
+FLAGS = tf.app.flags.FLAGS
+
+
+tf.app.flags.DEFINE_string('eval_dir', './tmp/TensorCaller_eval',
+                           """Directory where to write event logs.""")
+
+tf.app.flags.DEFINE_string('checkpoint_dir', './tmp/TensorCaller_train',
+                           """Directory where to read model checkpoints.""")
+
+tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,:
+                            """How often to run the eval.""")
+
+tf.app.flags.DEFINE_boolean('run_once', False,
+                         """Whether to run eval only once.""")
+
+tf.app.flags.DEFINE_integer('batch_size', 128,
+                            """Number of WindowTensor to process in a batch.""")
+
+tf.app.flags.DEFINE_string('TrainingData', './windows_training.txt.gz',
+                           """Path to the Training Data.""")
+
+tf.app.flags.DEFINE_string('ValidationData', './windows_validation.txt.gz',
+                           """Path to the Validation Data.""")
+
+tf.app.flags.DEFINE_string('TestingData', './windows_testing.txt.gz',
+                           """Path to the Testing Data.""")
+
+tf.app.flags.DEFINE_boolean('use_fl16', False,
+                            """Train the model using fp16.""")
+
+
 
 
 def read_window(filename_queue):

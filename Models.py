@@ -12,17 +12,12 @@ from Window2Tensor import *
 NUM_CLASSES = 3
 Window_Size = (WIDTH * (HEIGHT+1) * 3)
 
-import Input
+from imput import *
 
 FLAGS = tf.app.flags.FLAGS
 
 # Basic model parameters.
-tf.app.flags.DEFINE_integer('batch_size', 32,
-                            """Number of images to process in a batch.""")
-tf.app.flags.DEFINE_string('data_file', './windows_training.txt',
-                           """Path to the CIFAR-10 data directory.""")
-tf.app.flags.DEFINE_boolean('use_fl16', False,
-                            """Train the model using fp16.""")
+
 
 # Global constants describing the CIFAR-10 data set.
 NUM_CLASSES = Input.NUM_CLASSES
@@ -84,17 +79,27 @@ class ConvNets():
 		#exit()
 		# conv1
 		with tf.variable_scope('conv1') as scope:
-			kernel = _variable_with_weight_decay('weights', shape=[5,5,3,64], stddev=5e-2, wd=0.0)
-			conv = tf.nn.conv2d(InputTensor, kernel, [1,1,1,1], padding='SAME')
-			biases = _variable_on_cpu('biases', [64], tf.constant_initializer(0.0))
+			kernel = _variable_with_weight_decay('weights', shape=[3,3,3,32], stddev=5e-2, wd=0.0)
+			conv = tf.nn.conv2d(InputTensor, kernel, [1,2,2,1], padding='SAME')
+			biases = _variable_on_cpu('biases', [32], tf.constant_initializer(0.0))
 			pre_activation = tf.nn.bias_add(conv, biases)
 			conv1 = tf.nn.relu(pre_activation, name=scope.name)
 			_activation_summary(conv1)
 		# pool1
-		pool1 = tf.nn.max_pool(conv1, ksize=[1,3,3,1], strides=[1,2,2,1], padding='SAME', name='pool1')
+		#pool1 = tf.nn.max_pool(conv1, ksize=[1,3,3,1], strides=[1,2,2,1], padding='SAME', name='pool1')
 		# norm1
-		norm1 = tf.nn.lrn(pool1, 4, bias=1.0, alpha=0.001/9.0, beta=0.75, name='norm1')
+		#norm1 = tf.nn.lrn(pool1, 4, bias=1.0, alpha=0.001/9.0, beta=0.75, name='norm1')
 		
+		# conv2
+		with tf.variable_scope('conv2') as scope:
+			kernel = _variable_with_weight_decay('weights', shape=[5,5,3,32], stddev=5e-2, wd=0.0)
+			conv = tf.nn.conv2d(InputTensor, kernel, [1,1,1,1], padding='SAME')
+			biases = _variable_on_cpu('biases', [32], tf.constant_initializer(0.0))
+			pre_activation = tf.nn.bias_add(conv, biases)
+			conv1 = tf.nn.relu(pre_activation, name=scope.name)
+			_activation_summary(conv1)
+
+
 		# conv2
 		with tf.variable_scope('conv2') as scope:
 			kernel = _variable_with_weight_decay('weights', shape=[5,5,64,64], stddev=5e-2, wd=0.0)
