@@ -117,12 +117,11 @@ def train():
 
 		for step in xrange(max_steps):
 			start_time = time.time()
-			print sess.run(global_step)
 			feed_dict = fill_feed_dict(data_sets_training, tensor_placeholder, labels_placeholder)
 			
 			_, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
 			duration = time.time() - start_time
-			if step % 5 == 0:
+			if step % 10 == 0:
 				print 'Step %d Training loss = %.3f (%.3f sec)' % (step, loss_value, duration)
 				summary_str = sess.run(summary, feed_dict = feed_dict)
 				summary_writer.add_summary(summary_str, step)
