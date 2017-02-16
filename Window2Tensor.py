@@ -24,7 +24,7 @@ def base2code(base):
 		print "KeyError of base code. Unexpected base appear. |%s|" % base
 		exit()
 def qual2code(ch):
-	phred = float(ord(ch) - 33)
+	phred = (float(ord(ch) - 33) / 60) - 0.5
 	#return tf.cast((math.pow(10, -(phred/10))),tf.float32)
 	#return float(math.pow(10, -(phred/10)))
 	return phred 
@@ -42,7 +42,7 @@ class window_tensor():
 
 	def encode(self):
 		# This func encode elements in window tensor into tf.float32
-		return map(float, list(self.Alignment)) + map(lambda x:qual2code(x), list(self.Qual)) + map(float, list(self.Strand))
+		return [ (float(base)/6 - 0.5) for base list(self.Alignment)] + map(lambda x:qual2code(x), list(self.Qual)) + [ (float(strand)/2 - 0.5 for strand in list(self.Strand))] 
 
 class Data_Reader():
 	def __init__(self,handle,batch_size=BATCH_SIZE):
@@ -65,23 +65,6 @@ class Data_Reader():
 				i += 1
 		#print "Finish Reading"
 		return res_window, res_label
-
-# ARG: batch_size: The batch size will be baked into both placeholders.
-# Return: Tensors placeholder, Labels placeholder.
-def placeholder_inputs(batch_size):
-	#tensor_placeholder = tf.placeholder(tf.float32, shape=(batch_size,WIDTH,HEIGHT+1,3))
-	tensor_placeholder = tf.placeholder(tf.float32, shape=(batch_size,WIDTH*(HEIGHT+1)*3))
-	labels_placeholder = tf.placeholder(tf.int32, shape = batch_size)
-	return tensor_placeholder, labels_placeholder
-
-def fill_feed_dict(data_set, tensor_pl, labels_pl):
-	tensor_feed, labels_feed = data_set.read_batch()
-	feed_dict = {
-			tensor_pl: tensor_feed,
-			labels_pl: labels_feed
-			}
-	return feed_dict
-
 
 def GetOptions():
 	parser = OptionParser()

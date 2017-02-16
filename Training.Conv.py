@@ -1,5 +1,5 @@
 #!/home/local/users/jw/anaconda2/bin/python
-#Author: jywang	explorerwjy@gmail.com
+#Author: jywang explorerwjy@gmail.com
 
 #========================================================================================================
 # Training The ConvNet for Tensor Caller
@@ -12,61 +12,66 @@ import tensorflow as tf
 import Models
 from Input import *
 
+BATCH_SIZE=FLAGS.batch_size
 
 def train():
-  """Train TensorCaller for a number of steps."""
-  with tf.Graph().as_default():
-    global_step = tf.contrib.framework.get_or_create_global_step()
+	"""Train TensorCaller for a number of steps."""
+	with tf.Graph().as_default():
+		data_sets_training = Window2Tensor.Data_Reader(TrainingData, batch_size=BATCH_SIZE)
+		data_sets_testing = Window2Tensor.Data_Reader(TestingData, batch_size=BATCH_SIZE) 
 
-    # Get Tensors and labels for Training data.
-    tensors, labels = Models.inputs(FLAGS.data_file)
+		global_step = tf.contrib.framework.get_or_create_global_step()
 
-    
-    # Build a Graph that computes the logits predictions from the
-    # inference model.
-    convnets = Models.ConvNets()
-    logits = convnets.Inference(tensors)
+		# Get Tensors and labels for Training data.
+		#tensors, labels = Models.inputs(FLAGS.data_file)
 
-    # Calculate loss.
-    loss = convnets.loss(logits, labels)
+				
+		# Build a Graph that computes the logits predictions from the
+		# inference model.
+		tensor_placeholder, labels_placeholder = Window2Tensor.placeholder_inputs(BATCH_SIZE)
+		convnets = Models.ConvNets()
+		logits = convnets.Inference(tensor_placeholder)
 
-    # Build a Graph that trains the model with one batch of examples and
-    # updates the model parameters.
-    train_op = convnets.Train(loss, global_step)
+		# Calculate loss.
+		loss = convnets.loss(logits, labels_placeholder)
 
-    class _LoggerHook(tf.train.SessionRunHook):
-      """Logs loss and runtime."""
+		# Build a Graph that trains the model with one batch of examples and
+		# updates the model parameters.
+		train_op = convnets.Train(loss, global_step)
 
-      def begin(self):
-        self._step = -1
+		class _LoggerHook(tf.train.SessionRunHook):
+			"""Logs loss and runtime."""
 
-      def before_run(self, run_context):
-        self._step += 1
-        self._start_time = time.time()
-        return tf.train.SessionRunArgs(loss)  # Asks for loss value.
+			def begin(self):
+				self._step = -1
 
-      def after_run(self, run_context, run_values):
-        duration = time.time() - self._start_time
-        loss_value = run_values.results
-        if self._step % 10 == 0:
-          num_examples_per_step = FLAGS.batch_size
-          examples_per_sec = num_examples_per_step / duration
-          sec_per_batch = float(duration)
+			def before_run(self, run_context):
+				self._step += 1
+				self._start_time = time.time()
+				return tf.train.SessionRunArgs(loss)  # Asks for loss value.
 
-          format_str = ('%s: step %d, loss = %.2f (%.1f examples/sec; %.3f '
-                        'sec/batch)')
-          print (format_str % (datetime.now(), self._step, loss_value,
-                               examples_per_sec, sec_per_batch))
+			def after_run(self, run_context, run_values):
+				duration = time.time() - self._start_time
+				loss_value = run_values.results
+				if self._step % 100 == 0: # Output Loss Every 100 Steps Training
+					num_examples_per_step = FLAGS.batch_size
+					examples_per_sec = num_examples_per_step / duration
+					sec_per_batch = float(duration)
 
-    with tf.train.MonitoredTrainingSession(
-        checkpoint_dir=FLAGS.train_dir,
-        hooks=[tf.train.StopAtStepHook(last_step=FLAGS.max_steps),
-               tf.train.NanTensorHook(loss),
-               _LoggerHook()],
-        config=tf.ConfigProto(
-            log_device_placement=FLAGS.log_device_placement)) as mon_sess:
-      while not mon_sess.should_stop():
-        mon_sess.run(train_op)
+					format_str = ('%s: step %d, loss = %.2f (%.1f examples/sec; %.3f ' 'sec/batch)')
+					print (format_str % (datetime.now(), self._step, loss_value, examples_per_sec, sec_per_batch))
+				#if self._step % 1000 == 0: # Output Loss of Evauation Data Every 100 Steps
+
+
+
+	with tf.train.MonitoredTrainingSession(
+		checkpoint_dir=FLAGS.train_dir, 
+		hooks=[tf.train.StopAtStepHook(last_step=FLAGS.max_steps), tf.train.NanTensorHook(loss), _LoggerHook()],
+		config=tf.ConfigProto(log_device_placement=FLAGS.log_device_placement)) as mon_sess:
+		while not mon_sess.should_stop():
+			feed_dict = fill_feed_dict(data_sets_training, tensor_placeholder, labels_placeholder)
+			#_, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
+			mon_sess.run(train_op, feed_dict=feed_dict)
 
 
 def main(argv=None):  # pylint: disable=unused-argument

@@ -1,5 +1,5 @@
 #!/home/local/users/jw/anaconda2/bin/python
-#Author: jywang	explorerwjy@gmail.com
+#Author: jywang explorerwjy@gmail.com
 
 #========================================================================================================
 # Prepare Input Data For Training
@@ -69,10 +69,25 @@ tf.app.flags.DEFINE_integer('max_steps', 200000,
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
 
+# ARG: batch_size: The batch size will be baked into both placeholders.
+# Return: Tensors placeholder, Labels placeholder.
+def placeholder_inputs(batch_size):
+  #tensor_placeholder = tf.placeholder(tf.float32, shape=(batch_size,WIDTH,HEIGHT+1,3))
+    tensor_placeholder = tf.placeholder(tf.float32, shape=(batch_size,WIDTH*(HEIGHT+1)*3))
+    labels_placeholder = tf.placeholder(tf.int32, shape = batch_size)
+    return tensor_placeholder, labels_placeholder
+
+def fill_feed_dict(data_set, tensor_pl, labels_pl):
+    tensor_feed, labels_feed = data_set.read_batch()
+    feed_dict = {
+      tensor_pl: tensor_feed,
+      labels_pl: labels_feed
+      }
+    return feed_dict
 
 def main():
 
-	return
+    return
 
 if __name__=='__main__':
-	main()
+    main()
