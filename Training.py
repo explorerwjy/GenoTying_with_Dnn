@@ -12,7 +12,7 @@ import gzip
 import tensorflow as tf
 from Region import *
 import Window2Tensor
-from imput import *
+from Input import *
 import Models
 import os
 
