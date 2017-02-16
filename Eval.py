@@ -13,8 +13,7 @@ import time
 import numpy as np
 import tensorflow as tf
 
-from imput import *
-
+from Input import *
 
 
 def eval_once(saver, summary_writer, top_k_op, summary_op):
@@ -69,7 +68,6 @@ def eval_once(saver, summary_writer, top_k_op, summary_op):
     coord.request_stop()
     coord.join(threads, stop_grace_period_secs=10)
 
-
 def evaluate():
     """Eval CIFAR-10 for a number of steps."""
     with tf.Graph().as_default() as g:
@@ -103,12 +101,68 @@ def evaluate():
         time.sleep(FLAGS.eval_interval_secs)
 
 
+def evaluation(logits, labels):
+    correct = tf.nn.in_top_k(logits, labels, 1)
+    return tf.reduce_sum(tf.cast(correct, tf.int32))
+
+def do_eval(sess, eval_correct, testing_tensor_pl, testing_label_pl, Testing_tensor, Testing_labels, Total):
+    true_count = 0
+    steps_per_epoch = Total // BATCH_SIZE
+    num_examples = steps_per_epoch * BATCH_SIZE
+    for step in xrange(steps_per_epoch):
+        tensor = Testing_tensor[step*BATCH_SIZE : (step+1)*BATCH_SIZE]
+        label = Testing_labels[step*BATCH_SIZE : (step+1)*BATCH_SIZE]
+        #print label    
+        feed_dict = {testing_tensor_pl: tensor, testing_label_pl: label}
+        true_count += sess.run(eval_correct, feed_dict = feed_dict)
+    precision = float(true_count) / Total 
+    print '\tNum examples: %d\tNum correct: %d\tPrecision @ 1: %.04f' % (Total, true_count, precision)
+
+def runTesting(TrainingData, TestingData, ModelCKPT):
+    Total = 1000
+    with tf.Graph().as_default() as g:
+        TrainingData = gzip.open(TrainingData,'rb') 
+        TestingData = gzip.open(TestingData,'rb')
+        dataset_training = Window2Tensor.Data_Reader(TrainingData, batch_size=Total)
+        dataset_testing = Window2Tensor.Data_Reader(TestingData, batch_size=Total)
+        TensorPL, LabelPL = Window2Tensor.placeholder_inputs(BATCH_SIZE)
+        stime = time.time()
+        print "Reading Training Dataset %d windows"%Total
+        TrainingTensor, TrainingLabel = dataset_training.read_batch()
+        tmp1time = time.time()
+        print "Finish Reading Training Dataset. %.3f"%(tmp1time-stime)
+        print "Reading Testing Dataset %d windows"%Total
+        TestingTensor, TestingLabel = dataset_testing.read_batch()
+        tmp2time = time.time()
+        print "Finish Reading Testing Dataset. %.3f"%(tmp2time-tmp1time)
+
+        convnets = Models.ConvNets()
+        # Testing on Training
+        logits = convnets.Inference(TensorPL)
+        correct = evaluation(Training_logits, LabelPL)
+        
+        saver = tf.train.Saver()    
+        with tf.Session() as sess:
+            saver.restore(sess, ModelCKPT)
+            print "Evaluating On Training DownSample"
+            do_eval(sess, correct, TensorPL, LabelPL, TrainingTensor, TrainingLabel, Total)
+            print "Evaluating On Testing DownSample"
+            do_eval(sess, correct, TensorPL, LabelPL, TestingTensor, TestingLabel, Total)
+            
+            
+
+
+
 def main(argv=None):  # pylint: disable=unused-argument
     cifar10.maybe_download_and_extract()
     if tf.gfile.Exists(FLAGS.eval_dir):
         tf.gfile.DeleteRecursively(FLAGS.eval_dir)
     tf.gfile.MakeDirs(FLAGS.eval_dir)
-    evaluate()
+    #evaluate()
+    TrainingData = FLAGS.TrainingData
+    TestingData = FLAGS.TestingData
+    ModelCKPT = FLAGS.checkpoint_dir
+    runTesting(TrainingData, TestingData, ModelCKPT)
 
 
 if __name__ == '__main__':
