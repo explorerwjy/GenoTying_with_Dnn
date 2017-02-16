@@ -11,8 +11,10 @@ from Region import *
 import gzip
 import time
 import math
+from Input import *
 
-BATCH_SIZE = 32
+
+BATCH_SIZE = FLAGS.batch_size
 
 # ==========================================================================
 def base2code(base):
@@ -42,7 +44,14 @@ class window_tensor():
 
 	def encode(self):
 		# This func encode elements in window tensor into tf.float32
-		return [ (float(base)/6 - 0.5) for base list(self.Alignment)] + map(lambda x:qual2code(x), list(self.Qual)) + [ (float(strand)/2 - 0.5 for strand in list(self.Strand))] 
+		
+		#print len(self.Alignment), len(self.Alignment[0])
+		#print len(self.Qual), len(self.Qual[0])
+		#print len(self.Strand), len(self.Strand[0])
+		#exit()
+		res = [ (float(base)/6 - 0.5) for base in list(self.Alignment)] + [ qual2code(x) for x in list(self.Qual)] + [float(x)/2-0.5 for x in list(self.Strand)] 
+		#print len([float(x)/2-0.5 for x in list(self.Strand)]), len(list(self.Strand))
+		return res
 
 class Data_Reader():
 	def __init__(self,handle,batch_size=BATCH_SIZE):

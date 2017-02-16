@@ -14,12 +14,12 @@ import tensorflow as tf
 
 # Basic model parameters.
 WIDTH = Region.WIDTH
-HEIGHT = Region.HEIGHT + 1
+HEIGHT = Region.HEIGHT
 Window_Size = (WIDTH * (HEIGHT+1) * 3)
 
 NUM_CLASSES = 3
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 30000
-NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 3000
+NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 300000
+NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 30000
 
 # Constants describing the training process.
 MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
@@ -35,16 +35,19 @@ FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('eval_dir', './tmp/TensorCaller_eval',
                            """Directory where to write event logs.""")
 
+tf.app.flags.DEFINE_string('log_dir', './tmp/TensorCaller_train/log',
+                           """Directory where to write event logs.""")
+
 tf.app.flags.DEFINE_string('checkpoint_dir', './tmp/TensorCaller_train',
                            """Directory where to read model checkpoints.""")
 
-tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,:
+tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
                             """How often to run the eval.""")
 
 tf.app.flags.DEFINE_boolean('run_once', False,
                          """Whether to run eval only once.""")
 
-tf.app.flags.DEFINE_integer('batch_size', 128,
+tf.app.flags.DEFINE_integer('batch_size', 32,
                             """Number of WindowTensor to process in a batch.""")
 
 tf.app.flags.DEFINE_string('TrainingData', './windows_training.txt.gz',
