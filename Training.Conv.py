@@ -114,7 +114,8 @@ def train():
 		sess = tf.Session()
 		summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
 		sess.run(init)
-
+		
+		last_loss = 100
 		for step in xrange(max_steps):
 			start_time = time.time()
 			feed_dict = fill_feed_dict(data_sets_training, tensor_placeholder, labels_placeholder)
@@ -128,13 +129,15 @@ def train():
 				summary_writer.flush()
 
 			if (step + 1) % 100 == 0 or (step + 1) == max_steps:
-				checkpoint_file = os.path.join(log_dir, 'model.ckpt')
-			
-				saver.save(sess, checkpoint_file, global_step = step)
+				#Save Model only if loss decreasing
+				if loss_value < last_loss:
+					checkpoint_file = os.path.join(log_dir, 'model.ckpt')
+					saver.save(sess, checkpoint_file, global_step = step)
+				
 				feed_dict = fill_feed_dict(data_sets_testing, tensor_placeholder, labels_placeholder)
 				loss_value = sess.run(loss, feed_dict=feed_dict)
 				print 'Step %d Test loss = %.3f (%.3f sec)' % (step, loss_value, duration)
-
+			last_loss = loss_value
 
 def main(argv=None):  # pylint: disable=unused-argument
 	
