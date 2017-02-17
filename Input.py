@@ -19,13 +19,13 @@ Window_Size = (WIDTH * (HEIGHT+1) * 3)
 
 NUM_CLASSES = 3
 NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 10000
-NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 32000
+NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 6400
 
 # Constants describing the training process.
 MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
 NUM_EPOCHS_PER_DECAY = 350.0      # Epochs after which learning rate decays.
-LEARNING_RATE_DECAY_FACTOR = 0.1  # Learning rate decay factor.
-INITIAL_LEARNING_RATE = 0.1       # Initial learning rate.
+LEARNING_RATE_DECAY_FACTOR = 0.5  # Learning rate decay factor.
+INITIAL_LEARNING_RATE = 0.01       # Initial learning rate.
 
 
 # Global constants describing the data set & Model.
@@ -66,7 +66,7 @@ tf.app.flags.DEFINE_string('train_dir', './tmp/TensorCaller_train',
                            """Directory where to write event logs """
                            """and checkpoint.""")
 
-tf.app.flags.DEFINE_integer('max_steps', 200000,
+tf.app.flags.DEFINE_integer('max_steps', 1000000,
                             """Number of batches to run.""")
 
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
