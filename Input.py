@@ -47,7 +47,7 @@ tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
 tf.app.flags.DEFINE_boolean('run_once', False,
                          """Whether to run eval only once.""")
 
-tf.app.flags.DEFINE_integer('batch_size', 128,
+tf.app.flags.DEFINE_integer('batch_size', 64,
                             """Number of WindowTensor to process in a batch.""")
 
 tf.app.flags.DEFINE_string('TrainingData', './windows_training.txt.gz',
