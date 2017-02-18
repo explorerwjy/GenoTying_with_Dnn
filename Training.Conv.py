@@ -13,6 +13,8 @@ import tensorflow as tf
 import Models
 from Input import *
 import Window2Tensor
+import sys
+sys.stdout = sys.stderr
 
 BATCH_SIZE=FLAGS.batch_size
 log_dir = FLAGS.log_dir
@@ -194,7 +196,7 @@ def continue_train(ModelCKPT):
 				#Save Model only if loss decreasing
 				if loss_value < last_loss:
 					checkpoint_file = os.path.join(log_dir, 'model.ckpt')
-					saver.save(sess, checkpoint_file, global_step = step)
+					saver.save(sess, checkpoint_file, global_step = global_step)
 				
 				feed_dict = fill_feed_dict(data_sets_testing, tensor_placeholder, labels_placeholder)
 				loss_value = sess.run(loss, feed_dict=feed_dict)
@@ -203,10 +205,10 @@ def continue_train(ModelCKPT):
 
 def GetOptions():
 	parser = argparse.ArgumentParser()
-	parser.add_argument("-c", "--continue" help="continue training from a checkpoint",
+	parser.add_argument("-c", "--Continue", help="continue training from a checkpoint",
                     type=str)
 	args = parser.parse_args()
-	if args.continue.lower() in ['y', 'yes', 't', 'true']:
+	if args.Continue.lower() in ['y', 'yes', 't', 'true']:
 		return True
 
 def main(argv=None):  # pylint: disable=unused-argument
@@ -215,11 +217,15 @@ def main(argv=None):  # pylint: disable=unused-argument
 	print 'TraingDir is:',FLAGS.train_dir
 	if Continue:
 		ckptfile = FLAGS.checkpoint_dir+'/log/checkpoint'
-		ckpt = open(ckptfile,rb).readline().split(':').strip().strip('"')
+		f = open(ckptfile,'rb')
+		ckpt = f.readline().split(':')[1].strip().strip('"')
+		f.close()
+		prefix = os.path.abspath(FLAGS.checkpoint_dir+'/log/')
+		ckpt = prefix + '/' + ckpt
 		print ckpt
-		exit()
 		continue_train(ckpt)
 	else:
+		"""
 		cmd = raw_input("Start a New Training?(y/n):")
 		if cmd == 'y':
 			if tf.gfile.Exists(FLAGS.train_dir):
@@ -228,7 +234,8 @@ def main(argv=None):  # pylint: disable=unused-argument
 			train()
 		else:
 			exit()
-
+		"""
+		train()
 
 if __name__ == '__main__':
 	tf.app.run()
