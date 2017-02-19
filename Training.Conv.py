@@ -117,29 +117,29 @@ def train():
 		summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
 		sess.run(init)
 		
-		last_loss = 100
+		min_loss = 100
 		for step in xrange(max_steps):
 			start_time = time.time()
 			feed_dict = fill_feed_dict(data_sets_training, tensor_placeholder, labels_placeholder)
 			
 			_, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
 			duration = time.time() - start_time
+			v_step = sess.run(global_step)
 			if step % 10 == 0:
-				print 'Step %d Training loss = %.3f (%.3f sec)' % (step, loss_value, duration)
+				print 'Step %d Training loss = %.3f (%.3f sec)' % (v_step, loss_value, duration)
 				summary_str = sess.run(summary, feed_dict = feed_dict)
-				summary_writer.add_summary(summary_str, step)
+				summary_writer.add_summary(summary_str, v_step)
 				summary_writer.flush()
 
 			if (step + 1) % 100 == 0 or (step + 1) == max_steps:
 				#Save Model only if loss decreasing
-				if loss_value < last_loss:
+				if loss_value < min_loss:
 					checkpoint_file = os.path.join(log_dir, 'model.ckpt')
-					saver.save(sess, checkpoint_file, global_step = step)
-				
+					saver.save(sess, checkpoint_file, global_step = global_step)
+					min_loss = loss_value
 				feed_dict = fill_feed_dict(data_sets_testing, tensor_placeholder, labels_placeholder)
 				loss_value = sess.run(loss, feed_dict=feed_dict)
-				print 'Step %d Test loss = %.3f (%.3f sec)' % (step, loss_value, duration)
-			last_loss = loss_value
+				print 'Step %d Test loss = %.3f (%.3f sec); Saved loss = %.3f' % (v_step, loss_value, duration, min_loss)
 
 def continue_train(ModelCKPT):
 	"""Train TensorCaller for a number of steps."""
@@ -179,43 +179,50 @@ def continue_train(ModelCKPT):
 		summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
 		#sess.run(init)
 		
-		last_loss = 100
+		min_loss = 100
 		for step in xrange(max_steps):
 			start_time = time.time()
 			feed_dict = fill_feed_dict(data_sets_training, tensor_placeholder, labels_placeholder)
 			
 			_, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
 			duration = time.time() - start_time
+			v_step = sess.run(global_step)    
 			if step % 10 == 0:
-				print 'Step %d Training loss = %.3f (%.3f sec)' % (step, loss_value, duration)
+				print 'Step %d Training loss = %.3f (%.3f sec)' % (v_step, loss_value, duration)
 				summary_str = sess.run(summary, feed_dict = feed_dict)
 				summary_writer.add_summary(summary_str, step)
 				summary_writer.flush()
 
 			if (step + 1) % 100 == 0 or (step + 1) == max_steps:
 				#Save Model only if loss decreasing
-				if loss_value < last_loss:
+				#print loss_value, min_loss
+				if loss_value < min_loss:
 					checkpoint_file = os.path.join(log_dir, 'model.ckpt')
 					saver.save(sess, checkpoint_file, global_step = global_step)
-				
+					min_loss = loss_value
 				feed_dict = fill_feed_dict(data_sets_testing, tensor_placeholder, labels_placeholder)
 				loss_value = sess.run(loss, feed_dict=feed_dict)
-				print 'Step %d Test loss = %.3f (%.3f sec)' % (step, loss_value, duration)
-			last_loss = loss_value
+				print 'Step %d Test loss = %.3f (%.3f sec). Saved loss = %.3f' % (v_step, loss_value, duration, min_loss)
 
 def GetOptions():
 	parser = argparse.ArgumentParser()
 	parser.add_argument("-c", "--Continue", help="continue training from a checkpoint",
                     type=str)
 	args = parser.parse_args()
-	if args.Continue.lower() in ['y', 'yes', 't', 'true']:
-		return True
+	if	args.Continue != None:
+
+		if args.Continue.lower() in ['y', 'yes', 't', 'true']:
+			return True
+		else:
+			return False
+	else:
+		return False
 
 def main(argv=None):  # pylint: disable=unused-argument
 	Continue = GetOptions()
 
 	print 'TraingDir is:',FLAGS.train_dir
-	if Continue:
+	if Continue == True:
 		ckptfile = FLAGS.checkpoint_dir+'/log/checkpoint'
 		f = open(ckptfile,'rb')
 		ckpt = f.readline().split(':')[1].strip().strip('"')
