@@ -59,15 +59,44 @@ class Counts():
 		self.GT_FP = self.one_two + self.two_one + self.one_zero + self.two_zero
 		self.GT_FN = self.zero_one + self.zero_two
 		self.GT_SE = float(self.GT_TP)/(self.GT_TP + self.GT_FN)
-		self.GT_PPV = float(self.GT_TP)/(self.GT_TP+self.GTS_FP)
+		self.GT_PPV = float(self.GT_TP)/(self.GT_TP+self.GT_FP)
 		self.GT_F1 = float(2*self.GT_TP)/(2*self.GT_TP + self.GT_FN + self.GT_FP)
+	def show(self):
+		print '0/0 -> 0/0:',self.zero_zero
+		print '0/0 -> 0/1:',self.zero_one
+		print '0/0 -> 1/1:',self.zero_two
+		print '0/1 -> 0/0:',self.one_zero
+		print '0/1 -> 0/1:',self.one_one
+		print '0/1 -> 1/1:',self.one_two
+		print '1/1 -> 0/0:',self.two_zero
+		print '1/1 -> 0/1:',self.two_one
+		print '1/1 -> 1/1:',self.two_two
+		print '-'*50
+		print 'Position Eval:'
+		print 'TP:',self.POS_TP
+		print 'FP:',self.POS_FP
+		print 'FN:',self.POS_FN
+		print 'SE:',self.POS_SE
+		print 'PPV:',self.POS_PPV
+		print 'F1:',self.POS_F1
+		print '-'*50
+		print 'Genotype Eval:'
+		print 'TP:',self.GT_TP
+		print 'FP:',self.GT_FP
+		print 'FN:',self.GT_FN
+		print 'SE:',self.GT_SE
+		print 'PPV:',self.GT_PPV
+		print 'F1:',self.GT_F1
 
 def var2kv(l):
 	llist = l.strip().split('\t')
 	chrom, pos = llist[0:2]
-	alleles = llist[3:5]
+	ref, alt = llist[3:5]
+	ref = [ref]
+	alts = alt.split(',')
+	alleles = ref + alts
 	gt = llist[9].split(':')[0]
-	gt = re.findall('[\d.]',gt)
+	gt = map(int,re.findall('[\d.]',gt))
 	gt.sort()
 	k = chrom + '-' + pos
 	v = [ alleles[gt[0]], alleles[gt[1]] ]
@@ -126,11 +155,14 @@ def Evaluation(PositiveVCF,CandidateVCF):
 		elif l.startswith("#"):
 			header = l
 		else:
-			Classify(l, True_dict, counts)
+			try:
+				Classify(l, True_dict, counts)
+			except:
+				print l
 	GetFNs(counts,True_dict)
 	counts.Get_POS_Eval()
 	counts.Get_Genotype_Eval()
-	counts.Show()
+	counts.show()
 
 def main():
 	PositiveVCF,CandidateVCF = GetOptions()
