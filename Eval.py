@@ -19,6 +19,17 @@ import Models
 
 BATCH_SIZE = FLAGS.batch_size
 
+def GetCheckPoint():
+	ckptfile = FLAGS.checkpoint_dir+'/log/checkpoint'
+	if not os.path.isfile(ckptfile):
+		print "Model checkpoint not exists."
+		exit()
+	f = open(ckptfile,'rb')
+	ckpt = f.readline().split(':')[1].strip().strip('"')
+	f.close()
+	prefix = os.path.abspath(FLAGS.checkpoint_dir+'/log/')
+	ckpt = prefix + '/' + ckpt
+	return ckpt
 
 def eval_once(saver, summary_writer, top_k_op, summary_op):
 	"""Run Eval once.
@@ -109,36 +120,42 @@ def evaluation(logits, labels):
 	correct = tf.nn.in_top_k(logits, labels, 1)
 	return tf.reduce_sum(tf.cast(correct, tf.int32))
 
-def do_eval(sess, eval_correct, testing_tensor_pl, testing_label_pl, Testing_tensor, Testing_labels, Total):
+def do_eval(sess, eval_correct, testing_tensor_pl, testing_label_pl, dataset, Total):
 	true_count = 0
 	steps_per_epoch = Total // BATCH_SIZE
 	num_examples = steps_per_epoch * BATCH_SIZE
 	for step in xrange(steps_per_epoch):
-		tensor = Testing_tensor[step*BATCH_SIZE : (step+1)*BATCH_SIZE]
-		label = Testing_labels[step*BATCH_SIZE : (step+1)*BATCH_SIZE]
+		tensor, label = dataset.read_batch()
 		feed_dict = {testing_tensor_pl: tensor, testing_label_pl: label}
 		true_count += sess.run(eval_correct, feed_dict = feed_dict)
 	precision = float(true_count) / num_examples 
 	print '\tNum examples: %d\tNum correct: %d\tPrecision @ 1: %.04f' % (num_examples, true_count, precision)
 
 def runTesting(TrainingData, TestingData, ModelCKPT):
-	Total = 6400
+	Num_training = 3522409 
+	Num_validation = 86504
+	Num_testing = 186468
+
 	#with tf.Graph().as_default() as g:
-	with tf.device('/gpu:2'):
-		TrainingData = gzip.open(TrainingData,'rb') 
+	with tf.device('/gpu:1'):
+		TrainingData = gzip.open(TrainingData,'rb')
+		ValidationData = gzip.open(ValidationData,'rb')
 		TestingData = gzip.open(TestingData,'rb')
-		dataset_training = Window2Tensor.Data_Reader(TrainingData, batch_size=Total)
-		dataset_testing = Window2Tensor.Data_Reader(TestingData, batch_size=Total)
+
+		dataset_training = Window2Tensor.Data_Reader(TrainingData, batch_size=BATCH_SIZE)
+		dataset_validation = Window2Tensor.Data_Reader(ValidationData, batch_size=BATCH_SIZE)
+		dataset_testing = Window2Tensor.Data_Reader(TestingData, batch_size=BATCH_SIZE)
 		TensorPL, LabelPL = Window2Tensor.placeholder_inputs(BATCH_SIZE)
-		stime = time.time()
-		print "Reading Training Dataset %d windows"%Total
-		TrainingTensor, TrainingLabel = dataset_training.read_batch()
-		tmp1time = time.time()
-		print "Finish Reading Training Dataset. %.3f"%(tmp1time-stime)
-		print "Reading Testing Dataset %d windows"%Total
-		TestingTensor, TestingLabel = dataset_testing.read_batch()
-		tmp2time = time.time()
-		print "Finish Reading Testing Dataset. %.3f"%(tmp2time-tmp1time)
+
+		#stime = time.time()
+		#print "Reading Training Dataset %d windows"%Total
+		#TrainingTensor, TrainingLabel = dataset_training.read_batch()
+		#tmp1time = time.time()
+		#print "Finish Reading Training Dataset. %.3f"%(tmp1time-stime)
+		#print "Reading Testing Dataset %d windows"%Total
+		#TestingTensor, TestingLabel = dataset_testing.read_batch()
+		#tmp2time = time.time()
+		#print "Finish Reading Testing Dataset. %.3f"%(tmp2time-tmp1time)
 
 		convnets = Models.ConvNets()
 		# Testing on Training
@@ -156,10 +173,21 @@ def runTesting(TrainingData, TestingData, ModelCKPT):
 			#print TrainingLabel
 			#print sess.run(logits,feed_dict = {TensorPL:TrainingTensor})
 			
-			print "Evaluating On Training DownSample"
-			do_eval(sess, correct, TensorPL, LabelPL, TrainingTensor, TrainingLabel, Total)
-			print "Evaluating On Testing DownSample"
-			do_eval(sess, correct, TensorPL, LabelPL, TestingTensor, TestingLabel, Total)
+			print "Evaluating On Training Sample"
+			stime = time.time()
+			do_eval(sess, logits, TensorPL, LabelPL, dataset_training, Num_training)
+			print "Finish Evaluating Training Dataset. %.3f"%(time.time()-stime)
+
+			print "Evaluating On Validation Sample"
+			stime = time.time()
+			do_eval(sess, logits, TensorPL, LabelPL, dataset_validation, Num_validation)
+			print "Finish Evaluating Validation Dataset. %.3f"%(time.time()-stime)
+
+			print "Evaluating On Testing Sample"
+			stime = time.time()
+			do_eval(sess, logits, TensorPL, LabelPL, dataset_testing, Num_testing)
+			print "Finish Evaluating Testing Dataset. %.3f"%(time.time()-stime)
+
 
 def main(argv=None):  # pylint: disable=unused-argument
 	if tf.gfile.Exists(FLAGS.eval_dir):
