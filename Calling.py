@@ -21,7 +21,7 @@ BATCH_SIZE = FLAGS.batch_size
 
 def GetCheckPoint():
 	ckptfile = FLAGS.checkpoint_dir+'/log/checkpoint'
-	if not os.path.isfile(ckptfile+'.meta'):
+	if not os.path.isfile(ckptfile):
 		print "Model checkpoint not exists."
 		exit()
 	f = open(ckptfile,'rb')
@@ -40,14 +40,16 @@ def do_eval(sess, normed_logits, prediction, tensor_pl, label_pl, dataset, Total
 		feed_dict = {tensor_pl: tensor, label_pl: label}
 		GL, GT = sess.run([normed_logits, prediction], feed_dict = feed_dict)
 		for gt, gl in zip(GT, GL):
-			print gt, gl
-		#GL = map(str, GL)
-		#fout.write(str(GT)+'\t'+','.join(GL))
+			#print gt, gl
+			gl = map(str, gl)
+			fout.write(str(gt)+'\t'+','.join(gl)+'\n')
 
 
 
 def Calling(TrainingData, ValidationData, TestingData, ModelCKPT):
-	Total = 6400
+	Num_training = 3522409 
+	Num_validation = 86504
+	Num_testing = 186468
 	#with tf.Graph().as_default() as g:
 	with tf.device('/gpu:2'):
 		TrainingData = gzip.open(TrainingData,'rb')
@@ -58,9 +60,9 @@ def Calling(TrainingData, ValidationData, TestingData, ModelCKPT):
 		fout_validation = open('Calling_validation.txt','wb')
 		fout_testing = open('Calling_testing.txt','wb')
 
-		dataset_training = Window2Tensor.Data_Reader(TrainingData, batch_size=Total)
-		dataset_validation = Window2Tensor.Data_Reader(ValidationData, batch_size=Total)
-		dataset_testing = Window2Tensor.Data_Reader(TestingData, batch_size=Total)
+		dataset_training = Window2Tensor.Data_Reader(TrainingData, batch_size=BATCH_SIZE)
+		dataset_validation = Window2Tensor.Data_Reader(ValidationData, batch_size=BATCH_SIZE)
+		dataset_testing = Window2Tensor.Data_Reader(TestingData, batch_size=BATCH_SIZE)
 		TensorPL, LabelPL = Window2Tensor.placeholder_inputs(BATCH_SIZE)
 
 		#TrainingTensor, TrainingLabel = dataset_training.read_batch()
@@ -83,11 +85,11 @@ def Calling(TrainingData, ValidationData, TestingData, ModelCKPT):
 			#print sess.run(logits,feed_dict = {TensorPL:TrainingTensor})
 			
 			print "Evaluating On Training Sample"
-			do_eval(sess, normed_logits, prediction, TensorPL, LabelPL, dataset_training, Total, fout)
+			do_eval(sess, normed_logits, prediction, TensorPL, LabelPL, dataset_training, Num_training, fout_training)
 			print "Evaluating On Vlidation Sample"
-			do_eval(sess, normed_logits, prediction, TensorPL, LabelPL, dataset_validation, Total, fout)
+			do_eval(sess, normed_logits, prediction, TensorPL, LabelPL, dataset_validation, Num_validation, fout_validation)
 			print "Evaluating On Testing Sample"
-			do_eval(sess, normed_logits, prediction, TensorPL, LabelPL, dataset_testing, Total, fout)
+			do_eval(sess, normed_logits, prediction, TensorPL, LabelPL, dataset_testing, Num_testing, fout_testing)
 
 		fout_training.close()
 		fout_validation.close()
@@ -106,7 +108,7 @@ def main(argv=None):  # pylint: disable=unused-argument
 	# ModelCKPT = FLAGS.checkpoint_dir+'/model.ckpt-4599.meta'
 
 	ModelCKPT = GetCheckPoint()
-	Calling(TrainingData, TestingData, ModelCKPT)
+	Calling(TrainingData, ValidationData, TestingData, ModelCKPT)
 
 
 
