@@ -195,15 +195,12 @@ def main(argv=None):  # pylint: disable=unused-argument
 	tf.gfile.MakeDirs(FLAGS.eval_dir)
 	#evaluate()
 	TrainingData = FLAGS.TrainingData
+	ValidationData = FLAGS.ValidationData
 	TestingData = FLAGS.TestingData
 	#ModelCKPT = FLAGS.checkpoint_dir+'/model.ckpt-4599.meta'
-	global_step = sys.argv[1]	
-	ModelCKPT = FLAGS.checkpoint_dir+'/log/model.ckpt-'+ global_step
-	if os.path.isfile(ModelCKPT+'.meta'):
-		print "ModelCKPT: %s" % os.path.abspath(ModelCKPT)
-		runTesting(TrainingData, TestingData, ModelCKPT)
-	else:
-		print "ModelCKPT (%s) not exists." % ModelCKPT
+	ModelCKPT = GetCheckPoint()
+	runTesting(TrainingData, TestingData, ModelCKPT)
+
 
 
 if __name__ == '__main__':
