@@ -8,6 +8,7 @@
 #========================================================================================================
 
 from datetime import datetime
+import gzip
 import math
 import time
 import sys
@@ -72,15 +73,15 @@ class Counts():
 def Eval_Calling(TruthData,PredictedData):
 	print "Eval on",PredictedData
 	counts = Counts()
-	fin1 = open(TruthData, 'rb')
+	fin1 = gzip.open(TruthData, 'rb')
 	fin2 = open(PredictedData, 'rb')
-	fout = open('More_Detailed_'+PredictedData,'rb')
+	fout = open('More_Detailed_'+PredictedData,'wb')
 	for l in fin2:
 		P_label, GL = l.strip().split('\t')
 		flag = fin1.readline()[:13]
 		Label = flag[0]
 		Chrom = Region.Byte2Chrom(flag[1:3])
-		Pos = Region.Byte2Pos(flag[3:13]))
+		Pos = Region.Byte2Pos(flag[3:13])
 		if P_label == '0' and Label == '0':
 			counts.zero_zero += 1
 		elif P_label == '0' and Label == '1':
@@ -113,8 +114,8 @@ def main(argv=None):  # pylint: disable=unused-argument
 	ValidationPreticted = 'Calling_validation.txt'
 	TestingPreticted = 'Calling_testing.txt'
 
-	Eval_Calling(TrainingData, TrainingPreticted)
-	Eval_Calling(ValidationData, ValidationPreticted)
+	#Eval_Calling(TrainingData, TrainingPreticted)
+	#Eval_Calling(ValidationData, ValidationPreticted)
 	Eval_Calling(TestingData, TestingPreticted)
 
 if __name__=='__main__':
