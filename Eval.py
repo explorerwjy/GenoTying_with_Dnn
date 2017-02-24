@@ -131,13 +131,13 @@ def do_eval(sess, eval_correct, testing_tensor_pl, testing_label_pl, dataset, To
 	precision = float(true_count) / num_examples 
 	print '\tNum examples: %d\tNum correct: %d\tPrecision @ 1: %.04f' % (num_examples, true_count, precision)
 
-def runTesting(TrainingData, TestingData, ModelCKPT):
+def runTesting(TrainingData, ValidationData, TestingData, ModelCKPT):
 	Num_training = 3522409 
 	Num_validation = 86504
 	Num_testing = 186468
 
 	#with tf.Graph().as_default() as g:
-	with tf.device('/gpu:1'):
+	with tf.device('/gpu:7'):
 		TrainingData = gzip.open(TrainingData,'rb')
 		ValidationData = gzip.open(ValidationData,'rb')
 		TestingData = gzip.open(TestingData,'rb')
@@ -199,7 +199,7 @@ def main(argv=None):  # pylint: disable=unused-argument
 	TestingData = FLAGS.TestingData
 	#ModelCKPT = FLAGS.checkpoint_dir+'/model.ckpt-4599.meta'
 	ModelCKPT = GetCheckPoint()
-	runTesting(TrainingData, TestingData, ModelCKPT)
+	runTesting(TrainingData, ValidationData, TestingData, ModelCKPT)
 
 
 

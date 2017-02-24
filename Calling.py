@@ -51,17 +51,17 @@ def Calling(TrainingData, ValidationData, TestingData, ModelCKPT):
 	Num_validation = 86504
 	Num_testing = 186468
 	#with tf.Graph().as_default() as g:
-	with tf.device('/gpu:2'):
-		TrainingData = gzip.open(TrainingData,'rb')
-		ValidationData = gzip.open(ValidationData,'rb')
+	with tf.device('/gpu:7'):
+		#TrainingData = gzip.open(TrainingData,'rb')
+		#ValidationData = gzip.open(ValidationData,'rb')
 		TestingData = gzip.open(TestingData,'rb')
 
-		fout_training = open('Calling_training.txt','wb')
-		fout_validation = open('Calling_validation.txt','wb')
-		fout_testing = open('Calling_testing.txt','wb')
+		#fout_training = open('Calling_training.txt','wb')
+		#fout_validation = open('Calling_validation.txt','wb')
+		fout_testing = open('A_Calling_testing.txt','wb')
 
-		dataset_training = Window2Tensor.Data_Reader(TrainingData, batch_size=BATCH_SIZE)
-		dataset_validation = Window2Tensor.Data_Reader(ValidationData, batch_size=BATCH_SIZE)
+		#dataset_training = Window2Tensor.Data_Reader(TrainingData, batch_size=BATCH_SIZE)
+		#dataset_validation = Window2Tensor.Data_Reader(ValidationData, batch_size=BATCH_SIZE)
 		dataset_testing = Window2Tensor.Data_Reader(TestingData, batch_size=BATCH_SIZE)
 		TensorPL, LabelPL = Window2Tensor.placeholder_inputs(BATCH_SIZE)
 
@@ -84,10 +84,10 @@ def Calling(TrainingData, ValidationData, TestingData, ModelCKPT):
 			#print TrainingLabel
 			#print sess.run(logits,feed_dict = {TensorPL:TrainingTensor})
 			
-			print "Evaluating On Training Sample"
-			do_eval(sess, normed_logits, prediction, TensorPL, LabelPL, dataset_training, Num_training, fout_training)
-			print "Evaluating On Vlidation Sample"
-			do_eval(sess, normed_logits, prediction, TensorPL, LabelPL, dataset_validation, Num_validation, fout_validation)
+			#print "Evaluating On Training Sample"
+			#do_eval(sess, normed_logits, prediction, TensorPL, LabelPL, dataset_training, Num_training, fout_training)
+			#print "Evaluating On Vlidation Sample"
+			#do_eval(sess, normed_logits, prediction, TensorPL, LabelPL, dataset_validation, Num_validation, fout_validation)
 			print "Evaluating On Testing Sample"
 			do_eval(sess, normed_logits, prediction, TensorPL, LabelPL, dataset_testing, Num_testing, fout_testing)
 
