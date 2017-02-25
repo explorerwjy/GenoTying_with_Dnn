@@ -3,16 +3,17 @@
 
 #========================================================================================================
 # Take Union of several candidate vcf file into one to increase sensitivity.
+# UnFinished One
 #========================================================================================================
 
-from optparse import OptionParser
+import argparse
 import gzip
 
 def GetOptions():
-	parser = OptionParser()
-	parser.add_option('-v','--vcf',dest = 'VCFs', metavar = 'VCFs', help = 'vcf files to union together')
-	(options,args) = parser.parse_args()
-	vcflist = [ vcf.strip() for vcf in options.VCFs.split(',') ]
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-v','--vcf', nargs='+', type=str, help = 'vcf files to be union together')
+	args = parser.parse_args()
+	vcflist = [ vcf.strip() for vcf in args ]
 	outname = 'Union_'+'-'.join([ vcf.split('/')[-1].split('.')[0].strip() for vcf in vcflist])+'.vcf'
 	return vcflist, outname
 
@@ -31,10 +32,10 @@ def var2kv(l):
 	chrom,pos = llist[0:2]
 	#p = chrom+'-'+pos
 	k = get_xpos(chrom,pos)
-	return k
+	return k,l
 
 # Parse one vcf file into meta, header, and a dictionary of variants.
-def Parse_one(vcf):
+def VCF2DICT(vcf):
 	meta = []
 	header = None
 	variants = {}
@@ -45,7 +46,7 @@ def Parse_one(vcf):
 		elif l.startswith("#"):
 			header = l
 		else:
-			k,p,v = var2kv(l)
+			k,l = var2kv(l)
 			if k not in variants:
 				variants[k] = v
 			else:

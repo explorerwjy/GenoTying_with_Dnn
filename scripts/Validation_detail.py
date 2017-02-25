@@ -62,6 +62,7 @@ class Counts():
 		self.GT_PPV = float(self.GT_TP)/(self.GT_TP+self.GT_FP)
 		self.GT_F1 = float(2*self.GT_TP)/(2*self.GT_TP + self.GT_FN + self.GT_FP)
 	def show(self):
+		print 'Eval Results on TestSet -> GroundTruth'
 		print '0/0 -> 0/0:',self.zero_zero
 		print '0/0 -> 0/1:',self.zero_one
 		print '0/0 -> 1/1:',self.zero_two

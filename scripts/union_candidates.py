@@ -5,17 +5,16 @@
 # Take Union of several candidate vcf file into one to increase sensitivity.
 #========================================================================================================
 
-from optparse import OptionParser
+import argparse
 import gzip
 
 
 def GetOptions():
-	parser = OptionParser()
-	parser.add_option('-v','--vcf',dest = 'VCFs', metavar = 'VCFs', help = 'vcf files to union together')
-	(options,args) = parser.parse_args()
-	vcflist = [ vcf.strip() for vcf in options.VCFs.split(',') ]
-	print vcflist
-	outname = 'union_'+'-'.join([ vcf.split('/')[-1].lstrip('.vcf') for vcf in vcflist])+'.vcf'
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-v','--vcf', nargs='+', type=str, help = 'vcf files to be union together')
+	args = parser.parse_args()
+	vcflist = [ vcf.strip() for vcf in args ]
+	outname = 'Union_'+'-'.join([ vcf.split('/')[-1].split('.')[0].strip() for vcf in vcflist])+'.vcf'
 	return vcflist, outname
 
 # Return a uniq pos according to chrom and pos that easy to sort

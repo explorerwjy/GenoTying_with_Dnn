@@ -3,19 +3,22 @@
 
 #========================================================================================================
 # Make a evaluation of candidate variants and positive variants
+# Training: chr1-19
+# Testing: chr20-22
 #========================================================================================================
 
-from optparse import OptionParser
+import argparse
 import union_candidates as uc
 import gzip
 
 def GetOptions():
-	parser = OptionParser()
-	parser.add_option('-p','--positive',dest = 'Positive', metavar = 'Positive', help = 'VCF file contains Positive variants')
-	parser.add_option('-c','--candidate',dest = 'Candidate', metavar = 'Candidate', help = 'VCF file contains Candidate variants')
-	(options,args) = parser.parse_args()
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-p','--positive', help = 'VCF file contains Positive variants')
+	parser.add_argument('-c','--candidate', help = 'VCF file contains Candidate variants')
+	parser.add_argument('-m','--mode',type=str, choices=['train','test','all'], help='mode for run. train will load chr1-19 from positive vcf. test will load chr20-22 from positive vcf. all will load all variants from positive vcf')
+	args = parser.parse_args()
 	
-	return options.Positive,options.Candidate
+	return args.Positive,args.Candidate
 def getTPFP(candidates,positives):
 	TP,FP = 0,0
 

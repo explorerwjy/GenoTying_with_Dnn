@@ -82,7 +82,7 @@ def train_2():
 			#_, loss_value = sess.run([train_op, loss], feed_dict=feed_dict)
 			mon_sess.run(train_op, feed_dict=feed_dict)
 
-def train():
+def train_3():
 	"""Train TensorCaller for a number of steps."""
 	with tf.Graph().as_default():
 		print "Locating Data File"
@@ -140,6 +140,66 @@ def train():
 				feed_dict = fill_feed_dict(data_sets_testing, tensor_placeholder, labels_placeholder)
 				loss_value = sess.run(loss, feed_dict=feed_dict)
 				print 'Step %d Test loss = %.3f (%.3f sec); Saved loss = %.3f' % (v_step, loss_value, duration, min_loss)
+
+def GetInputs():
+	print "Locating Data File"
+	TrainingData = gzip.open(FLAGS.TrainingData,'rb')
+	TestingData = gzip.open(FLAGS.TestingData,'rb')
+	data_sets_training = Window2Tensor.Data_Reader(TrainingData, batch_size=BATCH_SIZE)
+	data_sets_testing = Window2Tensor.Data_Reader(TestingData, batch_size=BATCH_SIZE) 
+	print "Training Data @%s; \nTesting Data @%s" % (os.path.abspath(FLAGS.TrainingData), os.path.abspath(FLAGS.TestingData))
+
+def train():
+	"""Train TensorCaller for a number of steps."""
+	with tf.Graph().as_default():
+
+		# Get Tensors and labels for Training data.
+		tensors, labels = GetInputs()
+
+		global_step = tf.Variable(0, trainable=False, name='global_step')
+
+		# Build a Graph that computes the logits predictions from the
+		# inference model.
+		convnets = Models.ConvNets()
+		logits = convnets.Inference(tensors)
+
+		# Calculate loss.
+		loss = convnets.loss(logits, labels)
+
+		# Build a Graph that trains the model with one batch of examples and
+		# updates the model parameters.
+		train_op = convnets.Train(loss, global_step)
+		summary = tf.summary.merge_all()
+
+		init = tf.global_variables_initializer()
+		saver = tf.train.Saver()
+		sess = tf.Session()
+		summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
+		sess.run(init)
+		
+		min_loss = 100
+		for step in xrange(max_steps):
+			start_time = time.time()
+			
+			_, loss_value = sess.run([train_op, loss])
+			duration = time.time() - start_time
+			v_step = sess.run(global_step)
+			if step % 10 == 0:
+				print 'Step %d Training loss = %.3f (%.3f sec)' % (v_step, loss_value, duration)
+				summary_str = sess.run(summary)
+				summary_writer.add_summary(summary_str, v_step)
+				summary_writer.flush()
+
+			if (step + 1) % 100 == 0 or (step + 1) == max_steps:
+				#Save Model only if loss decreasing
+				if loss_value < min_loss:
+					checkpoint_file = os.path.join(log_dir, 'model.ckpt')
+					saver.save(sess, checkpoint_file, global_step = global_step)
+					min_loss = loss_value
+				feed_dict = fill_feed_dict(data_sets_testing, tensor_placeholder, labels_placeholder)
+				loss_value = sess.run(loss)
+				print 'Step %d Test loss = %.3f (%.3f sec); Saved loss = %.3f' % (v_step, loss_value, duration, min_loss)
+
 
 def continue_train(ModelCKPT):
 	"""Train TensorCaller for a number of steps."""
@@ -223,25 +283,15 @@ def main(argv=None):  # pylint: disable=unused-argument
 
 	print 'TraingDir is:',FLAGS.train_dir
 	if Continue == True:
-		ckptfile = FLAGS.checkpoint_dir+'/log/checkpoint'
+		ckptfile = FLAGS.log_dir+'/log/checkpoint'
 		f = open(ckptfile,'rb')
 		ckpt = f.readline().split(':')[1].strip().strip('"')
 		f.close()
-		prefix = os.path.abspath(FLAGS.checkpoint_dir+'/log/')
+		prefix = os.path.abspath(FLAGS.log_dir)
 		ckpt = prefix + '/' + ckpt
 		print ckpt
 		continue_train(ckpt)
 	else:
-		"""
-		cmd = raw_input("Start a New Training?(y/n):")
-		if cmd == 'y':
-			if tf.gfile.Exists(FLAGS.train_dir):
-				tf.gfile.DeleteRecursively(FLAGS.train_dir)
-				tf.gfile.MakeDirs(FLAGS.train_dir)
-			train()
-		else:
-			exit()
-		"""
 		train()
 
 if __name__ == '__main__':

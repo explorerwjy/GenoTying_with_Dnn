@@ -3,6 +3,9 @@
 
 #========================================================================================================
 # Region
+# A Region consists of Base Alignment, QualScore Alignemnt and Strand Alignment 
+# Output Format:
+# Chrom Pos Pos Ref Alt FlatTensor
 #========================================================================================================
 
 from optparse import OptionParser
