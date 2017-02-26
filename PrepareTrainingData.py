@@ -18,6 +18,9 @@ import multiprocessing
 import time
 import os
 import subprocess
+import sys
+
+sys.stdout = sys.stderr
 
 def GetOptions():
 	parser = argparse.ArgumentParser()
@@ -56,11 +59,12 @@ def VarScan(referenceGenome,bam,Candidate_vcf,Positive_vars,Nprocess):
 		p = multiprocessing.Process(target=load_variants, args=(Candidate_vcf, Positive_vars, referenceGenome, bam, i, Nprocess))
 		jobs.append(p)
 		p.start()
-	
+	for job in jobs:
+		job.join()
 	# Merge all files
 	print "Merging Files together and bgzip"
-	command1 = 'cat tmp.train.*.windows.txt| sort -k1,1d -k2,2n > Training.windows.txt ;bgzip Training.windows.txt; tabix -f -s 1 -b 2 -e 3 Training.windows.txt.gz'
-	command2 = 'cat tmp.test.*.windows.txt| sort -k1,1d -k2,2n > Testing.windows.txt ;bgzip Testing.windows.txt; tabix -s 1 -b 2 -e 3 Testing.windows.txt.gz'
+	command1 = 'cat tmp.train.*.windows.txt| sort -k1,1d -k2,2n > Training.windows.txt ;bgzip -f Training.windows.txt; tabix -f -s 1 -b 2 -e 3 Training.windows.txt.gz'
+	command2 = 'cat tmp.test.*.windows.txt| sort -k1,1d -k2,2n > Testing.windows.txt ;bgzip -f Testing.windows.txt; tabix -f -s 1 -b 2 -e 3 Testing.windows.txt.gz'
 	process1 = subprocess.Popen(command1, shell=True, stdout=subprocess.PIPE)
 	process2 = subprocess.Popen(command2, shell=True, stdout=subprocess.PIPE)
 	process1.wait()
@@ -104,8 +108,8 @@ def parse_tabix_file_subset(tabix_filenames, Positive_vars, referenceGenome, bam
 			counter += 1
 			yield parsed_record
 
-			if counter % 100000 == 0:
-				seconds_elapsed = float(time().time()-start_time)
+			if counter % 10000 == 0:
+				seconds_elapsed = float(time.time()-start_time)
 				print "Load %d records from subset %d of %d from %s in %f seconds" % (counter, subset_i, subset_n, short_filenames, seconds_elapsed)
 
 # The record_parser in parse_tabix_file_subset
