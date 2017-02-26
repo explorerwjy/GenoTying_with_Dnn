@@ -48,60 +48,22 @@ def Get_Positives(T_vcf):
 
 # Scan a candidate vcf file, generate window for the variant and mark genotype according to GIAB positives
 def VarScan(referenceGenome,bam,Candidate_vcf,Positive_vars,Nprocess):
-	if Nprocess<=1:
-		RefFile = pysam.FastaFile(referenceGenome)
-		SamFile = samfile = pysam.AlignmentFile(bam, "rb")
-		fout_training = gzip.open('windows_training.txt.gz','wb')
-		fout_validation = gzip.open('windows_validation.txt.gz','wb')
-		fout_testing = gzip.open('windows_testing.txt.gz','wb')
-		fin = open(Candidate_vcf,'rb')
-		for l in fin:
-			if l.startswith('##'):
-				continue
-			elif l.startswith('#'):
-				header = l.strip().split('\t')
-			else:	
-				llist = l.strip().split('\t')
-				chrom, pos = llist[0:2]
-				if chrom not in ['19','20','21','22','X','Y']:	
-					k,p,v = var2kv(l)
-					#region = Region.Region(ref,samfile, chrom, int(pos))
-					if k in Positive_vars:
-						GT = get_Genotype(llist)
-						region = Region.CreateRegion(RefFile, SamFile, chrom, pos, str(GT)) #Create a Region according to a site
-					else:
-						region = Region.CreateRegion(RefFile, SamFile, chrom, pos, '0') 
-					#Pulse(region)
-					fout_training.write(region.write()+'\n')
-				elif chrom in ['19']:
-					k,p,v = var2kv(l)
-					if k in Positive_vars:
-						GT = get_Genotype(llist)
-						region = Region.CreateRegion(RefFile, SamFile, chrom, pos, str(GT))
-					else:
-						region = Region.CreateRegion(RefFile, SamFile, chrom, pos, '0') 
-					fout_validation.write(region.write()+'\n')
-				elif chrom in ['20','21','22']:
-					k,p,v = var2kv(l)
-					#region = Region.Region(ref,samfile, chrom, int(pos))
-					if k in Positive_vars:
-						GT = get_Genotype(llist)
-						region = Region.CreateRegion(RefFile, SamFile, chrom, pos, str(GT)) #Create a Region according to a site
-					else:
-						region = Region.CreateRegion(RefFile, SamFile, chrom, pos, '0') 
-					#Pulse(region)
-					fout_testing.write(region.write()+'\n')
-		fout_training.close()
-		fout_testing.close()
+	RefFile = pysam.FastaFile(referenceGenome)
+	SamFile = samfile = pysam.AlignmentFile(bam, "rb")
+	jobs = []
+	for i in range(Nprocess):
+		outname = 'tmp.'+i+'.windows.txt'
+		p = multiprocessing.Process(target=load_variants, args=(Candidate_vcf, Positive_vars, RefFile, SamFile i, Nprocess, outname))
+		jobs.append(p)
+		p.start()
 
-	else:
-		jobs = []
-		for i in range(Nprocess):
-			p = multiprocessing.Process(target=worker, args=(i,))
-			jobs.append(p)
-			p.start()
+def load_variants(VCF, Positive_vars, RefFile, SamFile, i, n, outname):
+	fout = open(outname, 'wb')
+	window_generator = parse_tabix_file_subset([VCF], Positive_vars, RefFile, SamFile, i, n, get_variants_from_sites_vcf)
+	for record in window_generator:
+		fout.write(record)
 
-def parse_tabix_file_subset(tabix_filenames, subset_i, subset_n, record_parser):
+def parse_tabix_file_subset(tabix_filenames, Positive_vars, RefFile, SamFile, subset_i, subset_n, record_parser):
 	start_time = time.time()
 	open_tabix_files = [pysam.Tabixfile(tabix_filename) for tabix_filename in tabix_filenames]
 	tabix_file_contig_pairs = [(tabix_file, contig) for tabix_file in open_tabix_files for contig in tabix_file.contigs]
@@ -111,8 +73,10 @@ def parse_tabix_file_subset(tabix_filenames, subset_i, subset_n, record_parser):
 	print "Lodaing subset %d from %d" % (subset_i, subset_n)
 	counter = 0
 	for tabix_file, contig, in tabix_file_contig_subset:
-		header_iterator = tabix_file.headerreacords_iterator = tabix_file.fetch(contig, 0, 10**9, multiple_iterators=True)
-		for parsed_record in record_parser(itertools.chain(header_iterator, records_iterator)):
+		#header_iterator = tabix_file.header
+		reacords_iterator = tabix_file.fetch(contig, 0, 10**9, multiple_iterators=True)
+		#for parsed_record in record_parser(itertools.chain(header_iterator, records_iterator), Positive_vars, RefFile, SamFile ):
+		for parsed_record in record_parser(records_iterator, Positive_vars, RefFile, SamFile ):
 			counter += 1
 			yield parsed_record
 
@@ -120,11 +84,22 @@ def parse_tabix_file_subset(tabix_filenames, subset_i, subset_n, record_parser):
 				seconds_elapsed = float(time().time()-start_time)
 				print "Load %d records from subset %d of %d from %s in %f seconds" % (counter, subset_i, subset_n, short_filenames, seconds_elapsed)
 
-def parse_variants(sites_file, i, n, outname):
-	fout = open(outname, 'wb')
-	window_generator = parse_tabix_file_subset([sites_file], i, n, get_variants_from_sites_vcf)
-	for record in window_generator:
-		fout.write(record)
+# The record_parser in parse_tabix_file_subset
+def get_variants_from_sites_vcf(sites_file, Positive_vars, RefFile, SamFile):
+	for l in sites_file:
+		if l.startswith('##'):
+			continue
+		elif l.startswith('#'):
+			continue
+		llist = l.strip().split('\t')
+		k,chrom,pos,ref,alt = var2kv(llist)
+		if k in Positive_vars:
+			GT = get_Genotype(llist)
+			region = Region.CreateRegion(RefFile, SamFile, chrom, pos, ref, alt, str(GT)) #Create a Region according to a site
+		else:
+			region = Region.CreateRegion(RefFile, SamFile, chrom, pos, ref, alt, '0') 
+		yield region.write()
+
 
 # This func used to view window in a given region. Mainly aimed to debug the Region part.
 def OneVar(ref,bam): 
@@ -142,6 +117,7 @@ def OneVar(ref,bam):
 			print tmp
 			print tmp.split(':')
 			exit()
+
 def Pulse(region):
 	region.show()
 	ans = raw_input("Go to next var (y/n)? >>")

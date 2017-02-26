@@ -18,12 +18,12 @@ def get_xpos(chrom, pos):
 		chrom = 'chr{}'.format(chrom)
 	return CHROMSOME2CODE[chrom] * int(1e9) + int(pos)
 
-def var2kv(l):
-	llist = l.split('\t')
+def var2kv(llist):
 	chrom,pos = llist[0:2]
-	p = chrom+'-'+pos
+	ref,alt = llist[3:5]
+	#p = chrom+'-'+pos
 	k = get_xpos(chrom,pos)
-	return k,p,l
+	return k,chrom,pos,ref,alt
 
 def get_Genotype(llist):
 	#fmt = llist[9]

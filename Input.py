@@ -30,45 +30,30 @@ NUM_EPOCHS_PER_DECAY = 350.0      # Epochs after which learning rate decays.
 LEARNING_RATE_DECAY_FACTOR = 0.1  # Learning rate decay factor.
 INITIAL_LEARNING_RATE = 0.1       # Initial learning rate.
 
-
 # Global constants describing the data set & Model.
 FLAGS = tf.app.flags.FLAGS
-
-
 tf.app.flags.DEFINE_string('eval_dir', './tmp/TensorCaller_eval',
                            """Directory where to write event logs.""")
-
 tf.app.flags.DEFINE_string('train_dir', './tmp/TensorCaller_train',
-                           """Directory where to write event logs """
-                           """and checkpoint.""")
-
+                           """Directory where to write event logs and checkpoint.""")
 tf.app.flags.DEFINE_string('log_dir', './tmp/TensorCaller_train/log',
                            """Directory where to write event logs.""")
-
 tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
                             """How often to run the eval.""")
-
 tf.app.flags.DEFINE_boolean('run_once', False,
                          """Whether to run eval only once.""")
-
 tf.app.flags.DEFINE_integer('batch_size', 128,
                             """Number of WindowTensor to process in a batch.""")
-
 tf.app.flags.DEFINE_string('TrainingData', './windows_training.txt.gz',
                            """Path to the Training Data.""")
-
 tf.app.flags.DEFINE_string('ValidationData', './windows_validation.txt.gz',
                            """Path to the Validation Data.""")
-
 tf.app.flags.DEFINE_string('TestingData', './windows_testing.txt.gz',
                            """Path to the Testing Data.""")
-
 tf.app.flags.DEFINE_boolean('use_fl16', True,
                             """Train the model using fp16.""")
-
 tf.app.flags.DEFINE_integer('max_steps', 1000000,
                             """Number of batches to run.""")
-
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
 
@@ -108,15 +93,9 @@ class window_tensor():
 def Input():
     TrainingData = gzip.open(FLAGS.TrainingData,'rb')
     TestingData = gzip.open(FLAGS.TestingData,'rb')
-    InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT+1, 3]) 
-    
-
-
-
-
+    InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT+1, 3])  
 
 def main():
-
     return
 
 if __name__=='__main__':

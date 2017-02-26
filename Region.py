@@ -61,11 +61,13 @@ def per_base_alignment(start,end,pos,ref,read):
 			exit()
 
 class Region():
-	def __init__(self,chrom,pos,start,end,Y):
+	def __init__(self, chrom, pos, start, end, ref, alt, Y):
 		self.chrom = chrom
 		self.pos = pos
 		self.start = start
 		self.end = end
+		self.ref = ref
+		self.alt = alt
 		self.label = Y
 		self.base = []
 		self.qual = []
@@ -74,20 +76,21 @@ class Region():
 			self.base.append(['0'] * (WIDTH))
 			self.qual.append(['!']* (WIDTH))
 			self.strand.append(['0'] * (WIDTH))
-	def show(self):
-		print "#Alignment\t"+self.chrom+':'+str(self.pos)
+	def show(self,all=False):
+		print self.chrom+':'+str(self.pos)+self.ref+self.alt+'\n'
 		for row in self.base:
+			print "#BASE"
 			print ''.join(row)
-		"""
-		print "#QUAL"
-		for row in self.qual:
-			print ''.join(row)
-		print "#Strand"
-		for row in self.strand:
-			print ''.join(row)
-		"""
+		if all == True:
+			print "#QUAL"
+			for row in self.qual:
+				print ''.join(row)
+			print "#Strand"
+			for row in self.strand:
+				print ''.join(row)
+
 	def write(self):
-		Align = self.label + Chrom2Byte(self.chrom) + Pos2Byte(self.pos) # 13 Byte Meta 
+		#Align = self.label + Chrom2Byte(self.chrom) + Pos2Byte(self.pos) # 13 Byte Meta 
 		tmp = []
 		for row in self.base:
 			tmp.append(''.join(row))
@@ -100,7 +103,8 @@ class Region():
 		for row in self.strand:
 			tmp.append(''.join(row))
 		strands = ''.join(tmp)
-		return ''.join([Align, bases, quals, strands])
+		FlatTensor = ''.join([bases, quals, strands])
+		return '\t'.join([self.chrom, self.pos, self.pos, self.alt, self.ref, self.label, FlatTensor]) + '\n'
 	def fill_ref(self,ref):
 		for row in xrange(1):
 			for col in xrange(WIDTH):
@@ -137,12 +141,12 @@ def get_strand(flag_forward):
 		return '1'
 	else:
 		return '2'
-def CreateRegion(RefFile, SamFile, chrom, pos, Y, verbose=False):
+def CreateRegion(RefFile, SamFile, chrom, pos, ref, alt, Y, verbose=False):
 	pos = int(pos)
 	start = pos - (WIDTH - 1)/2
 	end = pos + (WIDTH - 1)/2 + 1
 	#print 'chr'+str(chrom)+':'+str(pos),start,end,start-end
-	region = Region(chrom, pos, start, end, Y)
+	region = Region(chrom, pos, start, end, ref, alt, Y)
 	ref = RefFile.fetch(chrom,start,end)
 	row_i = region.fill_ref(ref)
 	reads = get_overlapping(SamFile, chrom, pos, start, end)
