@@ -51,16 +51,14 @@ def Get_Positives(T_vcf):
 
 # Scan a candidate vcf file, generate window for the variant and mark genotype according to GIAB positives
 def VarScan(referenceGenome,bam,Candidate_vcf,Positive_vars,Nprocess):
-	"""
 	jobs = []
 	for i in range(Nprocess):
 		p = multiprocessing.Process(target=load_variants, args=(Candidate_vcf, Positive_vars, referenceGenome, bam, i, Nprocess))
 		jobs.append(p)
 		p.start()
-	"""
-	print "Merging Files together and bgzip"
 	
 	# Merge all files
+	print "Merging Files together and bgzip"
 	command1 = 'cat tmp.train.*.windows.txt| sort -k1,1d -k2,2n > Training.windows.txt ;bgzip Training.windows.txt; tabix -f -s 1 -b 2 -e 3 Training.windows.txt.gz'
 	command2 = 'cat tmp.test.*.windows.txt| sort -k1,1d -k2,2n > Testing.windows.txt ;bgzip Testing.windows.txt; tabix -s 1 -b 2 -e 3 Testing.windows.txt.gz'
 	process1 = subprocess.Popen(command1, shell=True, stdout=subprocess.PIPE)
