@@ -22,12 +22,12 @@ Window_Size = (WIDTH * (HEIGHT+1) * 3)
 NUM_CLASSES = 3
 NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 10000
 NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 6400
-LEARNING_RATE_DECAY_STEP = 20000
+LEARNING_RATE_DECAY_STEP = 1000
 
 # Constants describing the training process.
 MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
 NUM_EPOCHS_PER_DECAY = 350.0      # Epochs after which learning rate decays.
-LEARNING_RATE_DECAY_FACTOR = 0.1  # Learning rate decay factor.
+LEARNING_RATE_DECAY_FACTOR = 0.9  # Learning rate decay factor.
 INITIAL_LEARNING_RATE = 0.1       # Initial learning rate.
 
 # Global constants describing the data set & Model.
@@ -87,13 +87,22 @@ class window_tensor():
         # This func encode,norm elements and form into tensor 
         res = [ (float(base)/6 - 0.5) for base in list(self.Alignment)] + 
               [ qual2code(x) for x in list(self.Qual)] + 
-              [ float(x)/2-0.5 for x in list(self.Strand)] 
-        return tf.convert_to_tensor(res, dtype=tf.float32)
+              [ float(x)/2-0.5 for x in list(self.Strand)]
+    if FLAGS.use_fl16: 
+      RawTensor = tf.convert_to_tensor(res, dtype=tf.float16)
+    else:
+          RawTensor = tf.convert_to_tensor(res, dtype=tf.float32)
+        InputTensor = tf.reshape(RawTensor, [WIDTH, HEIGHT+1, 3]) 
+        return InputTensor
 
-def Input():
-    TrainingData = gzip.open(FLAGS.TrainingData,'rb')
-    TestingData = gzip.open(FLAGS.TestingData,'rb')
-    InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT+1, 3])  
+class RecordReader():
+  def __init__(self, hand):
+    self.hand = hand
+  def read(self):
+    record = window_tensor(self.hand.readline())
+    tensor = record.encode()
+    label = tf.one_hot(indices=tf.cast(record.label, tf.int16), depth=3)
+    return tensor, label
 
 def main():
     return

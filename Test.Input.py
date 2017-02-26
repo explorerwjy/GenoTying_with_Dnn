@@ -27,6 +27,37 @@ tf.app.flags.DEFINE_integer('max_steps', 1000000,
                             """Number of batches to run.""")
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
+tf.app.flags.DEFINE_boolean('queueThreads', 8,
+                            """Number of threads used to read input data.""")
+
+
+class window_tensor():
+    def __init__(self,line):
+        self.chrom, self.start, self.end, self.label, self.window = line.strip().split('\t')
+        self.Alignment = self.window[ 0 : WIDTH * (HEIGHT+1) ]
+        self.Qual = self.window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
+        self.Strand = self.window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
+
+    def encode(self):
+        # This func encode,norm elements and form into tensor 
+        res = [ (float(base)/6 - 0.5) for base in list(self.Alignment)] + 
+              [ qual2code(x) for x in list(self.Qual)] + 
+              [ float(x)/2-0.5 for x in list(self.Strand)]
+		if FLAGS.use_fl16: 
+			RawTensor = tf.convert_to_tensor(res, dtype=tf.float16)
+		else:
+        	RawTensor = tf.convert_to_tensor(res, dtype=tf.float32)
+        InputTensor = tf.reshape(RawTensor, [WIDTH, HEIGHT+1, 3]) 
+        return InputTensor
+
+class RecordReader():
+	def __init__(self, hand):
+		self.hand = hand
+	def read(self):
+		record = window_tensor(self.hand.readline())
+		tensor = record.encode()
+		label = tf.one_hot(indices=tf.cast(record.label, tf.int16), depth=3)
+		return tensor, label
 
 def Test_Input_1():
 	# TensorFlow Input Pipelines for Large Data Sets
@@ -94,28 +125,6 @@ def Test_Input_1():
 	coord.join(threads)
 	sess.close()
 
-class window_tensor():
-    def __init__(self,line):
-        self.chrom, self.start, self.end, self.label, self.window = line.strip().split('\t')
-        self.Alignment = self.window[ 0 : WIDTH * (HEIGHT+1) ]
-        self.Qual = self.window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
-        self.Strand = self.window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
-
-    def encode(self):
-        # This func encode,norm elements and form into tensor 
-        res = [ (float(base)/6 - 0.5) for base in list(self.Alignment)] + 
-              [ qual2code(x) for x in list(self.Qual)] + 
-              [ float(x)/2-0.5 for x in list(self.Strand)] 
-        return tf.convert_to_tensor(res, dtype=tf.float32)
-
-class RecordReader():
-	def __init__(self, hand):
-		self.hand = hand
-	def read(self):
-		record = window_tensor(self.hand.readline())
-		tensor = record.encode()
-		return tensor, record.label
-
 def TestInput_2():
 	#filename_queue = tf.train.string_input_producer(["file0.csv", "file1.csv"])
 	TrainHand=gzip.open(FLAGS.TrainingData,'rb')
@@ -133,3 +142,13 @@ def TestInput_2():
 
 		coord.request_stop()
 		coord.join(threads)
+
+def TestInput_3():
+	TrainHand=gzip.open(FLAGS.TrainingData,'rb')
+	reader = RecordReader(TrainHand)
+	tensor, label = reader.read()
+
+	# Create a queue, and an op that enqueues examples one at a time in the queue.
+	queue = tf.RandomShuffleQueue(name="InputQueue", names=['WindowTensor','Label'], capacity=FALGS.batch_size*10, dtypes=[tf.float32, tf.float32], shapes=[[WIDTH,HEIGHT,DEPTH], [NUM_CLASS]])
+	enqueue_op = queue.enqueue(tensor, label)
+	return queue, enqueue_o
