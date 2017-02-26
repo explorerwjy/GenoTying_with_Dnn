@@ -104,7 +104,7 @@ class Region():
 			tmp.append(''.join(row))
 		strands = ''.join(tmp)
 		FlatTensor = ''.join([bases, quals, strands])
-		return '\t'.join([self.chrom, self.pos, self.pos, self.alt, self.ref, self.label, FlatTensor]) + '\n'
+		return '\t'.join([self.chrom, str(self.pos), str(self.pos), self.ref, self.alt, self.label, FlatTensor]) + '\n'
 	def fill_ref(self,ref):
 		for row in xrange(1):
 			for col in xrange(WIDTH):

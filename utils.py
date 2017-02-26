@@ -18,6 +18,13 @@ def get_xpos(chrom, pos):
 		chrom = 'chr{}'.format(chrom)
 	return CHROMSOME2CODE[chrom] * int(1e9) + int(pos)
 
+def var2kv2(l):
+	llist = l.strip().split('\t')
+	chrom,pos = llist[0:2]
+	p = chrom+':'+pos
+	k = get_xpos(chrom,pos)
+	return k,p,l
+
 def var2kv(llist):
 	chrom,pos = llist[0:2]
 	ref,alt = llist[3:5]

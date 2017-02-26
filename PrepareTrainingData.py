@@ -15,6 +15,9 @@ from utils import *
 import Region
 import gzip
 import multiprocessing
+import time
+import os
+import subprocess
 
 def GetOptions():
 	parser = argparse.ArgumentParser()
@@ -27,7 +30,7 @@ def GetOptions():
 
 	args = parser.parse_args()
 	
-	return args.bam,args.vcf,args.true,args.mode, 
+	return args.ref,args.bam,args.vcf,args.true,args.mode,args.process 
 
 def Get_Positives(T_vcf):
 	if T_vcf.endswith('.vcf.gz'):
@@ -39,7 +42,7 @@ def Get_Positives(T_vcf):
 		if l.startswith('#'):
 			continue
 		else:
-			k,p,v = var2kv(l)
+			k,p,v = var2kv2(l)
 			if k not in res:
 				res[k] = v
 			else:
@@ -48,22 +51,41 @@ def Get_Positives(T_vcf):
 
 # Scan a candidate vcf file, generate window for the variant and mark genotype according to GIAB positives
 def VarScan(referenceGenome,bam,Candidate_vcf,Positive_vars,Nprocess):
-	RefFile = pysam.FastaFile(referenceGenome)
-	SamFile = samfile = pysam.AlignmentFile(bam, "rb")
+	"""
 	jobs = []
 	for i in range(Nprocess):
-		outname = 'tmp.'+i+'.windows.txt'
-		p = multiprocessing.Process(target=load_variants, args=(Candidate_vcf, Positive_vars, RefFile, SamFile i, Nprocess, outname))
+		p = multiprocessing.Process(target=load_variants, args=(Candidate_vcf, Positive_vars, referenceGenome, bam, i, Nprocess))
 		jobs.append(p)
 		p.start()
+	"""
+	print "Merging Files together and bgzip"
+	
+	# Merge all files
+	command1 = 'cat tmp.train.*.windows.txt| sort -k1,1d -k2,2n > Training.windows.txt ;bgzip Training.windows.txt; tabix -f -s 1 -b 2 -e 3 Training.windows.txt.gz'
+	command2 = 'cat tmp.test.*.windows.txt| sort -k1,1d -k2,2n > Testing.windows.txt ;bgzip Testing.windows.txt; tabix -s 1 -b 2 -e 3 Testing.windows.txt.gz'
+	process1 = subprocess.Popen(command1, shell=True, stdout=subprocess.PIPE)
+	process2 = subprocess.Popen(command2, shell=True, stdout=subprocess.PIPE)
+	process1.wait()
+	process2.wait()
+	print process1.returncode
+	print process2.returncode
+	process3 = subprocess.Popen('rm tmp.*.windows.txt', shell=True, stdout=subprocess.PIPE)
+	process3.wait()
+	print process3.returncode
 
-def load_variants(VCF, Positive_vars, RefFile, SamFile, i, n, outname):
-	fout = open(outname, 'wb')
-	window_generator = parse_tabix_file_subset([VCF], Positive_vars, RefFile, SamFile, i, n, get_variants_from_sites_vcf)
+def load_variants(VCF, Positive_vars, referenceGenome, bam, i, n):
+	outname_train = 'tmp.train.'+str(i)+'.windows.txt'
+	outname_test = 'tmp.test.'+str(i)+'.windows.txt'
+	fout_train = open(outname_train, 'wb')
+	fout_test = open(outname_test,'wb')
+	window_generator = parse_tabix_file_subset([VCF], Positive_vars, referenceGenome, bam, i, n, get_variants_from_sites_vcf)
 	for record in window_generator:
-		fout.write(record)
+		if record.chrom not in ['20','21','22','X','Y']:
+			fout_train.write(record.write())
+		elif record.chrom in ['20','21','22']:
+			fout_test.write(record.write())
 
-def parse_tabix_file_subset(tabix_filenames, Positive_vars, RefFile, SamFile, subset_i, subset_n, record_parser):
+def parse_tabix_file_subset(tabix_filenames, Positive_vars, referenceGenome, bam, subset_i, subset_n, record_parser):
 	start_time = time.time()
 	open_tabix_files = [pysam.Tabixfile(tabix_filename) for tabix_filename in tabix_filenames]
 	tabix_file_contig_pairs = [(tabix_file, contig) for tabix_file in open_tabix_files for contig in tabix_file.contigs]
@@ -71,10 +93,14 @@ def parse_tabix_file_subset(tabix_filenames, Positive_vars, RefFile, SamFile, su
 	short_filenames = ",".join(map(os.path.basename, tabix_filenames))
 	num_file_contig_pairs = len(tabix_file_contig_subset)
 	print "Lodaing subset %d from %d" % (subset_i, subset_n)
+	
+	RefFile = pysam.FastaFile(referenceGenome)
+	SamFile = samfile = pysam.AlignmentFile(bam, "rb")
+	
 	counter = 0
 	for tabix_file, contig, in tabix_file_contig_subset:
 		#header_iterator = tabix_file.header
-		reacords_iterator = tabix_file.fetch(contig, 0, 10**9, multiple_iterators=True)
+		records_iterator = tabix_file.fetch(contig, 0, 10**9, multiple_iterators=True)
 		#for parsed_record in record_parser(itertools.chain(header_iterator, records_iterator), Positive_vars, RefFile, SamFile ):
 		for parsed_record in record_parser(records_iterator, Positive_vars, RefFile, SamFile ):
 			counter += 1
@@ -87,10 +113,10 @@ def parse_tabix_file_subset(tabix_filenames, Positive_vars, RefFile, SamFile, su
 # The record_parser in parse_tabix_file_subset
 def get_variants_from_sites_vcf(sites_file, Positive_vars, RefFile, SamFile):
 	for l in sites_file:
-		if l.startswith('##'):
-			continue
-		elif l.startswith('#'):
-			continue
+		#if l.startswith('##'):
+		#	continue
+		#elif l.startswith('#'):
+		#	continue
 		llist = l.strip().split('\t')
 		k,chrom,pos,ref,alt = var2kv(llist)
 		if k in Positive_vars:
@@ -98,7 +124,7 @@ def get_variants_from_sites_vcf(sites_file, Positive_vars, RefFile, SamFile):
 			region = Region.CreateRegion(RefFile, SamFile, chrom, pos, ref, alt, str(GT)) #Create a Region according to a site
 		else:
 			region = Region.CreateRegion(RefFile, SamFile, chrom, pos, ref, alt, '0') 
-		yield region.write()
+		yield region
 
 
 # This func used to view window in a given region. Mainly aimed to debug the Region part.
