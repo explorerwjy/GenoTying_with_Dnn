@@ -63,17 +63,21 @@ def VarScan(referenceGenome,bam,Candidate_vcf,Positive_vars,Nprocess):
 		job.join()
 	# Merge all files
 	print "Merging Files together and bgzip"
-	command1 = 'cat tmp.train.*.windows.txt| sort -k1,1d -k2,2n > Training.windows.txt ;bgzip -f Training.windows.txt; tabix -f -s 1 -b 2 -e 3 Training.windows.txt.gz'
-	command2 = 'cat tmp.test.*.windows.txt| sort -k1,1d -k2,2n > Testing.windows.txt ;bgzip -f Testing.windows.txt; tabix -f -s 1 -b 2 -e 3 Testing.windows.txt.gz'
+	if not os.path.exists('./tmp_sort_training'):
+		os.makedirs('./tmp_sort_training')
+	if not os.path.exists('./tmp_sort_testing'):
+		os.makedirs('./tmp_sort_testing')
+	command1 = 'cat tmp.train.*.windows.txt| sort -k1,1d -k2,2n -T ./tmp_sort_training > Training.windows.txt ;bgzip -f Training.windows.txt; tabix -f -s 1 -b 2 -e 3 Training.windows.txt.gz'
+	command2 = 'cat tmp.test.*.windows.txt| sort -k1,1d -k2,2n -T ./tmp_sort_testing > Testing.windows.txt ;bgzip -f Testing.windows.txt; tabix -f -s 1 -b 2 -e 3 Testing.windows.txt.gz'
 	process1 = subprocess.Popen(command1, shell=True, stdout=subprocess.PIPE)
 	process2 = subprocess.Popen(command2, shell=True, stdout=subprocess.PIPE)
 	process1.wait()
 	process2.wait()
 	print process1.returncode
 	print process2.returncode
-	process3 = subprocess.Popen('rm tmp.*.windows.txt', shell=True, stdout=subprocess.PIPE)
-	process3.wait()
-	print process3.returncode
+	#process3 = subprocess.Popen('rm tmp.*.windows.txt', shell=True, stdout=subprocess.PIPE)
+	#process3.wait()
+	#print process3.returncode
 
 def load_variants(VCF, Positive_vars, referenceGenome, bam, i, n):
 	outname_train = 'tmp.train.'+str(i)+'.windows.txt'
