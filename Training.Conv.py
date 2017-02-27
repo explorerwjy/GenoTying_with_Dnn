@@ -83,7 +83,6 @@ def train():
 
 		try:
 			for step in xrange(max_steps):
-				print step
 				start_time = time.time()
 				if coord.should_stop():
 					break

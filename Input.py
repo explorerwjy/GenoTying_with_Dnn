@@ -43,7 +43,7 @@ tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
 		"""How often to run the eval.""")
 tf.app.flags.DEFINE_boolean('run_once', False,
 		"""Whether to run eval only once.""")
-tf.app.flags.DEFINE_integer('batch_size', 8,
+tf.app.flags.DEFINE_integer('batch_size', 128,
 		"""Number of WindowTensor to process in a batch.""")
 tf.app.flags.DEFINE_string('TrainingData', './Training.windows.txt.gz',
 		"""Path to the Training Data.""")
@@ -57,7 +57,7 @@ tf.app.flags.DEFINE_integer('max_steps', 1000000,
 		"""Number of batches to run.""")
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
 		"""Whether to log device placement.""")
-tf.app.flags.DEFINE_boolean('queueThreads', 8,
+tf.app.flags.DEFINE_boolean('queueThreads', 16,
 		"""Number of threads used to read data""")
 
 # ==========================================================================
