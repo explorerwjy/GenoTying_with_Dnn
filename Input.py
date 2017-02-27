@@ -43,7 +43,7 @@ tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
 		"""How often to run the eval.""")
 tf.app.flags.DEFINE_boolean('run_once', False,
 		"""Whether to run eval only once.""")
-tf.app.flags.DEFINE_integer('batch_size', 128,
+tf.app.flags.DEFINE_integer('batch_size', 10,
 		"""Number of WindowTensor to process in a batch.""")
 tf.app.flags.DEFINE_string('TrainingData', './Training.windows.txt.gz',
 		"""Path to the Training Data.""")
@@ -57,7 +57,7 @@ tf.app.flags.DEFINE_integer('max_steps', 1000000,
 		"""Number of batches to run.""")
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
 		"""Whether to log device placement.""")
-tf.app.flags.DEFINE_boolean('queueThreads', 16,
+tf.app.flags.DEFINE_boolean('queueThreads', 4,
 		"""Number of threads used to read data""")
 
 # ==========================================================================
@@ -106,11 +106,62 @@ class RecordReader():
 			line = self.hand.readline()
 		record = window_tensor(self.hand.readline())
 		tensor = record.encode()
-		label = tf.one_hot(indices=tf.cast(float(record.label), tf.int32), depth=3)
-		#label = tf.convert_to_tensor(float(record.label), dtype=tf.float32)
+		#label = tf.one_hot(indices=tf.cast(float(record.label), tf.int32), depth=3)
+		label = tf.convert_to_tensor(int(record.label), dtype=tf.int32)
 		return tensor, label
 
+def TestInputQueue():
+		"""Train TensorCaller for a number of steps."""
+	dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
+	with tf.Graph().as_default():
+
+		# Get Tensors and labels for data.
+		TestHand=gzip.open(FLAGS.TestingData,'rb')
+		Testreader = RecordReader(TestHand)
+		test_tensor, test_label = Testreader.read()
+
+		# Create a queue, and an op that enqueues examples one at a time in the queue.
+		queue = tf.RandomShuffleQueue(name="TrainingInputQueue", capacity=FLAGS.batch_size*10,min_after_dequeue=FLAGS.batch_size*3, seed=32, dtypes=[dtype, tf.float32], shapes=[[WIDTH,HEIGHT+1,DEPTH], [NUM_CLASSES]])
+		enqueue_op = queue.enqueue([test_tensor, test_label])
+		qr = tf.train.QueueRunner(queue, [enqueue_op] * FLAGS.queueThreads) # Create a queue runner
+
+		tensors, pos, labels = queue.dequeue_many(BATCH_SIZE)
+		labels = tf.cast(labels, dtype=tf.int32)
+		print tensors, labels
+	
+		global_step = tf.Variable(0, trainable=False, name='global_step')
+
+
+		summary = tf.summary.merge_all()
+		init = tf.global_variables_initializer()
+		saver = tf.train.Saver()
+
+		sess = tf.Session()
+		summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
+		sess.run(init)
+		
+		min_loss = 100	
+		coord = tf.train.Coordinator()
+		enqueue_threads = qr.create_threads(sess, coord=coord, start=True)
+
+		try:
+			for step in xrange(max_steps):
+				if coord.should_stop():
+					break
+				v_tensors, v_pos, v_labels = sess.run([tensors, pos, labels])
+				print v_pos
+				print v_labels
+				print ""
+
+		except Exception, e:
+			coord.request_stop(e)
+		finally:
+			coord.request_stop()
+			coord.join(enqueue_threads)
+
+
 def main():
+	TestInputQueue()
 	return
 
 if __name__=='__main__':

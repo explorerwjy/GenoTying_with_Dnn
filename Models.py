@@ -99,16 +99,16 @@ class ConvNets():
 			biases = _variable_on_cpu('biases', [NUM_CLASSES], tf.constant_initializer(0.0))
 			softmax_linear = tf.add(tf.matmul(local7_drop, weights), biases, name=scope.name)
 			_activation_summary(softmax_linear)
-			softmax = tf.nn.softmax(softmax_linear, dim=-1, name=None)
-		print softmax
-		return softmax
+			#softmax = tf.nn.softmax(softmax_linear, dim=-1, name=None)
+		print softmax_linear
+		return softmax_linear
 
 	def loss(self, logits, labels):
 		#labels = tf.cast(labels, tf.int64)
 		print 'logits',logits
 		print 'labels',labels
-		#cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=logits, name='cross_entropy_per_example')
-		cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=logits, name='cross_entropy_per_example')
+		cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=logits, name='cross_entropy_per_example')
+		#cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=logits, name='cross_entropy_per_example')
 		cross_entropy_mean = tf.reduce_mean(cross_entropy, name='cross_entropy')
 		tf.add_to_collection('losses', cross_entropy_mean)
 		return tf.add_n(tf.get_collection('losses'), name='total_loss')
