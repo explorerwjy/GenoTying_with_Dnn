@@ -10,6 +10,7 @@ import os
 import Region
 import time
 import gzip
+import threading
 import numpy as np
 import tensorflow as tf
 
@@ -121,7 +122,7 @@ def enqueue(sess, coord, Testreader, queue):
 		while True:
 			print("starting to write into queue")
 			tensor,pos,label = Testreader.read()
-			enqueue_op = queue.enqueue(tensor,pos,label)
+			enqueue_op = queue.enqueue([tensor,pos,label])
 			pos,_ = sess.run([pos,enqueue_op])
 			print("added ",pos,"to the queue")
 			print("finished enqueueing")
@@ -141,7 +142,7 @@ def TestInputQueue():
 		#queue_input_data = tf.placeholder(tf.float32, shape=[20, 4])
 		#queue_input_target = tf.placeholder(tf.float32, shape=[20, 3])
 
-		queue = tf.FIFOQueue(capacity=50, dtypes=[tf.float32, tf.float32], shapes=[[4], [3]])
+		queue = tf.FIFOQueue(capacity=50, dtypes=[tf.float32, tf.string, tf.float32], shapes=[[WIDTH,HEIGHT,DEPTH],[], [1]])
 
 		#enqueue_op = queue.enqueue([queue_input_data, queue_pos_data, queue_input_target])
 		dequeue_op = queue.dequeue()
@@ -160,7 +161,7 @@ def TestInputQueue():
 		sess.run(init)
 
 		coord = tf.train.Coordinator()
-		enqueue_thread = threading.Thread(target=enqueue, args=[sess, coord, Testreader])
+		enqueue_thread = threading.Thread(target=enqueue, args=[sess, coord, Testreader, queue])
 		#enqueue_thread = threading.Thread(target=enqueue, args=[sess, coord, Testreader, enqueue_op])
 		enqueue_thread.isDaemon()
 		enqueue_thread.start()
