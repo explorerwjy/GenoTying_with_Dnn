@@ -12,7 +12,7 @@ import os
 import tensorflow as tf
 import Models
 from Input import *
-import Window2Tensor
+#import Window2Tensor
 import sys
 sys.stdout = sys.stderr
 
@@ -20,7 +20,6 @@ BATCH_SIZE=FLAGS.batch_size
 log_dir = FLAGS.log_dir
 max_steps = FLAGS.max_steps
 
-d_type = 
 
 def GetInputs_2():
 	print "Locating Data File"
@@ -47,19 +46,23 @@ def train():
 		test_tensor, test_label = Testreader.read()
 
 		# Create a queue, and an op that enqueues examples one at a time in the queue.
-		queue = tf.RandomShuffleQueue(name="TrainingInputQueue", names=['WindowTensor','Label'], capacity=FALGS.batch_size*10, dtypes=[dtype, tf.int16], shapes=[[WIDTH,HEIGHT,DEPTH], [NUM_CLASS]])
-		enqueue_op = queue.enqueue(tensor, label)
+		queue = tf.RandomShuffleQueue(name="TrainingInputQueue", capacity=FLAGS.batch_size*10,min_after_dequeue=FLAGS.batch_size*3, seed=32, dtypes=[dtype, tf.float32], shapes=[[WIDTH,HEIGHT+1,DEPTH], [NUM_CLASSES]])
+		enqueue_op = queue.enqueue([train_tensor, train_label])
 		qr = tf.train.QueueRunner(queue, [enqueue_op] * FLAGS.queueThreads) # Create a queue runner
 
-		tensors, labels = queue.dequeue_many(batch_size)
-
+		tensors, labels = queue.dequeue_many(BATCH_SIZE)
+		labels = tf.cast(labels, dtype=dtype)
+		print tensors, labels
+	
 		global_step = tf.Variable(0, trainable=False, name='global_step')
 
 		# Build a Graph that computes the logits predictions from the
 		# inference model.
 		convnets = Models.ConvNets()
 		logits = convnets.Inference(tensors)
-
+		print 'logits',logits
+		print 'lables',labels
+		
 		# Calculate loss.
 		loss = convnets.loss(logits, labels)
 
@@ -67,7 +70,6 @@ def train():
 		# updates the model parameters.
 		train_op = convnets.Train(loss, global_step)
 		summary = tf.summary.merge_all()
-		qr = tf.train.QueueRunner(queue, [enqueue_op] * FLAGS.queueThreads) # Create a queue runner
 		init = tf.global_variables_initializer()
 		saver = tf.train.Saver()
 
@@ -81,6 +83,7 @@ def train():
 
 		try:
 			for step in xrange(max_steps):
+				print step
 				start_time = time.time()
 				if coord.should_stop():
 					break
@@ -105,7 +108,7 @@ def train():
 			coord.request_stop(e)
 		finally:
 			coord.request_stop()
-			coord.join(threads)
+			coord.join(enqueue_threads)
 
 
 def continue_train(ModelCKPT):
@@ -202,4 +205,5 @@ def main(argv=None):  # pylint: disable=unused-argument
 		train()
 
 if __name__ == '__main__':
-	tf.app.run()
+	main()
+	#tf.app.run()

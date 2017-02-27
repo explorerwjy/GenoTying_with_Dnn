@@ -15,6 +15,7 @@ import gzip
 
 WIDTH = 101
 HEIGHT = 100 # +1 Reference Seq
+DEPTH = 3
 INDEL_ANCHORING_BASE = 'X'
 BASE = {'A':'1', 'T':'2', 'G':'3', 'C':'4', 'X':'5', 'N':'6'}
 BASE2= {'0':'0', '1':'A', '2':'T', '3':'G', '4':'C', '5':'X', '6':'N'}

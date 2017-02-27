@@ -7,14 +7,15 @@
 
 from optparse import OptionParser
 import tensorflow as tf
-from Window2Tensor import *
+#from Window2Tensor import *
+import re
 from Input import *
 
 # This Class is not in used now
 class ConvNets():
 	def __init__(self):
 		pass
-	def Inference_2(self, RawTensor):
+	def Inference(self, RawTensor):
 		print RawTensor
 		# conv1
 		with tf.variable_scope('conv1') as scope:
@@ -103,8 +104,11 @@ class ConvNets():
 		return softmax
 
 	def loss(self, logits, labels):
-		labels = tf.cast(labels, tf.int64)
-		cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=logits, name='cross_entropy_per_example')
+		#labels = tf.cast(labels, tf.int64)
+		print 'logits',logits
+		print 'labels',labels
+		#cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=logits, name='cross_entropy_per_example')
+		cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=labels, logits=logits, name='cross_entropy_per_example')
 		cross_entropy_mean = tf.reduce_mean(cross_entropy, name='cross_entropy')
 		tf.add_to_collection('losses', cross_entropy_mean)
 		return tf.add_n(tf.get_collection('losses'), name='total_loss')
