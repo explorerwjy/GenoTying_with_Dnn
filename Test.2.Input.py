@@ -113,7 +113,7 @@ class RecordReader():
 		pos = tf.convert_to_tensor(record.pos, dtype='tf.string')
 		return tensor,pos,label
 
-def enqueue(sess, coord, Testreader, enqueue_op):
+def enqueue(sess, coord, Testreader, queue):
 	try:	
 		""" Iterates over our data puts small junks into our queue."""
 
@@ -121,6 +121,7 @@ def enqueue(sess, coord, Testreader, enqueue_op):
 		while True:
 			print("starting to write into queue")
 			tensor,pos,label = Testreader.read()
+			enqueue_op = queue.enqueue(tensor,pos,label)
 			pos,_ = sess.run([pos,enqueue_op])
 			print("added ",pos,"to the queue")
 			print("finished enqueueing")
@@ -142,12 +143,12 @@ def TestInputQueue():
 
 		queue = tf.FIFOQueue(capacity=50, dtypes=[tf.float32, tf.float32], shapes=[[4], [3]])
 
-		enqueue_op = queue.enqueue([queue_input_data, queue_pos_data, queue_input_target])
+		#enqueue_op = queue.enqueue([queue_input_data, queue_pos_data, queue_input_target])
 		dequeue_op = queue.dequeue()
 
 		# tensorflow recommendation:
 		# capacity = min_after_dequeue + (num_threads + a small safety margin) * batch_size
-		data_batch, pos_batch target_batch = tf.train.batch(dequeue_op, batch_size=15, capacity=40)
+		data_batch, pos_batch, target_batch = tf.train.batch(dequeue_op, batch_size=15, capacity=40)
 		# use this to shuffle batches:
 		# data_batch, target_batch = tf.train.shuffle_batch(dequeue_op, batch_size=15, capacity=40, min_after_dequeue=5)
 
@@ -159,7 +160,8 @@ def TestInputQueue():
 		sess.run(init)
 
 		coord = tf.train.Coordinator()
-		enqueue_thread = threading.Thread(target=enqueue, args=[sess, coord, Testreader, enqueue_op])
+		enqueue_thread = threading.Thread(target=enqueue, args=[sess, coord, Testreader])
+		#enqueue_thread = threading.Thread(target=enqueue, args=[sess, coord, Testreader, enqueue_op])
 		enqueue_thread.isDaemon()
 		enqueue_thread.start()
 
