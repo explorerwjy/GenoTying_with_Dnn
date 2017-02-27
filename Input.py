@@ -85,6 +85,7 @@ class window_tensor():
 		self.Alignment = self.window[ 0 : WIDTH * (HEIGHT+1) ]
 		self.Qual = self.window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
 		self.Strand = self.window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
+		self.pos = self.chrom+':'+self.start
 
 	def encode(self):
 		# This func encode,norm elements and form into tensor 
@@ -107,28 +108,46 @@ class RecordReader():
 		record = window_tensor(self.hand.readline())
 		tensor = record.encode()
 		#label = tf.one_hot(indices=tf.cast(float(record.label), tf.int32), depth=3)
-		label = tf.convert_to_tensor(int(record.label), dtype=tf.int32)
-		return tensor, label
+		label = tf.convert_to_tensor(int(record.label), dtype=tf.float32)
+		label = tf.reshape(label, [1])
+		print record.pos, record.label
+		return tensor,label
+
+def Myloop(coord, Testreader):
+	while not coord.should_step():
+		try:
+			test_tensor, test_label = Testreader.read()
+			return test_tensor, test_label
+			# Read a example
+		except ValueError:
+			coord.request_step()
 
 def TestInputQueue():
-		"""Train TensorCaller for a number of steps."""
+	"""Train TensorCaller for a number of steps."""
 	dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
+	BATCH_SIZE = FLAGS.batch_size
 	with tf.Graph().as_default():
 
 		# Get Tensors and labels for data.
 		TestHand=gzip.open(FLAGS.TestingData,'rb')
 		Testreader = RecordReader(TestHand)
-		test_tensor, test_label = Testreader.read()
-
+		#test_tensor, test_label = Testreader.read()
+		#test_tensor, test_label = Myloop(coord, Testreader)
+		
 		# Create a queue, and an op that enqueues examples one at a time in the queue.
-		queue = tf.RandomShuffleQueue(name="TrainingInputQueue", capacity=FLAGS.batch_size*10,min_after_dequeue=FLAGS.batch_size*3, seed=32, dtypes=[dtype, tf.float32], shapes=[[WIDTH,HEIGHT+1,DEPTH], [NUM_CLASSES]])
-		enqueue_op = queue.enqueue([test_tensor, test_label])
+		#queue = tf.RandomShuffleQueue(name="TrainingInputQueue", capacity=FLAGS.batch_size*10,min_after_dequeue=FLAGS.batch_size*3, seed=32, dtypes=[dtype, tf.float32], shapes=[[WIDTH,HEIGHT+1,DEPTH], [NUM_CLASSES]])
+		queue = tf.FIFOQueue(name="TrainingInputQueue", capacity=FLAGS.batch_size*10, dtypes=[dtype, tf.float32], shapes=[[WIDTH,HEIGHT+1,DEPTH], [1]])
+		
+		
+		enqueue_op = queue.enqueue(Myloop(coord, Testreader))
+		#enqueue_op = queue.enqueue([test_tensor, test_label])
+		
+		
 		qr = tf.train.QueueRunner(queue, [enqueue_op] * FLAGS.queueThreads) # Create a queue runner
 
-		tensors, pos, labels = queue.dequeue_many(BATCH_SIZE)
+		tensors, labels = queue.dequeue_many(BATCH_SIZE)
 		labels = tf.cast(labels, dtype=tf.int32)
-		print tensors, labels
-	
+
 		global_step = tf.Variable(0, trainable=False, name='global_step')
 
 
@@ -137,19 +156,18 @@ def TestInputQueue():
 		saver = tf.train.Saver()
 
 		sess = tf.Session()
-		summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
+		summary_writer = tf.summary.FileWriter(FLAGS.log_dir, sess.graph)
 		sess.run(init)
-		
+
 		min_loss = 100	
 		coord = tf.train.Coordinator()
 		enqueue_threads = qr.create_threads(sess, coord=coord, start=True)
 
 		try:
-			for step in xrange(max_steps):
+			for step in xrange(10):
 				if coord.should_stop():
 					break
-				v_tensors, v_pos, v_labels = sess.run([tensors, pos, labels])
-				print v_pos
+				v_tensors, v_labels = sess.run([tensors, labels])
 				print v_labels
 				print ""
 
