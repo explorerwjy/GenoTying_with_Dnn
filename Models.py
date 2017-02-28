@@ -82,7 +82,7 @@ class ConvNets():
 			weights = _variable_with_weight_decay('weights', shape=[dim,384], stddev=0.04, wd=0.004)
 			biases = _variable_on_cpu('biases', [384], tf.constant_initializer(0.1))
 			local6 = tf.nn.relu(tf.matmul(reshape, weights) + biases, name=scope.name)
-			local6_drop = tf.nn.dropout(local6, 0.9)
+			local6_drop = tf.nn.dropout(local6, 1)
 			_activation_summary(local6_drop)
 		print local6_drop
 		# local7
@@ -90,7 +90,7 @@ class ConvNets():
 			weights = _variable_with_weight_decay('weights', shape=[384, 192], stddev=0.04, wd=0.004)
 			biases = _variable_on_cpu('biases', [192], tf.constant_initializer(0.1))
 			local7 = tf.nn.relu(tf.matmul(local6_drop, weights) + biases, name=scope.name)
-			local7_drop = tf.nn.dropout(local7, 0.9)
+			local7_drop = tf.nn.dropout(local7, 1)
 			_activation_summary(local7_drop)
 		print local7_drop
 		# linear layer (WX + b)

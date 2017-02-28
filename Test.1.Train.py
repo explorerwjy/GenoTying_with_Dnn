@@ -21,13 +21,13 @@ BATCH_SIZE=FLAGS.batch_size
 log_dir = FLAGS.log_dir
 max_steps = FLAGS.max_steps
 
-def enqueue(sess, coord, Reader, enqueue_op, queue_input_data, queue_input_pos, queue_input_target):
+def enqueue(sess, coord, Reader, enqueue_op, queue_input_data , queue_input_target):
 	try:	
 		while True:
 			#print("starting to write into queue")
-			curr_data, curr_pos, curr_label = Reader.read()
+			curr_data, curr_label = Reader.read()
 			#print queue_input_data, queue_input_pos, queue_input_target
-			sess.run(enqueue_op, feed_dict={queue_input_data: curr_data, queue_input_pos: curr_pos, queue_input_target: curr_label})
+			sess.run(enqueue_op, feed_dict={queue_input_data: curr_data, queue_input_target: curr_label})
 			#print "added ",curr_pos,"to the queue" 
 		#print("finished enqueueing")
 	except:
@@ -46,7 +46,7 @@ def train():
 		queue_input_data = tf.placeholder(dtype, shape=[DEPTH,HEIGHT+1,WIDTH])
 		queue_input_label = tf.placeholder(tf.int32, shape=[])
 
-		queue = tf.FIFOQueue(capacity=FLAGS.batch_size*10, dtypes=[dtype, tf.string, tf.int32], shapes=[[DEPTH,HEIGHT+1,WIDTH], []])
+		queue = tf.FIFOQueue(capacity=FLAGS.batch_size*10, dtypes=[dtype, tf.int32], shapes=[[DEPTH,HEIGHT+1,WIDTH], []])
 
 		enqueue_op = queue.enqueue([queue_input_data, queue_input_label])
 		dequeue_op = queue.dequeue()
@@ -59,7 +59,7 @@ def train():
 		# Build a Graph that computes the logits predictions from the
 		# inference model.
 		convnets = Models.ConvNets()
-		logits = convnets.Inference(data_batch)
+		logits = convnets.Inference(data_batch_reshape)
 		
 		# Calculate loss.
 		loss = convnets.loss(logits, label_batch)
@@ -87,10 +87,12 @@ def train():
 				start_time = time.time()
 				if coord.should_stop():
 					break
-				_, loss_value, v_step = sess.run([train_op, loss, global_step])
+				_, labels, loss_value, v_step = sess.run([train_op, label_batch, loss, global_step])
 				duration = time.time() - start_time
+				print 'Step %d Training loss = %.3f (%.3f sec)' % (v_step, loss_value, duration)
+				display_label_stat(labels)
 				if v_step % 10 == 0:
-					print 'Step %d Training loss = %.3f (%.3f sec)' % (v_step, loss_value, duration)
+					#print 'Step %d Training loss = %.3f (%.3f sec)' % (v_step, loss_value, duration)
 					summary_str = sess.run(summary)
 					summary_writer.add_summary(summary_str, v_step)
 					summary_writer.flush()
@@ -111,6 +113,16 @@ def train():
 			coord.request_stop()
 			coord.join(threads)
 
+def display_label_stat(labels):
+	count = [0]*3
+	for i in labels:
+		if i == 0:
+			count[0] += 1
+		elif i == 1:
+			count[1] +=1
+		elif i == 2:
+			count[2] += 1
+	print count
 
 def continue_train(ModelCKPT):
 	"""Train TensorCaller for a number of steps."""

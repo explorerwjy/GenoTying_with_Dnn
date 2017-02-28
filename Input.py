@@ -29,15 +29,15 @@ LEARNING_RATE_DECAY_STEP = 1000
 MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
 NUM_EPOCHS_PER_DECAY = 350.0      # Epochs after which learning rate decays.
 LEARNING_RATE_DECAY_FACTOR = 0.9  # Learning rate decay factor.
-INITIAL_LEARNING_RATE = 0.01       # Initial learning rate.
+INITIAL_LEARNING_RATE = 0.1       # Initial learning rate.
 
 # Global constants describing the data set & Model.
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('eval_dir', './tmp/TensorCaller_eval',
 		"""Directory where to write event logs.""")
-tf.app.flags.DEFINE_string('train_dir', './tmp/TensorCaller_train',
+tf.app.flags.DEFINE_string('train_dir', './tmp/TensorCaller_train_4',
 		"""Directory where to write event logs and checkpoint.""")
-tf.app.flags.DEFINE_string('log_dir', './tmp/TensorCaller_train/log',
+tf.app.flags.DEFINE_string('log_dir', './tmp/TensorCaller_train_4/log',
 		"""Directory where to write event logs.""")
 tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
 		"""How often to run the eval.""")
@@ -79,12 +79,19 @@ def strand2code(ch):
 # ==========================================================================
 
 class window_tensor():
+	"""
 	def __init__(self,line):
 		self.chrom, self.start, self.end, self.ref, self.alt, self.label, self.window = line.strip().split('\t')
 		self.Alignment = self.window[ 0 : WIDTH * (HEIGHT+1) ]
 		self.Qual = self.window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
 		self.Strand = self.window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
 		self.pos = self.chrom+':'+self.start
+	"""
+	def __init__(self,line):
+		self.label = line[0]
+		self.Alignment = line[ 13 : 13 + WIDTH * (HEIGHT+1) ]
+		self.Qual = line[ 13 + WIDTH * (HEIGHT+1) : 13 + WIDTH * (HEIGHT+1)*2]
+		self.Strand = line[13 + WIDTH * (HEIGHT+1)*2 : 13 + WIDTH * (HEIGHT+1)*3]
 
 	def encode(self):
 		# This func encode,norm elements and form into tensor 
