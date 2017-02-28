@@ -78,7 +78,33 @@ def strand2code(ch):
 	return float(ch)
 # ==========================================================================
 
+class window_tensor():
+	def __init__(self,line):
+		self.chrom, self.start, self.end, self.ref, self.alt, self.label, self.window = line.strip().split('\t')
+		self.Alignment = self.window[ 0 : WIDTH * (HEIGHT+1) ]
+		self.Qual = self.window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
+		self.Strand = self.window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
+		self.pos = self.chrom+':'+self.start
 
+	def encode(self):
+		# This func encode,norm elements and form into tensor 
+		res = [ (float(base)/6 - 0.5) for base in list(self.Alignment)] + [ qual2code(x) for x in list(self.Qual)] + [ float(x)/2-0.5 for x in list(self.Strand)]
+		return np.array(res)
+
+class RecordReader():
+	def __init__(self, hand):
+		self.hand = hand
+	def read(self):
+		line = self.hand.readline()
+		if line == '':
+			self.hand.seek(0)
+			line = self.hand.readline()
+		record = window_tensor(self.hand.readline())
+		flat_alignment = record.encode()
+		tensor_feed = flat_alignment.reshape(WIDTH,HEIGHT+1,DEPTH)
+		return tensor_feed, record.pos, [record.label]
+
+"""
 class window_tensor():
 	def __init__(self,line):
 		self.chrom, self.start, self.end, self.ref, self.alt, self.label, self.window = line.strip().split('\t')
@@ -112,6 +138,7 @@ class RecordReader():
 		label = tf.reshape(label, [1])
 		print record.pos, record.label
 		return tensor,label
+
 
 def Myloop(coord, Testreader):
 	while not coord.should_step():
@@ -176,7 +203,7 @@ def TestInputQueue():
 		finally:
 			coord.request_stop()
 			coord.join(enqueue_threads)
-
+"""
 
 def main():
 	TestInputQueue()

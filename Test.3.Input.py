@@ -92,12 +92,6 @@ class window_tensor():
 		# This func encode,norm elements and form into tensor 
 		res = [ (float(base)/6 - 0.5) for base in list(self.Alignment)] + [ qual2code(x) for x in list(self.Qual)] + [ float(x)/2-0.5 for x in list(self.Strand)]
 		return np.array(res)
-		#if FLAGS.use_fl16: 
-		#	RawTensor = tf.convert_to_tensor(res, dtype=tf.float16)
-		#else:
-		#	RawTensor = tf.convert_to_tensor(res, dtype=tf.float32)
-		#InputTensor = tf.reshape(RawTensor, [WIDTH, HEIGHT+1, 3]) 
-		#return InputTensor
 
 class RecordReader():
 	def __init__(self, hand):
@@ -110,12 +104,6 @@ class RecordReader():
 		record = window_tensor(self.hand.readline())
 		flat_alignment = record.encode()
 		tensor_feed = flat_alignment.reshape(WIDTH,HEIGHT+1,DEPTH)
-		#label = tf.one_hot(indices=tf.cast(float(record.label), tf.int32), depth=3)
-		#label = tf.convert_to_tensor(int(record.label), dtype=tf.float32)
-		#label = tf.reshape(label, [1])
-		#pos = tf.convert_to_tensor(record.pos, dtype='tf.string')
-		#return tensor,pos,label
-		#print tensor_feed
 		return tensor_feed, record.pos, [record.label]
 
 def enqueue(sess, coord, Testreader, enqueue_op, queue_input_data, queue_input_pos, queue_input_target):
@@ -177,13 +165,13 @@ def TestInputQueue():
 		sess.run(init)
 
 		coord = tf.train.Coordinator()
-		#enqueue_thread = threading.Thread(target=enqueue, args=[sess, coord, Testreader, enqueue_op, queue_input_data,queue_input_pos, queue_input_target])
-		#enqueue_thread.isDaemon()
-		#enqueue_thread.start()
-		enqueue_threads = [threading.Thread(target=enqueue, args=[sess, coord, Testreader, enqueue_op, queue_input_data,queue_input_pos, queue_input_target] ) for i in xrange(10)]
-		for _thread in enqueue_threads:
-			_thread.isDaemon()
-			_thread.start()
+		enqueue_thread = threading.Thread(target=enqueue, args=[sess, coord, Testreader, enqueue_op, queue_input_data,queue_input_pos, queue_input_target])
+		enqueue_thread.isDaemon()
+		enqueue_thread.start()
+		#enqueue_threads = [threading.Thread(target=enqueue, args=[sess, coord, Testreader, enqueue_op, queue_input_data,queue_input_pos, queue_input_target] ) for i in xrange(10)]
+		#for _thread in enqueue_threads:
+		#	_thread.isDaemon()
+		#	_thread.start()
 
 		threads = tf.train.start_queue_runners(coord=coord, sess=sess)
 
