@@ -154,6 +154,7 @@ def _variable_on_cpu(name, shape, initializer):
 		dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
 		var = tf.get_variable(name, shape, initializer=initializer, dtype=dtype)
 	return var
+	
 def _activation_summary(x):
 	TOWER_NAME = 'Tower'
 	tensor_name = re.sub('%s_[0-9]/' % TOWER_NAME, '', x.op.name)

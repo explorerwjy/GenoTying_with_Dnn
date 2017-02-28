@@ -22,8 +22,6 @@ log_dir = FLAGS.log_dir
 max_steps = FLAGS.max_steps
 
 def enqueue(sess, coord, Reader, enqueue_op, queue_input_data, queue_input_pos, queue_input_target):
-	""" Iterates over our data puts small junks into our queue."""
-		#while coord.should_step():
 	try:	
 		while True:
 			#print("starting to write into queue")
@@ -47,13 +45,13 @@ def train():
 
 		queue_input_data = tf.placeholder(dtype, shape=[WIDTH,HEIGHT+1,DEPTH])
 		queue_input_pos = tf.placeholder(tf.string, shape=[])
-		queue_input_target = tf.placeholder(tf.int32, shape=[])
+		queue_input_label = tf.placeholder(tf.int32, shape=[])
 
 		queue = tf.FIFOQueue(capacity=FLAGS.batch_size*10, dtypes=[dtype, tf.string, tf.int32], shapes=[[WIDTH,HEIGHT+1,DEPTH], [], []])
 
-		enqueue_op = queue.enqueue([queue_input_data, queue_input_pos, queue_input_target])
+		enqueue_op = queue.enqueue([queue_input_data, queue_input_pos, queue_input_label])
 		dequeue_op = queue.dequeue()
-		data_batch, pos_batch, target_batch = tf.train.batch(dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size*4)
+		data_batch, pos_batch, label_batch = tf.train.batch(dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size*4)
 	
 		global_step = tf.Variable(0, trainable=False, name='global_step')
 
@@ -63,7 +61,7 @@ def train():
 		logits = convnets.Inference(data_batch)
 		
 		# Calculate loss.
-		loss = convnets.loss(logits, target_batch)
+		loss = convnets.loss(logits, label_batch)
 
 		# Build a Graph that trains the model with one batch of examples and
 		# updates the model parameters.
@@ -78,7 +76,7 @@ def train():
 		
 		min_loss = 100	
 		coord = tf.train.Coordinator()
-		enqueue_thread = threading.Thread(target=enqueue, args=[sess, coord, TrainingReader, enqueue_op, queue_input_data,queue_input_pos, queue_input_target])
+		enqueue_thread = threading.Thread(target=enqueue, args=[sess, coord, TrainingReader, enqueue_op, queue_input_data,queue_input_pos, queue_input_label])
 		enqueue_thread.isDaemon()
 		enqueue_thread.start()
 		threads = tf.train.start_queue_runners(coord=coord, sess=sess)

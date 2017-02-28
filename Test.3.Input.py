@@ -44,7 +44,7 @@ tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
 		"""How often to run the eval.""")
 tf.app.flags.DEFINE_boolean('run_once', False,
 		"""Whether to run eval only once.""")
-tf.app.flags.DEFINE_integer('batch_size', 10,
+tf.app.flags.DEFINE_integer('batch_size', 4,
 		"""Number of WindowTensor to process in a batch.""")
 tf.app.flags.DEFINE_string('TrainingData', './Training.windows.txt.gz',
 		"""Path to the Training Data.""")
@@ -153,7 +153,7 @@ def TestInputQueue():
 
 		# tensorflow recommendation:
 		# capacity = min_after_dequeue + (num_threads + a small safety margin) * batch_size
-		data_batch, pos_batch, target_batch = tf.train.batch(dequeue_op, batch_size=8, capacity=40)
+		data_batch, pos_batch, target_batch = tf.train.batch(dequeue_op, batch_size=4, capacity=40)
 		# use this to shuffle batches:
 		# data_batch, target_batch = tf.train.shuffle_batch(dequeue_op, batch_size=15, capacity=40, min_after_dequeue=5)
 
@@ -185,8 +185,10 @@ def TestInputQueue():
 					break
 				curr_data_batch, curr_pos_batch, curr_target_batch = sess.run([data_batch, pos_batch, target_batch], options=run_options)
 				print
-				print curr_pos_batch
-				print curr_target_batch
+				for data, pos, target in zip(curr_data_batch, curr_pos_batch, curr_target_batch):
+					print pos, target
+					print data
+
 				print
 		except Exception, e:
 			coord.request_stop(e)
