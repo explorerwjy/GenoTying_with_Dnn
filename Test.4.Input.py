@@ -12,7 +12,7 @@ import time
 import gzip
 import threading
 from threading import Thread
-import Queue
+from Queue import Queue
 import numpy as np
 import tensorflow as tf
 
@@ -174,16 +174,17 @@ def ReadingData_2(sess, coord, num_threads, enqueue_op, queue_input_data, queue_
 			
 def ReadingData(sess, coord, num_threads, enqueue_op, queue_input_data, queue_input_pos, queue_input_target):
 	TestHand=gzip.open(FLAGS.TestingData,'rb')
-	pool = ThreadPool(20)
+	pool = ThreadPool(FLAGS.queueThreads)
 	try:
-		while True:
+		count = 0
+		while count <= 20:
 			for i in range(num_threads):
 				line = TestHand.readline()
 				if line == '':
 					self.hand.seek(0)
 					line = TestHand.readline()
 
-				pool.add_task(DecodeAndEnQueue, args=[sess, coord, enqueue_op, queue_input_data,queue_input_pos, queue_input_target, line])
+				pool.add_task(DecodeAndEnQueue, sess, coord, enqueue_op, queue_input_data,queue_input_pos, queue_input_target, line)
 
 				#enqueue_thread = threading.Thread(target=DecodeAndEnQueue, args=[sess, coord, enqueue_op, queue_input_data,queue_input_pos, queue_input_target, line])
 				#enqueue_thread.isDaemon()

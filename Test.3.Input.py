@@ -14,6 +14,7 @@ import threading
 import numpy as np
 import tensorflow as tf
 
+np.set_printoptions(threshold='nan')
 
 # Basic model parameters.
 WIDTH = Region.WIDTH
@@ -71,7 +72,8 @@ def base2code(base):
 		print "KeyError of base code. Unexpected base appear. |%s|" % base
 		exit()
 def qual2code(ch):
-	phred = (float(ord(ch) - 33) / 60) - 0.5
+	#phred = (float(ord(ch) - 33) / 60) - 0.5
+	phred = float(ord(ch) - 33)
 	#return tf.cast((math.pow(10, -(phred/10))),tf.float32)
 	#return float(math.pow(10, -(phred/10)))
 	return phred 
@@ -90,7 +92,9 @@ class window_tensor():
 
 	def encode(self):
 		# This func encode,norm elements and form into tensor 
-		res = [ (float(base)/6 - 0.5) for base in list(self.Alignment)] + [ qual2code(x) for x in list(self.Qual)] + [ float(x)/2-0.5 for x in list(self.Strand)]
+		#res = [ (float(base)/6 - 0.5) for base in list(self.Alignment)] + [ qual2code(x) for x in list(self.Qual)] + [ float(x)/2-0.5 for x in list(self.Strand)]
+		res = [ float(base) for base in list(self.Alignment)] + [ qual2code(x) for x in list(self.Qual)] + [ float(x) for x in list(self.Strand)]
+		
 		return np.array(res)
 
 class RecordReader():
@@ -103,8 +107,10 @@ class RecordReader():
 			line = self.hand.readline()
 		record = window_tensor(self.hand.readline())
 		flat_alignment = record.encode()
-		tensor_feed = flat_alignment.reshape(WIDTH,HEIGHT+1,DEPTH)
-		return tensor_feed, record.pos, [record.label]
+		
+		#tensor_feed = flat_alignment.reshape(WIDTH,HEIGHT+1,DEPTH)
+		tensor_feed = flat_alignment.reshape(DEPTH,WIDTH,HEIGHT+1)
+		return tensor_feed, record.pos, record.label
 
 def enqueue(sess, coord, Testreader, enqueue_op, queue_input_data, queue_input_pos, queue_input_target):
 	""" Iterates over our data puts small junks into our queue."""
@@ -142,11 +148,13 @@ def TestInputQueue():
 
 	with tf.Graph().as_default():
 
-		queue_input_data = tf.placeholder(tf.float32, shape=[101,101,3])
+		#queue_input_data = tf.placeholder(tf.float32, shape=[101,101,3])
+		queue_input_data = tf.placeholder(tf.float32, shape=[3, 101, 101])
 		queue_input_pos = tf.placeholder(tf.string, shape=[])
-		queue_input_target = tf.placeholder(tf.float32, shape=[1])
+		queue_input_target = tf.placeholder(tf.float32, shape=[])
 
-		queue = tf.FIFOQueue(capacity=50, dtypes=[tf.float32, tf.string, tf.float32], shapes=[[WIDTH,HEIGHT+1,DEPTH], [], [1]])
+		#queue = tf.FIFOQueue(capacity=50, dtypes=[tf.float32, tf.string, tf.float32], shapes=[[WIDTH,HEIGHT+1,DEPTH], [], []])
+		queue = tf.FIFOQueue(capacity=50, dtypes=[tf.float32, tf.string, tf.float32], shapes=[[DEPTH, WIDTH, HEIGHT+1], [], []])
 
 		enqueue_op = queue.enqueue([queue_input_data, queue_input_pos, queue_input_target])
 		dequeue_op = queue.dequeue()
@@ -182,12 +190,14 @@ def TestInputQueue():
 				print "="*50
 				run_options = tf.RunOptions(timeout_in_ms=4000)
 				if coord.should_stop():
+					print "Error Occur"
 					break
 				curr_data_batch, curr_pos_batch, curr_target_batch = sess.run([data_batch, pos_batch, target_batch], options=run_options)
-				print
+				print "="*50
 				for data, pos, target in zip(curr_data_batch, curr_pos_batch, curr_target_batch):
+					print type(data), type(pos), type(target)
 					print pos, target
-					print data
+					display(data)
 
 				print
 		except Exception, e:
@@ -197,6 +207,15 @@ def TestInputQueue():
 			coord.request_stop()
 			coord.join(threads)
 
+def display(data):
+	for depth in data:
+		for line in depth:
+			print line
+		#	tmp = []
+		#	for base in line:
+		#		base = int(round(base))
+		#		tmp.append(str(base))
+		#	print tmp
 
 def main():
 	TestInputQueue()
