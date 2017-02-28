@@ -9,6 +9,7 @@ import argparse
 from datetime import datetime
 import time
 import os 
+import threading
 import tensorflow as tf
 import Models
 from Input import *
@@ -25,7 +26,7 @@ def enqueue(sess, coord, Reader, enqueue_op, queue_input_data, queue_input_pos, 
 		#while coord.should_step():
 	try:	
 		while True:
-			print("starting to write into queue")
+			#print("starting to write into queue")
 			curr_data, curr_pos, curr_label = Reader.read()
 			#print queue_input_data, queue_input_pos, queue_input_target
 			sess.run(enqueue_op, feed_dict={queue_input_data: curr_data, queue_input_pos: curr_pos, queue_input_target: curr_label})
@@ -39,16 +40,16 @@ def train():
 	"""Train TensorCaller for a number of steps."""
 	dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
 	BATCH_SIZE = FLAGS.batch_size
-	TrainingHand=gzip.open(FLAGS.TestingData,'rb')
+	TrainingHand=gzip.open(FLAGS.TrainingData,'rb')
 	TrainingReader = RecordReader(TrainingHand)
 
 	with tf.Graph().as_default():
 
-		queue_input_data = tf.placeholder(tf.float32, shape=[WIDTH,HEIGHT+1,DEPTH])
+		queue_input_data = tf.placeholder(dtype, shape=[WIDTH,HEIGHT+1,DEPTH])
 		queue_input_pos = tf.placeholder(tf.string, shape=[])
-		queue_input_target = tf.placeholder(tf.float32, shape=[1])
+		queue_input_target = tf.placeholder(tf.int32, shape=[])
 
-		queue = tf.FIFOQueue(capacity=FLAGS.batch_size*10, dtypes=[tf.float32, tf.string, tf.float32], shapes=[[WIDTH,HEIGHT+1,DEPTH], [], [1]])
+		queue = tf.FIFOQueue(capacity=FLAGS.batch_size*10, dtypes=[dtype, tf.string, tf.int32], shapes=[[WIDTH,HEIGHT+1,DEPTH], [], []])
 
 		enqueue_op = queue.enqueue([queue_input_data, queue_input_pos, queue_input_target])
 		dequeue_op = queue.dequeue()
@@ -90,6 +91,8 @@ def train():
 				_, loss_value, v_step = sess.run([train_op, loss, global_step])
 				duration = time.time() - start_time
 				if v_step % 10 == 0:
+					Batch_pos, Batch_label = sess.run([pos_batch, target_batch])
+					print Batch_pos, Batch_label
 					print 'Step %d Training loss = %.3f (%.3f sec)' % (v_step, loss_value, duration)
 					summary_str = sess.run(summary)
 					summary_writer.add_summary(summary_str, v_step)

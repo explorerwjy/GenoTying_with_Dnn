@@ -29,7 +29,7 @@ LEARNING_RATE_DECAY_STEP = 1000
 MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
 NUM_EPOCHS_PER_DECAY = 350.0      # Epochs after which learning rate decays.
 LEARNING_RATE_DECAY_FACTOR = 0.9  # Learning rate decay factor.
-INITIAL_LEARNING_RATE = 0.1       # Initial learning rate.
+INITIAL_LEARNING_RATE = 0.01       # Initial learning rate.
 
 # Global constants describing the data set & Model.
 FLAGS = tf.app.flags.FLAGS
@@ -43,7 +43,7 @@ tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
 		"""How often to run the eval.""")
 tf.app.flags.DEFINE_boolean('run_once', False,
 		"""Whether to run eval only once.""")
-tf.app.flags.DEFINE_integer('batch_size', 10,
+tf.app.flags.DEFINE_integer('batch_size', 128,
 		"""Number of WindowTensor to process in a batch.""")
 tf.app.flags.DEFINE_string('TrainingData', './Training.windows.txt.gz',
 		"""Path to the Training Data.""")
@@ -55,7 +55,7 @@ tf.app.flags.DEFINE_boolean('use_fl16', True,
 		"""Train the model using fp16.""")
 tf.app.flags.DEFINE_integer('max_steps', 1000000,
 		"""Number of batches to run.""")
-tf.app.flags.DEFINE_boolean('log_device_placement', False,
+tf.app.flags.DEFINE_boolean('log_device_placement', True,
 		"""Whether to log device placement.""")
 tf.app.flags.DEFINE_boolean('queueThreads', 4,
 		"""Number of threads used to read data""")
@@ -102,7 +102,7 @@ class RecordReader():
 		record = window_tensor(self.hand.readline())
 		flat_alignment = record.encode()
 		tensor_feed = flat_alignment.reshape(WIDTH,HEIGHT+1,DEPTH)
-		return tensor_feed, record.pos, [record.label]
+		return tensor_feed, record.pos, record.label
 
 """
 class window_tensor():
@@ -150,7 +150,6 @@ def Myloop(coord, Testreader):
 			coord.request_step()
 
 def TestInputQueue():
-	"""Train TensorCaller for a number of steps."""
 	dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
 	BATCH_SIZE = FLAGS.batch_size
 	with tf.Graph().as_default():
