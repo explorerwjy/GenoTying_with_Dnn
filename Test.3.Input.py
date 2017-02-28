@@ -10,6 +10,7 @@ import os
 import Region
 import time
 import gzip
+import threading
 import numpy as np
 import tensorflow as tf
 
@@ -108,28 +109,41 @@ class RecordReader():
 			line = self.hand.readline()
 		record = window_tensor(self.hand.readline())
 		flat_alignment = record.encode()
-		tensor_feed = flat_alignment.reshape(WIDTH,HEIGHT,DEPTH)
+		tensor_feed = flat_alignment.reshape(WIDTH,HEIGHT+1,DEPTH)
 		#label = tf.one_hot(indices=tf.cast(float(record.label), tf.int32), depth=3)
 		#label = tf.convert_to_tensor(int(record.label), dtype=tf.float32)
 		#label = tf.reshape(label, [1])
 		#pos = tf.convert_to_tensor(record.pos, dtype='tf.string')
 		#return tensor,pos,label
-		print tensor_feed
-		return tensor_feed, self.pos, self.label
+		#print tensor_feed
+		return tensor_feed, record.pos, [record.label]
 
 def enqueue(sess, coord, Testreader, enqueue_op, queue_input_data, queue_input_pos, queue_input_target):
-	try:	
-		""" Iterates over our data puts small junks into our queue."""
-
+	""" Iterates over our data puts small junks into our queue."""
 		#while coord.should_step():
+	while True:
+		print("starting to write into queue")
+		curr_data, curr_pos, curr_label = Testreader.read()
+		#print queue_input_data, queue_input_pos, queue_input_target
+		sess.run(enqueue_op, feed_dict={queue_input_data: curr_data, queue_input_pos: curr_pos, queue_input_target: curr_label})
+		print "added ",curr_pos,"to the queue" 
+	print("finished enqueueing")
+
+def enqueue_2(sess, coord, Testreader, enqueue_op, queue_input_data, queue_input_pos, queue_input_target):
+	""" Iterates over our data puts small junks into our queue."""
+		#while coord.should_step():
+	try:	
 		while True:
 			print("starting to write into queue")
-			tensor,pos,label = Testreader.read()
-			sess.run(enqueue_op, feed_dict={queue_input_data: curr_data, queue_input_pos: curr_pos, queue_input_target: curr_target})
-			print("added ",pos,"to the queue")
-			print("finished enqueueing")
+			curr_data, curr_pos, curr_label = Testreader.read()
+			#print queue_input_data, queue_input_pos, queue_input_target
+			sess.run(enqueue_op, feed_dict={queue_input_data: curr_data, queue_input_pos: curr_pos, queue_input_target: curr_label})
+			print "added ",curr_pos,"to the queue" 
+		print("finished enqueueing")
 	except:
+		print("finished enqueueing")
 		coord.request_stop()
+
 
 def TestInputQueue():
 	"""Train TensorCaller for a number of steps."""
@@ -144,14 +158,14 @@ def TestInputQueue():
 		queue_input_pos = tf.placeholder(tf.string, shape=[])
 		queue_input_target = tf.placeholder(tf.float32, shape=[1])
 
-		queue = tf.FIFOQueue(capacity=50, dtypes=[tf.float32, tf.string, tf.float32], shapes=[[WIDTH,HEIGHT,DEPTH], [], [1]])
+		queue = tf.FIFOQueue(capacity=50, dtypes=[tf.float32, tf.string, tf.float32], shapes=[[WIDTH,HEIGHT+1,DEPTH], [], [1]])
 
 		enqueue_op = queue.enqueue([queue_input_data, queue_input_pos, queue_input_target])
 		dequeue_op = queue.dequeue()
 
 		# tensorflow recommendation:
 		# capacity = min_after_dequeue + (num_threads + a small safety margin) * batch_size
-		data_batch, pos_batch, target_batch = tf.train.batch(dequeue_op, batch_size=15, capacity=40)
+		data_batch, pos_batch, target_batch = tf.train.batch(dequeue_op, batch_size=8, capacity=40)
 		# use this to shuffle batches:
 		# data_batch, target_batch = tf.train.shuffle_batch(dequeue_op, batch_size=15, capacity=40, min_after_dequeue=5)
 
@@ -163,22 +177,29 @@ def TestInputQueue():
 		sess.run(init)
 
 		coord = tf.train.Coordinator()
-		enqueue_thread = threading.Thread(target=enqueue, args=[sess, coord, Testreader, enqueue_op, queue_input_data,queue_input_pos, queue_input_target])
-		#enqueue_thread = threading.Thread(target=enqueue, args=[sess, coord, Testreader, enqueue_op])
-		enqueue_thread.isDaemon()
-		enqueue_thread.start()
+		#enqueue_thread = threading.Thread(target=enqueue, args=[sess, coord, Testreader, enqueue_op, queue_input_data,queue_input_pos, queue_input_target])
+		#enqueue_thread.isDaemon()
+		#enqueue_thread.start()
+		enqueue_threads = [threading.Thread(target=enqueue, args=[sess, coord, Testreader, enqueue_op, queue_input_data,queue_input_pos, queue_input_target] ) for i in xrange(10)]
+		for _thread in enqueue_threads:
+			_thread.isDaemon()
+			_thread.start()
 
 		threads = tf.train.start_queue_runners(coord=coord, sess=sess)
 
 		try:
-			for step in xrange(10):
+			for step in xrange(3):
+				print "="*50
+				print step
+				print "="*50
 				run_options = tf.RunOptions(timeout_in_ms=4000)
 				if coord.should_stop():
 					break
-				curr_data_batch, curr_pos_batch, curr_target_batch = sess.run([data_batch, target_batch], options=run_options)
-				print curr_data_batch
+				curr_data_batch, curr_pos_batch, curr_target_batch = sess.run([data_batch, pos_batch, target_batch], options=run_options)
+				print
+				print curr_pos_batch
 				print curr_target_batch
-
+				print
 		except Exception, e:
 			coord.request_stop(e)
 		finally:
