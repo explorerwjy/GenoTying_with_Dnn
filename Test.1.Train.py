@@ -43,16 +43,17 @@ def train():
 
 	with tf.Graph().as_default():
 
-		queue_input_data = tf.placeholder(dtype, shape=[WIDTH,HEIGHT+1,DEPTH])
-		queue_input_pos = tf.placeholder(tf.string, shape=[])
+		queue_input_data = tf.placeholder(dtype, shape=[DEPTH,HEIGHT+1,WIDTH])
 		queue_input_label = tf.placeholder(tf.int32, shape=[])
 
-		queue = tf.FIFOQueue(capacity=FLAGS.batch_size*10, dtypes=[dtype, tf.string, tf.int32], shapes=[[WIDTH,HEIGHT+1,DEPTH], [], []])
+		queue = tf.FIFOQueue(capacity=FLAGS.batch_size*10, dtypes=[dtype, tf.string, tf.int32], shapes=[[DEPTH,HEIGHT+1,WIDTH], []])
 
-		enqueue_op = queue.enqueue([queue_input_data, queue_input_pos, queue_input_label])
+		enqueue_op = queue.enqueue([queue_input_data, queue_input_label])
 		dequeue_op = queue.dequeue()
-		data_batch, pos_batch, label_batch = tf.train.batch(dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size*4)
-	
+		data_batch, label_batch = tf.train.batch(dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size*4)
+		data_batch_reshape = tf.transpose(data_batch, [0,2,3,1])
+		print data_batch
+		print data_batch_reshape
 		global_step = tf.Variable(0, trainable=False, name='global_step')
 
 		# Build a Graph that computes the logits predictions from the
@@ -76,7 +77,7 @@ def train():
 		
 		min_loss = 100	
 		coord = tf.train.Coordinator()
-		enqueue_thread = threading.Thread(target=enqueue, args=[sess, coord, TrainingReader, enqueue_op, queue_input_data,queue_input_pos, queue_input_label])
+		enqueue_thread = threading.Thread(target=enqueue, args=[sess, coord, TrainingReader, enqueue_op, queue_input_data, queue_input_label])
 		enqueue_thread.isDaemon()
 		enqueue_thread.start()
 		threads = tf.train.start_queue_runners(coord=coord, sess=sess)
@@ -89,8 +90,6 @@ def train():
 				_, loss_value, v_step = sess.run([train_op, loss, global_step])
 				duration = time.time() - start_time
 				if v_step % 10 == 0:
-					Batch_pos, Batch_label = sess.run([pos_batch, target_batch])
-					print Batch_pos, Batch_label
 					print 'Step %d Training loss = %.3f (%.3f sec)' % (v_step, loss_value, duration)
 					summary_str = sess.run(summary)
 					summary_writer.add_summary(summary_str, v_step)

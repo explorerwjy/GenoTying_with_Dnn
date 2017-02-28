@@ -101,8 +101,9 @@ class RecordReader():
 			line = self.hand.readline()
 		record = window_tensor(self.hand.readline())
 		flat_alignment = record.encode()
-		tensor_feed = flat_alignment.reshape(WIDTH,HEIGHT+1,DEPTH)
-		return tensor_feed, record.pos, record.label
+		#tensor_feed = flat_alignment.reshape(WIDTH,HEIGHT+1,DEPTH)
+		tensor_feed = flat_alignment.reshape(DEPTH,WIDTH,HEIGHT+1)
+		return tensor_feed, record.label
 
 """
 class window_tensor():
