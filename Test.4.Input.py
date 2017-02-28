@@ -10,6 +10,7 @@ import os
 import Region
 import time
 import gzip
+import threading
 import numpy as np
 import tensorflow as tf
 
@@ -137,7 +138,7 @@ def enqueue_2(sess, coord, Testreader, enqueue_op, queue_input_data, queue_input
 		coord.request_stop()
 
 def DecodeAndEnQueue(sess, coord, enqueue_op, queue_input_data, queue_input_pos, queue_input_target, line):
-	record = window_tensor(self.hand.readline())
+	record = window_tensor(line)
 	flat_alignment = record.encode()
 	tensor_feed = flat_alignment.reshape(WIDTH,HEIGHT+1,DEPTH)
 
@@ -155,7 +156,7 @@ def ReadingData(sess, coord, num_threads, enqueue_op, queue_input_data, queue_in
 				line = TestHand.readline()
 				if line == '':
 					self.hand.seek(0)
-					line = self.hand.readline()
+					line = TestHand.readline()
 				enqueue_thread = threading.Thread(target=DecodeAndEnQueue, args=[sess, coord, enqueue_op, queue_input_data,queue_input_pos, queue_input_target, line])
 				enqueue_thread.isDaemon()
 				enqueue_thread.start()
@@ -169,16 +170,11 @@ def TestInputQueue():
 	"""Train TensorCaller for a number of steps."""
 	dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
 	BATCH_SIZE = FLAGS.batch_size
-	TestHand=gzip.open(FLAGS.TestingData,'rb')
-	Testreader = RecordReader(TestHand)
-
 	with tf.Graph().as_default():
-
 		queue_input_data = tf.placeholder(tf.float32, shape=[101,101,3])
 		queue_input_pos = tf.placeholder(tf.string, shape=[])
 		queue_input_target = tf.placeholder(tf.float32, shape=[1])
-
-		queue = tf.FIFOQueue(capacity=50, dtypes=[tf.float32, tf.string, tf.float32], shapes=[[WIDTH,HEIGHT,DEPTH], [], [1]])
+		queue = tf.FIFOQueue(capacity=50, dtypes=[tf.float32, tf.string, tf.float32], shapes=[[WIDTH,HEIGHT+1,DEPTH], [], [1]])
 
 		enqueue_op = queue.enqueue([queue_input_data, queue_input_pos, queue_input_target])
 		dequeue_op = queue.dequeue()
@@ -186,27 +182,22 @@ def TestInputQueue():
 		# tensorflow recommendation:
 		# capacity = min_after_dequeue + (num_threads + a small safety margin) * batch_size
 		data_batch, pos_batch, target_batch = tf.train.batch(dequeue_op, batch_size=15, capacity=40)
-		# use this to shuffle batches:
-		# data_batch, target_batch = tf.train.shuffle_batch(dequeue_op, batch_size=15, capacity=40, min_after_dequeue=5)
-
-
 		init = tf.global_variables_initializer()
-
 		sess = tf.Session()
-		
 		sess.run(init)
-
 		coord = tf.train.Coordinator()
-		
-
+		num_threads = FLAGS.queueThreads
+		InputQueueRunner = threading.Thread(target=ReadingData, args= [sess, coord, num_threads, enqueue_op, queue_input_data, queue_input_pos, queue_input_target])
+		InputQueueRunner.isDaemon()
+		InputQueueRunner.start()
 		threads = tf.train.start_queue_runners(coord=coord, sess=sess)
 
 		try:
-			for step in xrange(10):
+			for step in xrange(3):
 				run_options = tf.RunOptions(timeout_in_ms=4000)
 				if coord.should_stop():
 					break
-				curr_data_batch, curr_pos_batch, curr_target_batch = sess.run([data_batch, curr_pos_batch, target_batch], options=run_options)
+				curr_data_batch, curr_pos_batch, curr_target_batch = sess.run([data_batch, pos_batch, target_batch], options=run_options)
 				print curr_data_batch
 				print curr_target_batch
 
