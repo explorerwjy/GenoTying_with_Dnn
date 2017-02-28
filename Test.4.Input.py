@@ -11,6 +11,8 @@ import Region
 import time
 import gzip
 import threading
+from threading import Thread
+import Queue
 import numpy as np
 import tensorflow as tf
 
@@ -111,31 +113,36 @@ class RecordReader():
 		#print tensor_feed
 		return tensor_feed, record.pos, [record.label]
 
-def enqueue(sess, coord, Testreader, enqueue_op, queue_input_data, queue_input_pos, queue_input_target):
-	""" Iterates over our data puts small junks into our queue."""
-		#while coord.should_step():
-	while True:
-		print("starting to write into queue")
-		curr_data, curr_pos, curr_label = Testreader.read()
-		#print queue_input_data, queue_input_pos, queue_input_target
-		sess.run(enqueue_op, feed_dict={queue_input_data: curr_data, queue_input_pos: curr_pos, queue_input_target: curr_label})
-		print "added ",curr_pos,"to the queue" 
-	print("finished enqueueing")
-
-def enqueue_2(sess, coord, Testreader, enqueue_op, queue_input_data, queue_input_pos, queue_input_target):
-	""" Iterates over our data puts small junks into our queue."""
-		#while coord.should_step():
-	try:	
+class Worker(Thread):
+	"""Thread executing tasks from a given tasks queue"""
+	def __init__(self, tasks):
+		Thread.__init__(self)
+		self.tasks = tasks
+		self.daemon = True
+		self.start()
+	def run(self):
 		while True:
-			print("starting to write into queue")
-			curr_data, curr_pos, curr_label = Testreader.read()
-			#print queue_input_data, queue_input_pos, queue_input_target
-			sess.run(enqueue_op, feed_dict={queue_input_data: curr_data, queue_input_pos: curr_pos, queue_input_target: curr_label})
-			print "added ",curr_pos,"to the queue" 
-		print("finished enqueueing")
-	except:
-		print("finished enqueueing")
-		coord.request_stop()
+			func, args, kargs = self.tasks.get()
+			try:
+				func(*args, **kargs)
+			except Exception, e:
+				print e
+			finally:
+				self.tasks.task_done()
+
+class ThreadPool():
+	"""Pool of threads consuming tasks from a queue"""
+	def __init__(self, num_threads):
+		self.tasks = Queue(num_threads)
+		for _ in range(num_threads): Worker(self.tasks)
+
+	def add_task(self, func, *args, **kargs):
+		"""Add a task to the queue"""
+		self.tasks.put((func, args, kargs))
+
+	def wait_completion(self):
+		"""Wait for completion of all the tasks in the queue"""
+		self.tasks.join()
 
 def DecodeAndEnQueue(sess, coord, enqueue_op, queue_input_data, queue_input_pos, queue_input_target, line):
 	record = window_tensor(line)
@@ -148,7 +155,7 @@ def DecodeAndEnQueue(sess, coord, enqueue_op, queue_input_data, queue_input_pos,
 
 
 # One Main Thread Readfile, other threads process it.
-def ReadingData(sess, coord, num_threads, enqueue_op, queue_input_data, queue_input_pos, queue_input_target):
+def ReadingData_2(sess, coord, num_threads, enqueue_op, queue_input_data, queue_input_pos, queue_input_target):
 	TestHand=gzip.open(FLAGS.TestingData,'rb')
 	try:
 		while True:
@@ -165,6 +172,30 @@ def ReadingData(sess, coord, num_threads, enqueue_op, queue_input_data, queue_in
 		TestHand.close()
 		coord.request_stop()
 			
+def ReadingData(sess, coord, num_threads, enqueue_op, queue_input_data, queue_input_pos, queue_input_target):
+	TestHand=gzip.open(FLAGS.TestingData,'rb')
+	pool = ThreadPool(20)
+	try:
+		while True:
+			for i in range(num_threads):
+				line = TestHand.readline()
+				if line == '':
+					self.hand.seek(0)
+					line = TestHand.readline()
+
+				pool.add_task(DecodeAndEnQueue, args=[sess, coord, enqueue_op, queue_input_data,queue_input_pos, queue_input_target, line])
+
+				#enqueue_thread = threading.Thread(target=DecodeAndEnQueue, args=[sess, coord, enqueue_op, queue_input_data,queue_input_pos, queue_input_target, line])
+				#enqueue_thread.isDaemon()
+				#enqueue_thread.start()
+
+		pool.wait_completion()
+	except:
+		print("finished enqueueing")
+		TestHand.close()
+		coord.request_stop()
+
+
 
 def TestInputQueue():
 	"""Train TensorCaller for a number of steps."""
