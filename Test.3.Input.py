@@ -115,12 +115,11 @@ class RecordReader():
 def enqueue(sess, coord, Testreader, enqueue_op, queue_input_data, queue_input_pos, queue_input_target):
 	""" Iterates over our data puts small junks into our queue."""
 		#while coord.should_step():
+	print("starting to write into queue")
 	while True:
-		print("starting to write into queue")
 		curr_data, curr_pos, curr_label = Testreader.read()
 		#print queue_input_data, queue_input_pos, queue_input_target
 		sess.run(enqueue_op, feed_dict={queue_input_data: curr_data, queue_input_pos: curr_pos, queue_input_target: curr_label})
-		print "added ",curr_pos,"to the queue" 
 	print("finished enqueueing")
 
 def enqueue_2(sess, coord, Testreader, enqueue_op, queue_input_data, queue_input_pos, queue_input_target):
@@ -184,22 +183,16 @@ def TestInputQueue():
 		threads = tf.train.start_queue_runners(coord=coord, sess=sess)
 
 		try:
-			for step in xrange(3):
-				print "="*50
-				print step
-				print "="*50
+			for step in xrange(100000):
+				start_time = time.time()
 				run_options = tf.RunOptions(timeout_in_ms=4000)
-				if coord.should_stop():
-					print "Error Occur"
-					break
 				curr_data_batch, curr_pos_batch, curr_target_batch = sess.run([data_batch, pos_batch, target_batch], options=run_options)
-				print "="*50
-				for data, pos, target in zip(curr_data_batch, curr_pos_batch, curr_target_batch):
-					print type(data), type(pos), type(target)
-					print pos, target
-					display(data)
-
-				print
+				#for data, pos, target in zip(curr_data_batch, curr_pos_batch, curr_target_batch):
+				#	print type(data), type(pos), type(target)
+				#	print pos, target
+				#	display(data)
+	
+				print "One Batch Time Costs: ",time.time() - start_time
 		except Exception, e:
 			coord.request_stop(e)
 		finally:

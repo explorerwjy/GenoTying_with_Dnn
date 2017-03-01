@@ -29,7 +29,9 @@ class InputDataProducer(Thread):
 		self.sess = sess
 		self.coord = coord
 		self.hand = gzip.open(FileName,'rb')
+		Thread.__init__(self)
 	def run(self):
+		print 'Starting Data Reader'
 		global DataDecodingQueue
 		try:
 			while True:
@@ -38,38 +40,43 @@ class InputDataProducer(Thread):
 					self.hand.seek(0)
 					line = self.hand.readline()
 				record = window_tensor(line)
-				queue.put(record)
+				DataDecodingQueue.put(record)
 		except Exception, e:
 			print e
-			print("finished enqueueing")
-			coord.request_stop(e)
+			print("finished Reading Input Data")
+			self.coord.request_stop(e)
 
 class InputDataDecoder(Thread):
-	def __init__(self, sess, coord, enqueue_op, queue_input_data , queue_input_label):
+	def __init__(self, sess, coord, enqueue_op, queue_input_data , queue_input_label, _id):
 		self.sess = sess
+		self._id = _id
 		self.coord = coord
 		self.enqueue_op = enqueue_op
 		self.queue_input_data = queue_input_data
 		self.queue_input_label = queue_input_label
+		Thread.__init__(self)
 	def run(self):
+		print "Starting Decoder", self._id
 		global DataDecodingQueue
 		try:
 			while True:
-				record = queue.get()
-				print record.chrom + ':' + record.start
+				record = DataDecodingQueue.get()
+				#print record.chrom + ':' + record.start
 				record.encode()
-				sess.run(self.enqueue_op, feed_dict={self.queue_input_data: record.res , self.queue_input_label: record.label})
+				self.sess.run(self.enqueue_op, feed_dict={self.queue_input_data: record.res , self.queue_input_label: record.label})
 		except Exception, e:
 			print e
 			print("finished enqueueing")
-			coord.request_stop(e)
+			self.coord.request_stop(e)
 
 
 def train():
 	dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
 	BATCH_SIZE = FLAGS.batch_size
 	
+	print "Start Building Graph"
 	with tf.Graph().as_default():
+		print "Define Training Data FIFOQueue"
 		queue_input_data = tf.placeholder(dtype, shape=[DEPTH * (HEIGHT+1) * WIDTH])
 		queue_input_label = tf.placeholder(tf.int32, shape=[])
 		queue = tf.FIFOQueue(capacity=FLAGS.batch_size*10, dtypes=[dtype, tf.int32], shapes=[[DEPTH * (HEIGHT+1) * WIDTH], []])
@@ -91,41 +98,48 @@ def train():
 
 		# Build a Graph that trains the model with one batch of examples and
 		# updates the model parameters.
-		train_op = convnets.Train(loss, global_step)
-		summary = tf.summary.merge_all()
+		#train_op = convnets.Train(loss, global_step)
+		#summary = tf.summary.merge_all()
 
 		init = tf.global_variables_initializer()
-		saver = tf.train.Saver()
+		#saver = tf.train.Saver()
 		sess = tf.Session()
-		summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
+		#summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
 		sess.run(init)
 		
 		coord = tf.train.Coordinator()
 
-
+	
+		print "Lunch Threads reading & decoding data from file."
 		# Manipulate Data Streaming
 		#enqueue_thread = threading.Thread(target=enqueueInputData, args=[sess, coord, TrainingReader, enqueue_op, queue_input_data, queue_input_label])
 		#enqueue_thread.isDaemon()
 		#enqueue_thread.start()
-		Producer = InputDataProducer(self, sess, coord, FLAGS.TrainingData)
+		Producer = InputDataProducer(sess, coord, FLAGS.TrainingData)
+		Producer.isDaemon()
+		Producer.start()
 		for i in range(FLAGS.numOfDecodingThreads):
-			Consumer = InputDataDecoder(sess, coord, enqueue_op, queue_input_data , queue_input_label)
-
+			Consumer = InputDataDecoder(sess, coord, enqueue_op, queue_input_data , queue_input_label, i)
+			Consumer.isDaemon()
+			Consumer.start()
 		threads = tf.train.start_queue_runners(coord=coord, sess=sess)
-
+		
+		print "Start Runing"
 		min_loss = 100
 		try:	
 			for step in xrange(max_steps):
+						
 				start_time = time.time()
-				#_, loss_value, v_step = sess.run([train_op, loss, global_step])
+
 				curr_data, curr_labels = sess.run([data_batch, label_batch])
+				
+				print "1 Batch Time Costs:", time.time() - start_time
+				#_, loss_value, v_step = sess.run([train_op, loss, global_step])
 
-				for label in curr_labels:
-					print label,
-				print ''
-
-				duration = time.time() - start_time
-				print duration
+				#for label in curr_labels:
+				#	print label,
+				#print ''
+				
 				#if v_step % 10 == 0:
 					#print 'Step %d Training loss = %.3f (%.3f sec)' % (v_step, loss_value, duration)
 					#summary_str = sess.run(summary)
