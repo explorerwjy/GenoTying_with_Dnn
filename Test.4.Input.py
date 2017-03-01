@@ -22,7 +22,8 @@ BATCH_SIZE=FLAGS.batch_size
 log_dir = FLAGS.log_dir
 max_steps = FLAGS.max_steps
 
-DataDecodingQueue = Queue(BATCH_SIZE*10)
+DataDecodingQueue = Queue(BATCH_SIZE*10000)
+DecodeBatch = 10000
 
 class InputDataProducer(Thread):
 	def __init__(self, sess, coord, FileName):
@@ -34,13 +35,17 @@ class InputDataProducer(Thread):
 		print 'Starting Data Reader'
 		global DataDecodingQueue
 		try:
+			record_batch = []
 			while True:
 				line = self.hand.readline()
 				if line == '':
 					self.hand.seek(0)
 					line = self.hand.readline()
 				record = window_tensor(line)
-				DataDecodingQueue.put(record)
+				record_batch.append(record)
+				if len(record_batch) == DecodeBatch:
+					DataDecodingQueue.put(record_batch)
+					record_batch = []
 		except Exception, e:
 			print e
 			print("finished Reading Input Data")
@@ -60,10 +65,11 @@ class InputDataDecoder(Thread):
 		global DataDecodingQueue
 		try:
 			while True:
-				record = DataDecodingQueue.get()
+				record_batch = DataDecodingQueue.get()
 				#print record.chrom + ':' + record.start
-				record.encode()
-				self.sess.run(self.enqueue_op, feed_dict={self.queue_input_data: record.res , self.queue_input_label: record.label})
+				for record in record_batch:
+					record.encode()
+					self.sess.run(self.enqueue_op, feed_dict={self.queue_input_data: record.res , self.queue_input_label: record.label})
 		except Exception, e:
 			print e
 			print("finished enqueueing")
@@ -79,11 +85,11 @@ def train():
 		print "Define Training Data FIFOQueue"
 		queue_input_data = tf.placeholder(dtype, shape=[DEPTH * (HEIGHT+1) * WIDTH])
 		queue_input_label = tf.placeholder(tf.int32, shape=[])
-		queue = tf.FIFOQueue(capacity=FLAGS.batch_size*10, dtypes=[dtype, tf.int32], shapes=[[DEPTH * (HEIGHT+1) * WIDTH], []])
+		queue = tf.FIFOQueue(capacity=FLAGS.batch_size*10000, dtypes=[dtype, tf.int32], shapes=[[DEPTH * (HEIGHT+1) * WIDTH], []])
 		enqueue_op = queue.enqueue([queue_input_data, queue_input_label])
 		dequeue_op = queue.dequeue()
 		# Get Tensors and labels for Training data.
-		data_batch, label_batch = tf.train.batch(dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size*4)
+		data_batch, label_batch = tf.train.batch(dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size*10000)
 		#data_batch_reshape = tf.transpose(data_batch, [0,2,3,1])
 
 		#global_step = tf.Variable(0, trainable=False, name='global_step')
@@ -118,7 +124,8 @@ def train():
 		Producer = InputDataProducer(sess, coord, FLAGS.TrainingData)
 		Producer.isDaemon()
 		Producer.start()
-		for i in range(FLAGS.numOfDecodingThreads):
+		#for i in range(FLAGS.numOfDecodingThreads):
+		for i in range(1):
 			Consumer = InputDataDecoder(sess, coord, enqueue_op, queue_input_data , queue_input_label, i)
 			Consumer.isDaemon()
 			Consumer.start()
@@ -131,9 +138,10 @@ def train():
 						
 				start_time = time.time()
 
-				curr_data, curr_labels = sess.run([data_batch, label_batch])
+				curr_data, curr_labels, NumQ = sess.run([data_batch, label_batch, queue.size()])
 				
-				print "1 Batch Time Costs:", time.time() - start_time
+				print "1 Batch Time Costs: %.3f, 1 Batch size: %d" % ((time.time() - start_time), len(curr_labels))
+				print "Num Ele in Queue:",NumQ
 				#_, loss_value, v_step = sess.run([train_op, loss, global_step])
 
 				#for label in curr_labels:

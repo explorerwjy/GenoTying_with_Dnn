@@ -80,7 +80,7 @@ tf.app.flags.DEFINE_integer('max_steps', 1000000,
 tf.app.flags.DEFINE_boolean('log_device_placement', True,
                             """Whether to log device placement.""")
 
-tf.app.flags.DEFINE_boolean('numOfDecodingThreads', 128,
+tf.app.flags.DEFINE_boolean('numOfDecodingThreads', 4,
                             """Whether to log device placement.""")
 
 npdtype = np.float16 if FLAGS.use_fl16 else np.float32
@@ -161,7 +161,7 @@ def strand2code(ch):
 def TestReadingTime():
 	Hand = gzip.open(FLAGS.TrainingData,'rb')
 	Reader = RecordReader(Hand)
-	CompareSteps = 1280
+	CompareSteps = 128
 	print 'Reading with decoding'
 	count = 0
 	s_time = time.time()
@@ -175,7 +175,7 @@ def TestReadingTime():
 	while count < CompareSteps:
 		Reader.read_without_processing()
 		count += 1
-	print "With Decoding: ",time.time()-s_time
+	print "Without Decoding: ",time.time()-s_time
 
 
 
