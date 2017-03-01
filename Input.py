@@ -125,7 +125,7 @@ class RecordReader():
 		if line == '':
 			self.hand.seek(0)
 			line = self.hand.readline()
-		record = window_tensor(self.hand.readline())
+		record = window_tensor(line)
 		record.encode()
 		#return flat_alignment, record.label
 		#print len(record.res)
