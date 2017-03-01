@@ -77,7 +77,10 @@ tf.app.flags.DEFINE_boolean('use_fl16', False,
 tf.app.flags.DEFINE_integer('max_steps', 1000000,
                             """Number of batches to run.""")
 
-tf.app.flags.DEFINE_boolean('log_device_placement', False,
+tf.app.flags.DEFINE_boolean('log_device_placement', True,
+                            """Whether to log device placement.""")
+
+tf.app.flags.DEFINE_boolean('numOfDecodingThreads', 10,
                             """Whether to log device placement.""")
 
 npdtype = np.float16 if FLAGS.use_fl16 else np.float32

@@ -2,237 +2,144 @@
 #Author: jywang explorerwjy@gmail.com
 
 #========================================================================================================
-# Prepare Input Data For Training
+# Training The ConvNet for Tensor Caller
 #========================================================================================================
 
-from optparse import OptionParser
-import os
-import Region
+import argparse
+from datetime import datetime
 import time
-import gzip
-import threading
+import os 
 from threading import Thread
 from Queue import Queue
 import numpy as np
 import tensorflow as tf
+import Models
+from Input import *
+import sys
+sys.stdout = sys.stderr
 
+BATCH_SIZE=FLAGS.batch_size
+log_dir = FLAGS.log_dir
+max_steps = FLAGS.max_steps
 
-# Basic model parameters.
-WIDTH = Region.WIDTH
-HEIGHT = Region.HEIGHT
-DEPTH = Region.DEPTH
-Window_Size = (WIDTH * (HEIGHT+1) * DEPTH)
+DataDecodingQueue = Queue(BATCH_SIZE*10)
 
-NUM_CLASSES = 3
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 10000
-NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 6400
-LEARNING_RATE_DECAY_STEP = 1000
-
-# Constants describing the training process.
-MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
-NUM_EPOCHS_PER_DECAY = 350.0      # Epochs after which learning rate decays.
-LEARNING_RATE_DECAY_FACTOR = 0.9  # Learning rate decay factor.
-INITIAL_LEARNING_RATE = 0.1       # Initial learning rate.
-
-# Global constants describing the data set & Model.
-FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_string('eval_dir', './tmp/TensorCaller_eval',
-		"""Directory where to write event logs.""")
-tf.app.flags.DEFINE_string('train_dir', './tmp/TensorCaller_train',
-		"""Directory where to write event logs and checkpoint.""")
-tf.app.flags.DEFINE_string('log_dir', './tmp/TensorCaller_train/log',
-		"""Directory where to write event logs.""")
-tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
-		"""How often to run the eval.""")
-tf.app.flags.DEFINE_boolean('run_once', False,
-		"""Whether to run eval only once.""")
-tf.app.flags.DEFINE_integer('batch_size', 10,
-		"""Number of WindowTensor to process in a batch.""")
-tf.app.flags.DEFINE_string('TrainingData', './Training.windows.txt.gz',
-		"""Path to the Training Data.""")
-tf.app.flags.DEFINE_string('ValidationData', '',
-		"""Path to the Validation Data.""")
-tf.app.flags.DEFINE_string('TestingData', 'Testing.windows.txt.gz',
-		"""Path to the Testing Data.""")
-tf.app.flags.DEFINE_boolean('use_fl16', True,
-		"""Train the model using fp16.""")
-tf.app.flags.DEFINE_integer('max_steps', 1000000,
-		"""Number of batches to run.""")
-tf.app.flags.DEFINE_boolean('log_device_placement', False,
-		"""Whether to log device placement.""")
-tf.app.flags.DEFINE_boolean('queueThreads', 4,
-		"""Number of threads used to read data""")
-
-# ==========================================================================
-def base2code(base):
-	try:
-		#return tf.cast(BASE[base],tf.float32)
-		#return float(BASE[base])
-		return float(base)
-	except KeyError:
-		print "KeyError of base code. Unexpected base appear. |%s|" % base
-		exit()
-def qual2code(ch):
-	phred = (float(ord(ch) - 33) / 60) - 0.5
-	#return tf.cast((math.pow(10, -(phred/10))),tf.float32)
-	#return float(math.pow(10, -(phred/10)))
-	return phred 
-def strand2code(ch):
-	return float(ch)
-# ==========================================================================
-
-class window_tensor():
-	def __init__(self,line):
-		self.chrom, self.start, self.end, self.ref, self.alt, self.label, self.window = line.strip().split('\t')
-		self.Alignment = self.window[ 0 : WIDTH * (HEIGHT+1) ]
-		self.Qual = self.window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
-		self.Strand = self.window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
-		self.pos = self.chrom+':'+self.start
-
-	def encode(self):
-		# This func encode,norm elements and form into tensor 
-		res = [ (float(base)/6 - 0.5) for base in list(self.Alignment)] + [ qual2code(x) for x in list(self.Qual)] + [ float(x)/2-0.5 for x in list(self.Strand)]
-		return np.array(res)
-
-class RecordReader():
-	def __init__(self, hand):
-		self.hand = hand
-	def read(self):
-		line = self.hand.readline()
-		if line == '':
-			self.hand.seek(0)
-			line = self.hand.readline()
-		record = window_tensor(self.hand.readline())
-		flat_alignment = record.encode()
-		tensor_feed = flat_alignment.reshape(WIDTH,HEIGHT+1,DEPTH)
-		#label = tf.one_hot(indices=tf.cast(float(record.label), tf.int32), depth=3)
-		#label = tf.convert_to_tensor(int(record.label), dtype=tf.float32)
-		#label = tf.reshape(label, [1])
-		#pos = tf.convert_to_tensor(record.pos, dtype='tf.string')
-		#return tensor,pos,label
-		#print tensor_feed
-		return tensor_feed, record.pos, [record.label]
-
-class Worker(Thread):
-	"""Thread executing tasks from a given tasks queue"""
-	def __init__(self, tasks):
-		Thread.__init__(self)
-		self.tasks = tasks
-		self.daemon = True
-		self.start()
+class InputDataProducer(Thread):
+	def __init__(self, sess, coord, FileName):
+		self.sess = sess
+		self.coord = coord
+		self.hand = gzip.open(FileName,'rb')
 	def run(self):
-		while True:
-			func, args, kargs = self.tasks.get()
-			try:
-				func(*args, **kargs)
-			except Exception, e:
-				print e
-			finally:
-				self.tasks.task_done()
-
-class ThreadPool():
-	"""Pool of threads consuming tasks from a queue"""
-	def __init__(self, num_threads):
-		self.tasks = Queue(num_threads)
-		for _ in range(num_threads): Worker(self.tasks)
-
-	def add_task(self, func, *args, **kargs):
-		"""Add a task to the queue"""
-		self.tasks.put((func, args, kargs))
-
-	def wait_completion(self):
-		"""Wait for completion of all the tasks in the queue"""
-		self.tasks.join()
-
-def DecodeAndEnQueue(sess, coord, enqueue_op, queue_input_data, queue_input_pos, queue_input_target, line):
-	record = window_tensor(line)
-	flat_alignment = record.encode()
-	tensor_feed = flat_alignment.reshape(WIDTH,HEIGHT+1,DEPTH)
-
-	return tensor_feed, record.pos, [record.label]
-	sess.run(enqueue_op, feed_dict={queue_input_data: curr_data, queue_input_pos: curr_pos, queue_input_target: curr_label})
-	print "added ",curr_pos,"to the queue"
-
-
-# One Main Thread Readfile, other threads process it.
-def ReadingData_2(sess, coord, num_threads, enqueue_op, queue_input_data, queue_input_pos, queue_input_target):
-	TestHand=gzip.open(FLAGS.TestingData,'rb')
-	try:
-		while True:
-			for i in range(num_threads):
-				line = TestHand.readline()
+		global DataDecodingQueue
+		try:
+			while True:
+				line = self.hand.readline()
 				if line == '':
 					self.hand.seek(0)
-					line = TestHand.readline()
-				enqueue_thread = threading.Thread(target=DecodeAndEnQueue, args=[sess, coord, enqueue_op, queue_input_data,queue_input_pos, queue_input_target, line])
-				enqueue_thread.isDaemon()
-				enqueue_thread.start()
-	except:
-		print("finished enqueueing")
-		TestHand.close()
-		coord.request_stop()
-			
-def ReadingData(sess, coord, num_threads, enqueue_op, queue_input_data, queue_input_pos, queue_input_target):
-	TestHand=gzip.open(FLAGS.TestingData,'rb')
-	pool = ThreadPool(FLAGS.queueThreads)
-	try:
-		count = 0
-		while count <= 20:
-			for i in range(num_threads):
-				line = TestHand.readline()
-				if line == '':
-					self.hand.seek(0)
-					line = TestHand.readline()
+					line = self.hand.readline()
+				record = window_tensor(line)
+				queue.put(record)
+		except Exception, e:
+			print e
+			print("finished enqueueing")
+			coord.request_stop(e)
 
-				pool.add_task(DecodeAndEnQueue, sess, coord, enqueue_op, queue_input_data,queue_input_pos, queue_input_target, line)
-
-				#enqueue_thread = threading.Thread(target=DecodeAndEnQueue, args=[sess, coord, enqueue_op, queue_input_data,queue_input_pos, queue_input_target, line])
-				#enqueue_thread.isDaemon()
-				#enqueue_thread.start()
-
-		pool.wait_completion()
-	except:
-		print("finished enqueueing")
-		TestHand.close()
-		coord.request_stop()
+class InputDataDecoder(Thread):
+	def __init__(self, sess, coord, enqueue_op, queue_input_data , queue_input_label):
+		self.sess = sess
+		self.coord = coord
+		self.enqueue_op = enqueue_op
+		self.queue_input_data = queue_input_data
+		self.queue_input_label = queue_input_label
+	def run(self):
+		global DataDecodingQueue
+		try:
+			while True:
+				record = queue.get()
+				print record.chrom + ':' + record.start
+				record.encode()
+				sess.run(self.enqueue_op, feed_dict={self.queue_input_data: record.res , self.queue_input_label: record.label})
+		except Exception, e:
+			print e
+			print("finished enqueueing")
+			coord.request_stop(e)
 
 
-
-def TestInputQueue():
-	"""Train TensorCaller for a number of steps."""
+def train():
 	dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
 	BATCH_SIZE = FLAGS.batch_size
+	
 	with tf.Graph().as_default():
-		queue_input_data = tf.placeholder(tf.float32, shape=[101,101,3])
-		queue_input_pos = tf.placeholder(tf.string, shape=[])
-		queue_input_target = tf.placeholder(tf.float32, shape=[1])
-		queue = tf.FIFOQueue(capacity=50, dtypes=[tf.float32, tf.string, tf.float32], shapes=[[WIDTH,HEIGHT+1,DEPTH], [], [1]])
-
-		enqueue_op = queue.enqueue([queue_input_data, queue_input_pos, queue_input_target])
+		queue_input_data = tf.placeholder(dtype, shape=[DEPTH * (HEIGHT+1) * WIDTH])
+		queue_input_label = tf.placeholder(tf.int32, shape=[])
+		queue = tf.FIFOQueue(capacity=FLAGS.batch_size*10, dtypes=[dtype, tf.int32], shapes=[[DEPTH * (HEIGHT+1) * WIDTH], []])
+		enqueue_op = queue.enqueue([queue_input_data, queue_input_label])
 		dequeue_op = queue.dequeue()
+		# Get Tensors and labels for Training data.
+		data_batch, label_batch = tf.train.batch(dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size*4)
+		#data_batch_reshape = tf.transpose(data_batch, [0,2,3,1])
 
-		# tensorflow recommendation:
-		# capacity = min_after_dequeue + (num_threads + a small safety margin) * batch_size
-		data_batch, pos_batch, target_batch = tf.train.batch(dequeue_op, batch_size=15, capacity=40)
+		#global_step = tf.Variable(0, trainable=False, name='global_step')
+
+		# Build a Graph that computes the logits predictions from the
+		# inference model.
+		#convnets = Models.ConvNets()
+		#logits = convnets.Inference(data_batch)
+
+		# Calculate loss.
+		#loss = convnets.loss(logits, label_batch)
+
+		# Build a Graph that trains the model with one batch of examples and
+		# updates the model parameters.
+		train_op = convnets.Train(loss, global_step)
+		summary = tf.summary.merge_all()
+
 		init = tf.global_variables_initializer()
+		saver = tf.train.Saver()
 		sess = tf.Session()
+		summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
 		sess.run(init)
+		
 		coord = tf.train.Coordinator()
-		num_threads = FLAGS.queueThreads
-		InputQueueRunner = threading.Thread(target=ReadingData, args= [sess, coord, num_threads, enqueue_op, queue_input_data, queue_input_pos, queue_input_target])
-		InputQueueRunner.isDaemon()
-		InputQueueRunner.start()
+
+
+		# Manipulate Data Streaming
+		#enqueue_thread = threading.Thread(target=enqueueInputData, args=[sess, coord, TrainingReader, enqueue_op, queue_input_data, queue_input_label])
+		#enqueue_thread.isDaemon()
+		#enqueue_thread.start()
+		Producer = InputDataProducer(self, sess, coord, FLAGS.TrainingData)
+		for i in range(FLAGS.numOfDecodingThreads):
+			Consumer = InputDataDecoder(sess, coord, enqueue_op, queue_input_data , queue_input_label)
+
 		threads = tf.train.start_queue_runners(coord=coord, sess=sess)
 
-		try:
-			for step in xrange(3):
-				run_options = tf.RunOptions(timeout_in_ms=4000)
-				if coord.should_stop():
-					break
-				curr_data_batch, curr_pos_batch, curr_target_batch = sess.run([data_batch, pos_batch, target_batch], options=run_options)
-				print curr_data_batch
-				print curr_target_batch
+		min_loss = 100
+		try:	
+			for step in xrange(max_steps):
+				start_time = time.time()
+				#_, loss_value, v_step = sess.run([train_op, loss, global_step])
+				curr_data, curr_labels = sess.run([data_batch, label_batch])
 
+				for label in curr_labels:
+					print label,
+				print ''
+
+				duration = time.time() - start_time
+				print duration
+				#if v_step % 10 == 0:
+					#print 'Step %d Training loss = %.3f (%.3f sec)' % (v_step, loss_value, duration)
+					#summary_str = sess.run(summary)
+					#summary_writer.add_summary(summary_str, v_step)
+					#summary_writer.flush()
+
+				#if (v_step) % 100 == 0 or (v_step) == max_steps:
+					#Save Model only if loss decreasing
+					#if loss_value < min_loss:
+					#	checkpoint_file = os.path.join(log_dir, 'model.ckpt')
+					#	saver.save(sess, checkpoint_file, global_step = global_step)
+					#	min_loss = loss_value
+					#loss_value = sess.run(loss, feed_dict=feed_dict)
+					#print 'Step %d Test loss = %.3f (%.3f sec); Saved loss = %.3f' % (v_step, loss_value, duration, min_loss)
 		except Exception, e:
 			coord.request_stop(e)
 		finally:
@@ -241,9 +148,35 @@ def TestInputQueue():
 			coord.join(threads)
 
 
-def main():
-	TestInputQueue()
-	return
+def GetOptions():
+	parser = argparse.ArgumentParser()
+	parser.add_argument("-c", "--Continue", help="continue training from a checkpoint",
+                    type=str)
+	args = parser.parse_args()
+	if	args.Continue != None:
 
-if __name__=='__main__':
-	main()
+		if args.Continue.lower() in ['y', 'yes', 't', 'true']:
+			return True
+		else:
+			return False
+	else:
+		return False
+
+def main(argv=None):  # pylint: disable=unused-argument
+	Continue = GetOptions()
+
+	print 'TraingDir is:',FLAGS.train_dir
+	if Continue == True:
+		ckptfile = FLAGS.checkpoint_dir+'/log/checkpoint'
+		f = open(ckptfile,'rb')
+		ckpt = f.readline().split(':')[1].strip().strip('"')
+		f.close()
+		prefix = os.path.abspath(FLAGS.checkpoint_dir+'/log/')
+		ckpt = prefix + '/' + ckpt
+		print ckpt
+		continue_train(ckpt)
+	else:
+		train()
+
+if __name__ == '__main__':
+	tf.app.run()
