@@ -54,6 +54,7 @@ class ConvNets():
 	def __init__(self):
 		pass
 	def Inference(self, RawTensor):
+		print RawTensor
 		InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT+1, 3]) 
 		print InputTensor
 		# conv1

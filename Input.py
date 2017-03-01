@@ -11,14 +11,14 @@ import Region
 import time
 import gzip
 import numpy as np
+from numba import vectorize
 import tensorflow as tf
-
 
 # Basic model parameters.
 WIDTH = Region.WIDTH
 HEIGHT = Region.HEIGHT
-DEPTH = Region.DEPTH
-Window_Size = (WIDTH * (HEIGHT+1) * DEPTH)
+DEPTH = 3
+Window_Size = (WIDTH * (HEIGHT+1) * 3)
 
 NUM_CLASSES = 3
 NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 10000
@@ -31,36 +31,113 @@ NUM_EPOCHS_PER_DECAY = 350.0      # Epochs after which learning rate decays.
 LEARNING_RATE_DECAY_FACTOR = 0.9  # Learning rate decay factor.
 INITIAL_LEARNING_RATE = 0.1       # Initial learning rate.
 
+
 # Global constants describing the data set & Model.
 FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_string('eval_dir', './tmp/TensorCaller_eval',
-		"""Directory where to write event logs.""")
-tf.app.flags.DEFINE_string('train_dir', './tmp/TensorCaller_train_4',
-		"""Directory where to write event logs and checkpoint.""")
-tf.app.flags.DEFINE_string('log_dir', './tmp/TensorCaller_train_4/log',
-		"""Directory where to write event logs.""")
-tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
-		"""How often to run the eval.""")
-tf.app.flags.DEFINE_boolean('run_once', False,
-		"""Whether to run eval only once.""")
-tf.app.flags.DEFINE_integer('batch_size', 128,
-		"""Number of WindowTensor to process in a batch.""")
-tf.app.flags.DEFINE_string('TrainingData', './Training.windows.txt.gz',
-		"""Path to the Training Data.""")
-tf.app.flags.DEFINE_string('ValidationData', '',
-		"""Path to the Validation Data.""")
-tf.app.flags.DEFINE_string('TestingData', 'Testing.windows.txt.gz',
-		"""Path to the Testing Data.""")
-tf.app.flags.DEFINE_boolean('use_fl16', True,
-		"""Train the model using fp16.""")
-tf.app.flags.DEFINE_integer('max_steps', 1000000,
-		"""Number of batches to run.""")
-tf.app.flags.DEFINE_boolean('log_device_placement', True,
-		"""Whether to log device placement.""")
-tf.app.flags.DEFINE_boolean('queueThreads', 4,
-		"""Number of threads used to read data""")
 
+
+tf.app.flags.DEFINE_string('eval_dir', './tmp/TensorCaller_eval',
+                           """Directory where to write event logs.""")
+
+tf.app.flags.DEFINE_string('train_dir', './tmp/TensorCaller_train_4',
+                           """Directory where to write event logs """
+                           """and checkpoint.""")
+	
+tf.app.flags.DEFINE_string('checkpoint_dir', './tmp/TensorCaller_train_4',
+                           """Directory where to read model checkpoints.""")
+
+tf.app.flags.DEFINE_string('log_dir', './tmp/TensorCaller_train_3/log',
+                           """Directory where to write event logs.""")
+
+tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
+                            """How often to run the eval.""")
+
+tf.app.flags.DEFINE_boolean('run_once', False,
+                         """Whether to run eval only once.""")
+
+tf.app.flags.DEFINE_integer('batch_size', 128,
+                            """Number of WindowTensor to process in a batch.""")
+
+#tf.app.flags.DEFINE_integer('test_batch_size', 64,
+#                            """Number of WindowTensor to process in a batch.""")
+
+tf.app.flags.DEFINE_string('TrainingData', 'Training.windows.txt.gz',
+                           """Path to the Training Data.""")
+
+tf.app.flags.DEFINE_string('ValidationData', './windows_validation.txt.gz',
+                           """Path to the Validation Data.""")
+
+tf.app.flags.DEFINE_string('TestingData', 'Testing.windows.txt.gz',
+                           """Path to the Testing Data.""")
+
+tf.app.flags.DEFINE_boolean('use_fl16', False,
+                            """Train the model using fp16.""")
+
+
+tf.app.flags.DEFINE_integer('max_steps', 1000000,
+                            """Number of batches to run.""")
+
+tf.app.flags.DEFINE_boolean('log_device_placement', False,
+                            """Whether to log device placement.""")
+
+npdtype = np.float16 if FLAGS.use_fl16 else np.float32
+# ARG: batch_size: The batch size will be baked into both placeholders.
+# Return: Tensors placeholder, Labels placeholder.
+
+class window_tensor():
+	def __init__(self,line):
+		self.chrom, self.start, self.end, self.ref, self.alt, self.label, self.window = line.strip().split('\t')
+		self.Alignment = self.window[ 0 : WIDTH * (HEIGHT+1) ]
+		self.Qual = self.window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
+		self.Strand = self.window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
+	def encode(self):
+		# This func encode elements in window tensor into tf.float32
+		
+		#print len(self.Alignment), len(self.Alignment[0])
+		#print len(self.Qual), len(self.Qual[0])
+		#print len(self.Strand), len(self.Strand[0])
+		#exit()
+		p1 = np.fromiter(self.Alignment, dtype = npdtype)
+		p2 = np.array(map(lambda x: qual2code(x), self.Qual), dtype = npdtype)
+		p3 = np.fromiter(self.Strand, dtype = npdtype)
+		self.res = np.concatenate([p1, p2, p3])
+		
+		#res = [ (base2code(base)/6 - 0.5) for base in self.Alignment] + [ qual2code(x) for x in self.Qual] + [float(x)/2-0.5 for x in self.Strand] 
+		#res = map(lambda x:(float(x)/6 - 0.5), list(self.Alignment)) + map(lambda x: qual2code(x), list(self.Qual)) + map(lambda x:float(x)/2-0.5, list(self.Strand)) 
+		#res = map(lambda x: qual2code(x), self.Qual) 
+		#res = map(lambda x:(float(x)/6 - 0.5), list(self.Alignment))
+		#res = map(lambda x:(float(x)/6 - 0.5), list(self.Alignment)) + map(lambda x: qual2code(x), list(self.Qual)) + map(lambda x:float(x)/2-0.5, list(self.Strand)) 
+		#print len([float(x)/2-0.5 for x in list(self.Strand)]), len(list(self.Strand))
+		#return np.array(res)
+"""
+class window_tensor():
+	def __init__(self, line):
+		self.chrom, self.start, self.end, self.ref, self.alt, self.label, self.window = line.strip().split('\t')
+		self.res = np.fromiter(self.window[ 0 : WIDTH * (HEIGHT+1) ], dtype = npdtype) + np.array(map(lambda x: qual2code(x), self.window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]), dtype = npdtype) + np.fromiter(self.window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3], dtype = npdtype)
+	def encode(self):
+		return self.res
+"""
+class RecordReader():
+	def __init__(self, handle):
+		self.hand = handle
+	def read(self):
+		line = self.hand.readline()
+		if line == '':
+			self.hand.seek(0)
+			line = self.hand.readline()
+		record = window_tensor(self.hand.readline())
+		record.encode()
+		#return flat_alignment, record.label
+		#print len(record.res)
+		return record.res, record.label
+	def read_without_processing(self):
+		line = self.hand.readline()
+		if line == '':
+			self.hand.seek(0)
+			line = self.hand.readline()
+		record = window_tensor(self.hand.readline())
 # ==========================================================================
+#@vectorize(["float32(chr)"], target='gpu')
 def base2code(base):
 	try:
 		#return tf.cast(BASE[base],tf.float32)
@@ -78,143 +155,31 @@ def strand2code(ch):
 	return float(ch)
 # ==========================================================================
 
-class window_tensor():
-	"""
-	def __init__(self,line):
-		self.chrom, self.start, self.end, self.ref, self.alt, self.label, self.window = line.strip().split('\t')
-		self.Alignment = self.window[ 0 : WIDTH * (HEIGHT+1) ]
-		self.Qual = self.window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
-		self.Strand = self.window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
-		self.pos = self.chrom+':'+self.start
-	"""
-	def __init__(self,line):
-		self.label = line[0]
-		self.Alignment = line[ 13 : 13 + WIDTH * (HEIGHT+1) ]
-		self.Qual = line[ 13 + WIDTH * (HEIGHT+1) : 13 + WIDTH * (HEIGHT+1)*2]
-		self.Strand = line[13 + WIDTH * (HEIGHT+1)*2 : 13 + WIDTH * (HEIGHT+1)*3]
-
-	def encode(self):
-		# This func encode,norm elements and form into tensor 
-		res = [ (float(base)/6 - 0.5) for base in list(self.Alignment)] + [ qual2code(x) for x in list(self.Qual)] + [ float(x)/2-0.5 for x in list(self.Strand)]
-		return np.array(res)
-
-class RecordReader():
-	def __init__(self, hand):
-		self.hand = hand
-	def read(self):
-		line = self.hand.readline()
-		if line == '':
-			self.hand.seek(0)
-			line = self.hand.readline()
-		record = window_tensor(self.hand.readline())
-		flat_alignment = record.encode()
-		#tensor_feed = flat_alignment.reshape(WIDTH,HEIGHT+1,DEPTH)
-		tensor_feed = flat_alignment.reshape(DEPTH,WIDTH,HEIGHT+1)
-		return tensor_feed, record.label
-
-"""
-class window_tensor():
-	def __init__(self,line):
-		self.chrom, self.start, self.end, self.ref, self.alt, self.label, self.window = line.strip().split('\t')
-		self.Alignment = self.window[ 0 : WIDTH * (HEIGHT+1) ]
-		self.Qual = self.window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
-		self.Strand = self.window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
-		self.pos = self.chrom+':'+self.start
-
-	def encode(self):
-		# This func encode,norm elements and form into tensor 
-		res = [ (float(base)/6 - 0.5) for base in list(self.Alignment)] + [ qual2code(x) for x in list(self.Qual)] + [ float(x)/2-0.5 for x in list(self.Strand)]
-		if FLAGS.use_fl16: 
-			RawTensor = tf.convert_to_tensor(res, dtype=tf.float16)
-		else:
-			RawTensor = tf.convert_to_tensor(res, dtype=tf.float32)
-		InputTensor = tf.reshape(RawTensor, [WIDTH, HEIGHT+1, 3]) 
-		return InputTensor
-
-class RecordReader():
-	def __init__(self, hand):
-		self.hand = hand
-	def read(self):
-		line = self.hand.readline()
-		if line == '':
-			self.hand.seek(0)
-			line = self.hand.readline()
-		record = window_tensor(self.hand.readline())
-		tensor = record.encode()
-		#label = tf.one_hot(indices=tf.cast(float(record.label), tf.int32), depth=3)
-		label = tf.convert_to_tensor(int(record.label), dtype=tf.float32)
-		label = tf.reshape(label, [1])
-		print record.pos, record.label
-		return tensor,label
+def TestReadingTime():
+	Hand = gzip.open(FLAGS.TrainingData,'rb')
+	Reader = RecordReader(Hand)
+	CompareSteps = 1280
+	print 'Reading with decoding'
+	count = 0
+	s_time = time.time()
+	while count < CompareSteps:
+		Reader.read()
+		count += 1
+	print "With Decoding: ",time.time()-s_time
+	print "\nReading without Decoding..."
+	s_time = time.time()
+	count = 0
+	while count < CompareSteps:
+		Reader.read_without_processing()
+		count += 1
+	print "With Decoding: ",time.time()-s_time
 
 
-def Myloop(coord, Testreader):
-	while not coord.should_step():
-		try:
-			test_tensor, test_label = Testreader.read()
-			return test_tensor, test_label
-			# Read a example
-		except ValueError:
-			coord.request_step()
 
-def TestInputQueue():
-	dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
-	BATCH_SIZE = FLAGS.batch_size
-	with tf.Graph().as_default():
-
-		# Get Tensors and labels for data.
-		TestHand=gzip.open(FLAGS.TestingData,'rb')
-		Testreader = RecordReader(TestHand)
-		#test_tensor, test_label = Testreader.read()
-		#test_tensor, test_label = Myloop(coord, Testreader)
-		
-		# Create a queue, and an op that enqueues examples one at a time in the queue.
-		#queue = tf.RandomShuffleQueue(name="TrainingInputQueue", capacity=FLAGS.batch_size*10,min_after_dequeue=FLAGS.batch_size*3, seed=32, dtypes=[dtype, tf.float32], shapes=[[WIDTH,HEIGHT+1,DEPTH], [NUM_CLASSES]])
-		queue = tf.FIFOQueue(name="TrainingInputQueue", capacity=FLAGS.batch_size*10, dtypes=[dtype, tf.float32], shapes=[[WIDTH,HEIGHT+1,DEPTH], [1]])
-		
-		
-		enqueue_op = queue.enqueue(Myloop(coord, Testreader))
-		#enqueue_op = queue.enqueue([test_tensor, test_label])
-		
-		
-		qr = tf.train.QueueRunner(queue, [enqueue_op] * FLAGS.queueThreads) # Create a queue runner
-
-		tensors, labels = queue.dequeue_many(BATCH_SIZE)
-		labels = tf.cast(labels, dtype=tf.int32)
-
-		global_step = tf.Variable(0, trainable=False, name='global_step')
-
-
-		summary = tf.summary.merge_all()
-		init = tf.global_variables_initializer()
-		saver = tf.train.Saver()
-
-		sess = tf.Session()
-		summary_writer = tf.summary.FileWriter(FLAGS.log_dir, sess.graph)
-		sess.run(init)
-
-		min_loss = 100	
-		coord = tf.train.Coordinator()
-		enqueue_threads = qr.create_threads(sess, coord=coord, start=True)
-
-		try:
-			for step in xrange(10):
-				if coord.should_stop():
-					break
-				v_tensors, v_labels = sess.run([tensors, labels])
-				print v_labels
-				print ""
-
-		except Exception, e:
-			coord.request_stop(e)
-		finally:
-			coord.request_stop()
-			coord.join(enqueue_threads)
-"""
 
 def main():
-	TestInputQueue()
+	TestReadingTime()
 	return
 
 if __name__=='__main__':
-	main()
+    main()
