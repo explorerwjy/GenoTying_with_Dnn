@@ -78,9 +78,27 @@ class InputDataDecoder(Process):
 			print("finished enqueueing")
 			self.coord.request_stop(e)
 
+def load_samples(FileName, sess, coord, queue_input_data, queue_input_label, enqueue_op, subset_i, subset_n)):
+	try:
+		open_tabix_files = pysam.Tabixfile(FileName)
+		contigs = [contig for contig in tabix_file.contigs]
+		contig_subset = contigs[subset_i : : subset_n]
+		print "Lodaing subset %d from %d" % (subset_i, subset_n)
+		Num_of_contigs = len(contig_subset)
+		for contig in contig_subset:
+			records_iterator = tabix_file.fetch(contig, 0, 10**9, multiple_iterators=True)
+			for data, label in record_parser(records_iterator):
+				sess.run(enqueue_op, feed_dict={queue_input_data: data, queue_input_label: label})
+	except Exception, e:
+		print e
+		print("finished Reading Input Data")
+		self.coord.request_stop(e)
 
-def load_samples(FileName, sess, coord, queue_input_data, queue_input_label, enqueue_op, i, N)):
-	open_tabix_files = []
+def record_parser(records_iterator):
+	for line in records_iterator:
+		record = window_tensor(line)
+		record.encode()
+		yield record.res, record.label
 
 def train():
 	# Try multiProcess
@@ -110,6 +128,9 @@ def train():
 		N = 4
 		for i in range(N):
 			p = multiprocessing.Process(target=load_samples, args=(FLAGS.TestingData, sess, coord, queue_input_data, queue_input_label, enqueue_op, i, N))
+			jobs.append(p)
+			p.start()
+
 
 		print "Start Runing"
 		min_loss = 100
@@ -122,6 +143,8 @@ def train():
 		except Exception, e:
 			coord.request_stop(e)
 		finally:
+			for job in jobs:
+				job.join()
 			sess.run(queue.close(cancel_pending_enqueues=True))
 			coord.request_stop()
 			coord.join(threads)
