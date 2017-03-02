@@ -30,55 +30,30 @@ DataDecodingQueue = Queue(BATCH_SIZE*10000)
 DecodeBatch = 10000
 
 class InputDataProducer(Thread):
-	def __init__(self, sess, coord, FileName, enqueue_op, queue_input_data , queue_input_label):
+	def __init__(self, sess, coord, FileName):
 		self.sess = sess
 		self.coord = coord
 		self.hand = gzip.open(FileName,'rb')
-		self.enqueue_op = enqueue_op
-		self.queue_input_data = queue_input_data
-		self.queue_input_label = queue_input_label
 		Thread.__init__(self)
 	def run(self):
 		print 'Starting Data Reader'
-		DataDecodingQueue = Queue(4000)
+		global DataDecodingQueue
 		try:
-			len_batch_size = 1000
-			procs = []
-			num_procs = 4
+			record_batch = []
 			while True:
-				print "Start Decoding a Batch."
-				s_time = time.time()
-				for i in xrange(num_procs):
-					lineBatch = self.readBatch(len_batch_size)
-					p = multiprocessing.Process(target=self.worker, args=(lineBatch, DataDecodingQueue))
-					procs.append(p)
-					p.start()
-				for i in range(num_procs):
-					while not DataDecodingQueue.empty():
-						curr_data, curr_label = DataDecodingQueue.get()
-						self.sess.run(self.enqueue_op, feed_dict={self.queue_input_dadta : curr_data, self.queue_input_label : curr_label})
-				for p in procs:
-					p.join()
-				print "Done Decoding a Batch with %d samples, Costs %.3f secs." % (num_procs*len_batch_size, time.time()-s_time)
-				time.sleep(100)
+				line = self.hand.readline()
+				if line == '':
+					self.hand.seek(0)
+					line = self.hand.readline()
+				record = window_tensor(line)
+				record_batch.append(record)
+				if len(record_batch) == DecodeBatch:
+					DataDecodingQueue.put(record_batch)
+					record_batch = []
 		except Exception, e:
 			print e
 			print("finished Reading Input Data")
 			self.coord.request_stop(e)
-	def readBatch(self, Batchsize):
-		res = []
-		for i in xrange(Batchsize):
-			line = self.hand.readline()
-			if line == '':
-				self.hand.seek(0)
-				line = self.hand.readline()
-			res.append(line)
-		return res
-	def worker(self, lineBatch, DataDecodingQueue):
-		for line in lineBatch:
-			record = window_tensor(line)
-			record.encode()
-			DataDecodingQueue.put((record.res, record.label))
 
 class InputDataDecoder(Process):
 	def __init__(self, sess, coord, enqueue_op, queue_input_data , queue_input_label, _id):
@@ -103,6 +78,61 @@ class InputDataDecoder(Process):
 			print e
 			print("finished enqueueing")
 			self.coord.request_stop(e)
+
+def load_samples(FileName, sess, coord, queue_input_data, queue_input_label, enqueue_op, subset_i, subset_n):
+	try:
+		tabix_file = pysam.Tabixfile(FileName)
+		contigs = [contig for contig in tabix_file.contigs]
+		contig_subset = contigs[subset_i : : subset_n]
+		print "Lodaing subset %d from %d" % (subset_i, subset_n)
+		Num_of_contigs = len(contig_subset)
+		for contig in contig_subset:
+			records_iterator = tabix_file.fetch(contig, 0, 10**9, multiple_iterators=True)
+			for data, label in record_parser(records_iterator):
+				print 'Try to enqueue on process',subset_i
+				sess.run(enqueue_op, feed_dict={queue_input_data: data, queue_input_label: label})
+				print 'Successful enqueue on process',subset_i
+
+	except Exception, e:
+		print e
+		print("finished Reading Input Data")
+		coord.request_stop(e)
+
+
+class DataReaderThread(Thread):
+	def __init__(self, FileName, sess, coord, queue_input_data, queue_input_label, enqueue_op, subset_i, subset_n):
+		self.FileName = FileName
+		self.sess = sess
+		self.coord = coord
+		self.queue_input_data = queue_input_data
+		self.queue_input_label = queue_input_label
+		self.enqueue_op = enqueue_op
+		self.subset_i = subset_i
+		self.subset_n = subset_n
+		Thread.__init__(self)
+	def run(self):
+		try:
+			tabix_file = pysam.Tabixfile(self.FileName)
+			contigs = [contig for contig in tabix_file.contigs]
+			contig_subset = contigs[self.subset_i : : self.subset_n]
+			print "Lodaing subset %d from %d" % (self.subset_i, self.subset_n)
+			Num_of_contigs = len(contig_subset)
+			for contig in contig_subset:
+				records_iterator = tabix_file.fetch(contig, 0, 10**9, multiple_iterators=True)
+				for data, label in self.record_parser(records_iterator):
+					#print 'Try to enqueue on process',subset_i
+					self.sess.run(self.enqueue_op, feed_dict={self.queue_input_data: data, self.queue_input_label: label})
+					#print 'Successful enqueue on process',subset_i
+
+		except Exception, e:
+			print e
+			print("finished Reading Input Data")
+			self.coord.request_stop(e)
+	def record_parser(self, records_iterator):
+		for line in records_iterator:
+			record = window_tensor(line)
+			record.encode()
+			yield record.res, record.label
 
 def train():
 	# Try multiProcess
@@ -129,17 +159,17 @@ def train():
 	
 		print "Lunch Process reading & decoding data from file."
 		FileName = 'TestInput.txt.gz'
-		
-		Producer = InputDataProducer(sess, coord, FileName, enqueue_op, queue_input_data , queue_input_label) 
-		Producer.isDaemon()
-		Producer.start()
-		
+		N = 2
+		for i in range(N):
+			p = DataReaderThread(FileName, sess, coord, queue_input_data, queue_input_label, enqueue_op, i, N)
+			p.start()
+
 		threads = tf.train.start_queue_runners(coord=coord, sess=sess)
 		print "Start Runing"
 		min_loss = 100
 		try:	
 			for step in xrange(max_steps):
-				print step
+				print '='*50+'\n',step
 				start_time = time.time()
 				curr_data, curr_labels, NumQ = sess.run([data_batch, label_batch, queue.size()])
 				print "1 Batch Time Costs: %.3f, 1 Batch size: %d" % ((time.time() - start_time), len(curr_labels))

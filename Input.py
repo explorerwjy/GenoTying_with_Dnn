@@ -39,14 +39,14 @@ FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('eval_dir', './tmp/TensorCaller_eval',
                            """Directory where to write event logs.""")
 
-tf.app.flags.DEFINE_string('train_dir', './tmp/TensorCaller_train_4',
+tf.app.flags.DEFINE_string('train_dir', './tmp/TensorCaller_train_2',
                            """Directory where to write event logs """
                            """and checkpoint.""")
 	
-tf.app.flags.DEFINE_string('checkpoint_dir', './tmp/TensorCaller_train_4',
+tf.app.flags.DEFINE_string('checkpoint_dir', './tmp/TensorCaller_train_2',
                            """Directory where to read model checkpoints.""")
 
-tf.app.flags.DEFINE_string('log_dir', './tmp/TensorCaller_train_3/log',
+tf.app.flags.DEFINE_string('log_dir', './tmp/TensorCaller_train_2/log',
                            """Directory where to write event logs.""")
 
 tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,

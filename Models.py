@@ -129,13 +129,13 @@ class ConvNets():
 		#num_batches_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
 		#decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
 		decay_steps = LEARNING_RATE_DECAY_STEP 
-		lr = tf.train.exponential_decay(INITIAL_LEARNING_RATE, global_step, decay_steps, LEARNING_RATE_DECAY_FACTOR, staircase=True)
+		#lr = tf.train.exponential_decay(INITIAL_LEARNING_RATE, global_step, decay_steps, LEARNING_RATE_DECAY_FACTOR, staircase=True)
 		tf.summary.scalar('learning_rate', lr)
 		loss_averages_op = self.add_loss_summaries(total_loss)
 
 		with tf.control_dependencies([loss_averages_op]):
-			opt = tf.train.GradientDescentOptimizer(lr)
-			#opt = tf.train.RMSPropOptimizer(lr, decay=0.9, momentum=0.8, epsilon=1e-10, centered=False)
+			#opt = tf.train.GradientDescentOptimizer(lr)
+			opt = tf.train.RMSPropOptimizer(INITIAL_LEARNING_RATE, decay=0.9, momentum=0.8, epsilon=1e-10, centered=False)
 			grads = opt.compute_gradients(total_loss)
 
 		apply_gradient_op = opt.apply_gradients(grads, global_step=global_step)

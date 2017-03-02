@@ -147,16 +147,14 @@ def train():
 		try:	
 			for step in xrange(max_steps):
 				start_time = time.time()
-				#_, loss_value, v_step = sess.run([train_op, loss, global_step])
+				_, loss_value, v_step = sess.run([train_op, loss, global_step])
 				curr_batch, curr_label, v_step = sess.run([data_batch, label_batch, global_step])
 				duration = time.time() - start_time
 				if v_step % 10 == 0:
-					#print 'Step %d Training loss = %.3f (%.3f sec)' % (v_step, loss_value, duration)
-					print "One Batch Reading Costs:",duration
+					print 'Step %d Training loss = %.3f (%.3f sec)' % (v_step, loss_value, duration)
 					summary_str = sess.run(summary)
 					summary_writer.add_summary(summary_str, v_step)
 					summary_writer.flush()
-"""
 				if (v_step) % 100 == 0 or (v_step) == max_steps:
 					#Save Model only if loss decreasing
 					if loss_value < min_loss:
@@ -165,7 +163,6 @@ def train():
 						min_loss = loss_value
 					#loss_value = sess.run(loss, feed_dict=feed_dict)
 					print 'Step %d Test loss = %.3f (%.3f sec); Saved loss = %.3f' % (v_step, loss_value, duration, min_loss)
-"""
 		except Exception, e:
 			coord.request_stop(e)
 		finally:
