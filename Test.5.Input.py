@@ -79,7 +79,11 @@ class InputDataDecoder(Process):
 			self.coord.request_stop(e)
 
 
+def load_samples(FileName, sess, coord, queue_input_data, queue_input_label, enqueue_op, i, N)):
+	open_tabix_files = []
+
 def train():
+	# Try multiProcess
 	dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
 	BATCH_SIZE = FLAGS.batch_size
 	
@@ -93,41 +97,61 @@ def train():
 		dequeue_op = queue.dequeue()
 		# Get Tensors and labels for Training data.
 		data_batch, label_batch = tf.train.batch(dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size*10000)
-		#data_batch_reshape = tf.transpose(data_batch, [0,2,3,1])
-
-		#global_step = tf.Variable(0, trainable=False, name='global_step')
-
-		# Build a Graph that computes the logits predictions from the
-		# inference model.
-		#convnets = Models.ConvNets()
-		#logits = convnets.Inference(data_batch)
-
-		# Calculate loss.
-		#loss = convnets.loss(logits, label_batch)
-
-		# Build a Graph that trains the model with one batch of examples and
-		# updates the model parameters.
-		#train_op = convnets.Train(loss, global_step)
-		#summary = tf.summary.merge_all()
 
 		init = tf.global_variables_initializer()
-		#saver = tf.train.Saver()
 		sess = tf.Session()
-		#summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
+		sess.run(init)
+		
+		coord = tf.train.Coordinator()
+
+	
+		print "Lunch Process reading & decoding data from file."
+		jobs = []
+		N = 4
+		for i in range(N):
+			p = multiprocessing.Process(target=load_samples, args=(FLAGS.TestingData, sess, coord, queue_input_data, queue_input_label, enqueue_op, i, N))
+
+		print "Start Runing"
+		min_loss = 100
+		try:	
+			for step in xrange(max_steps):
+				start_time = time.time()
+				curr_data, curr_labels, NumQ = sess.run([data_batch, label_batch, queue.size()])
+				print "1 Batch Time Costs: %.3f, 1 Batch size: %d" % ((time.time() - start_time), len(curr_labels))
+				print "Num Ele in Queue:",NumQ
+		except Exception, e:
+			coord.request_stop(e)
+		finally:
+			sess.run(queue.close(cancel_pending_enqueues=True))
+			coord.request_stop()
+			coord.join(threads)
+
+def train_2():
+	dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
+	BATCH_SIZE = FLAGS.batch_size
+	
+	print "Start Building Graph"
+	with tf.Graph().as_default():
+		print "Define Training Data FIFOQueue"
+		queue_input_data = tf.placeholder(dtype, shape=[DEPTH * (HEIGHT+1) * WIDTH])
+		queue_input_label = tf.placeholder(tf.int32, shape=[])
+		queue = tf.FIFOQueue(capacity=FLAGS.batch_size*10000, dtypes=[dtype, tf.int32], shapes=[[DEPTH * (HEIGHT+1) * WIDTH], []])
+		enqueue_op = queue.enqueue([queue_input_data, queue_input_label])
+		dequeue_op = queue.dequeue()
+		# Get Tensors and labels for Training data.
+		data_batch, label_batch = tf.train.batch(dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size*10000)
+
+		init = tf.global_variables_initializer()
+		sess = tf.Session()
 		sess.run(init)
 		
 		coord = tf.train.Coordinator()
 
 	
 		print "Lunch Threads reading & decoding data from file."
-		# Manipulate Data Streaming
-		#enqueue_thread = threading.Thread(target=enqueueInputData, args=[sess, coord, TrainingReader, enqueue_op, queue_input_data, queue_input_label])
-		#enqueue_thread.isDaemon()
-		#enqueue_thread.start()
 		Producer = InputDataProducer(sess, coord, FLAGS.TrainingData)
 		Producer.isDaemon()
 		Producer.start()
-		#for i in range(FLAGS.numOfDecodingThreads):
 		for i in range(4):
 			Consumer = InputDataDecoder(sess, coord, enqueue_op, queue_input_data , queue_input_label, i)
 			#Consumer.isDaemon()
@@ -138,33 +162,10 @@ def train():
 		min_loss = 100
 		try:	
 			for step in xrange(max_steps):
-						
 				start_time = time.time()
-
 				curr_data, curr_labels, NumQ = sess.run([data_batch, label_batch, queue.size()])
-				
 				print "1 Batch Time Costs: %.3f, 1 Batch size: %d" % ((time.time() - start_time), len(curr_labels))
 				print "Num Ele in Queue:",NumQ
-				#_, loss_value, v_step = sess.run([train_op, loss, global_step])
-
-				#for label in curr_labels:
-				#	print label,
-				#print ''
-				
-				#if v_step % 10 == 0:
-					#print 'Step %d Training loss = %.3f (%.3f sec)' % (v_step, loss_value, duration)
-					#summary_str = sess.run(summary)
-					#summary_writer.add_summary(summary_str, v_step)
-					#summary_writer.flush()
-
-				#if (v_step) % 100 == 0 or (v_step) == max_steps:
-					#Save Model only if loss decreasing
-					#if loss_value < min_loss:
-					#	checkpoint_file = os.path.join(log_dir, 'model.ckpt')
-					#	saver.save(sess, checkpoint_file, global_step = global_step)
-					#	min_loss = loss_value
-					#loss_value = sess.run(loss, feed_dict=feed_dict)
-					#print 'Step %d Test loss = %.3f (%.3f sec); Saved loss = %.3f' % (v_step, loss_value, duration, min_loss)
 		except Exception, e:
 			coord.request_stop(e)
 		finally:

@@ -11,7 +11,7 @@ import Region
 import time
 import gzip
 import numpy as np
-from numba import vectorize
+import multiprocessing
 import tensorflow as tf
 
 # Basic model parameters.
