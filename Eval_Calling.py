@@ -14,9 +14,10 @@ import time
 import sys
 import os
 import numpy as np
-import tensorflow as tf
-import Window2Tensor
-from Input import *
+import Region
+#import tensorflow as tf
+#import Window2Tensor
+#from Input import *
 
 class Counts():
 	def __init__(self):
@@ -107,15 +108,15 @@ def Eval_Calling(TruthData,PredictedData):
 
 def main(argv=None):  # pylint: disable=unused-argument
 	# Get File Name of TraingData, ValidationData and Testdata
-	TrainingData = FLAGS.TrainingData
-	ValidationData = FLAGS.ValidationData
-	TestingData = FLAGS.TestingData
+	TrainingData = "Training.windows.txt.gz" #FLAGS.TrainingData
+	ValidationData = "windows_validation.txt.gz" #FLAGS.ValidationData
+	TestingData = "Testing.windows.txt.gz" #FLAGS.TestingData
 	TrainingPreticted = 'Calling_training.txt'
 	ValidationPreticted = 'Calling_validation.txt'
 	TestingPreticted = 'Calling_testing.txt'
 
-	#Eval_Calling(TrainingData, TrainingPreticted)
-	#Eval_Calling(ValidationData, ValidationPreticted)
+	Eval_Calling(TrainingData, TrainingPreticted)
+	Eval_Calling(ValidationData, ValidationPreticted)
 	Eval_Calling(TestingData, TestingPreticted)
 
 if __name__=='__main__':
