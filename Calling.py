@@ -31,44 +31,47 @@ def GetCheckPoint():
 	ckpt = prefix + '/' + ckpt
 	return ckpt
 
+def Form_record(chrom, start, ref, alt, gt, gl, fout):
+	string_gl = map(str, gl)
+	GL = ','.join(string_gl)
+	if gt == 0:
+		GT = '0/0'
+	elif gt == 1:
+		GT = '0/1'
+	elif gt == 2:
+		GT = '1/1'
+	fout.write('\t'.join([chrom, start, ".", ref, alt, max(gl), ".", ".", "GT:GL", GT+':'+GL]+'\n'))
+
 # dataset: Window2Tensor.Data_Reader object, read BATCH_SIZE samples a time.
-def do_eval(sess, normed_logits, prediction, tensor_pl, label_pl, dataset, Total, fout):
-	steps_per_epoch = Total // BATCH_SIZE
-	num_examples = steps_per_epoch * BATCH_SIZE
-	for step in xrange(steps_per_epoch):
-		tensor, label = dataset.read_batch()
-		feed_dict = {tensor_pl: tensor, label_pl: label}
-		GL, GT = sess.run([normed_logits, prediction], feed_dict = feed_dict)
-		for gt, gl in zip(GT, GL):
-			#print gt, gl
-			gl = map(str, gl)
-			fout.write(str(gt)+'\t'+','.join(gl)+'\n')
+def do_eval(sess, normed_logits, prediction, DataReader, tensor_pl, fout):
+	counter = 0
+	s_time = time.time()
+	while 1:
+		tensor, chroms, starts, refs, alts = DataReader.read2()
+		GL, GT = sess.run([normed_logits, prediction], feed_dict = {tensor_pl: tensor})
+		for chrom, start, ref, alt, gt, gl in zip(chroms, starts, refs, alts, GT, GL):
+			Form_record(chrom, start, ref, alt, gt, gl, fout)
+			#gl = map(str, gl)
+			#fout.write(str(gt)+'\t'+','.join(gl)+'\n')
 
+		if len(label) < BATCH_SIZE:
+			return
+		if counter % 10 == 0:
+			duration = time.time()-s_time()
+			print "Read %d batches, %d records, used %.3fs per batch"%(counter,counter*BATCH_SIZE,duration)
+			s_time = time.time()
+		counter += 1
 
-
-def Calling(TrainingData, ValidationData, TestingData, ModelCKPT):
-	Num_training = 3522409 
-	Num_validation = 86504
-	Num_testing = 186468
+def Calling(Dataset, OutName, ModelCKPT):
 	#with tf.Graph().as_default() as g:
 	with tf.device('/gpu:7'):
 		#TrainingData = gzip.open(TrainingData,'rb')
-		#ValidationData = gzip.open(ValidationData,'rb')
-		TestingData = gzip.open(TestingData,'rb')
-
+		Data = gzip.open(Dataset,'rb')
+		DataReader = RecordReader(Data)
 		#fout_training = open('Calling_training.txt','wb')
-		#fout_validation = open('Calling_validation.txt','wb')
-		fout_testing = open('A_Calling_testing.txt','wb')
+		fout = open(OutName,'wb')
 
-		#dataset_training = Window2Tensor.Data_Reader(TrainingData, batch_size=BATCH_SIZE)
-		#dataset_validation = Window2Tensor.Data_Reader(ValidationData, batch_size=BATCH_SIZE)
-		dataset_testing = Window2Tensor.Data_Reader(TestingData, batch_size=BATCH_SIZE)
-		TensorPL, LabelPL = Window2Tensor.placeholder_inputs(BATCH_SIZE)
-
-		#TrainingTensor, TrainingLabel = dataset_training.read_batch()
-		#ValidationTensor, ValidationLabel = dataset_validation.read_batch()
-		#TestingTensor, TestingLabel = dataset_testing.read_batch()
-
+		TensorPL = tf.placeholder(tf.float32, shape=(BATCH_SIZE,WIDTH*(HEIGHT+1)*3))
 
 		convnets = Models.ConvNets()
 		logits = convnets.Inference(TensorPL)
@@ -76,24 +79,94 @@ def Calling(TrainingData, ValidationData, TestingData, ModelCKPT):
 		prediction=tf.argmax(normed_logits,1)
 
 		saver = tf.train.Saver() 
-
 		config = tf.ConfigProto(allow_soft_placement = True)
 		with tf.Session(config = config) as sess:
 			saver.restore(sess, ModelCKPT)
 			
-			#print TrainingLabel
-			#print sess.run(logits,feed_dict = {TensorPL:TrainingTensor})
-			
-			#print "Evaluating On Training Sample"
-			#do_eval(sess, normed_logits, prediction, TensorPL, LabelPL, dataset_training, Num_training, fout_training)
-			#print "Evaluating On Vlidation Sample"
-			#do_eval(sess, normed_logits, prediction, TensorPL, LabelPL, dataset_validation, Num_validation, fout_validation)
-			print "Evaluating On Testing Sample"
-			do_eval(sess, normed_logits, prediction, TensorPL, LabelPL, dataset_testing, Num_testing, fout_testing)
+			print "Evaluating On",Dataset
+			fout.write('\t'.join(["#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", "SAMPLE"]+'\n'))
+			do_eval(sess, normed_logits, prediction, DataReader,TensorPL, fout)
+		fout.close()
 
-		fout_training.close()
-		fout_validation.close()
-		fout_testing.close()
+def Calling_2(Dataset, ModelCKPT):
+	dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
+    BATCH_SIZE = FLAGS.batch_size
+    DatasetHand=gzip.open(Dataset,'rb')
+    DataReader = RecordReader(DatasetHand)
+
+    with tf.Graph().as_default():
+        queue_input_data = tf.placeholder(dtype, shape=[DEPTH * (HEIGHT+1) * WIDTH])
+        queue_input_label = tf.placeholder(tf.int32, shape=[])
+        queue = tf.RandomShuffleQueue(capacity=FLAGS.batch_size*10, dtypes=[dtype, tf.int32], shapes=[[DEPTH * (HEIGHT+1) * WIDTH], []], min_after_dequeue=FLAGS.batch_size, name='RandomShuffleQueue')
+        enqueue_op = queue.enqueue([queue_input_data, queue_input_label])
+        dequeue_op = queue.dequeue()
+        # Get Tensors and labels for Training data.
+        data_batch, label_batch = tf.train.batch(dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size*4)
+        #data_batch_reshape = tf.transpose(data_batch, [0,2,3,1])
+
+        global_step = tf.Variable(0, trainable=False, name='global_step')
+
+        # Build a Graph that computes the logits predictions from the
+        # inference model.
+        convnets = Models.ConvNets()
+        logits = convnets.Inference(data_batch)
+
+        # Calculate loss.
+        loss = convnets.loss(logits, label_batch)
+
+        # Build a Graph that trains the model with one batch of examples and
+        # updates the model parameters.
+        train_op = convnets.Train(loss, global_step)
+        summary = tf.summary.merge_all()
+
+        init = tf.global_variables_initializer()
+        saver = tf.train.Saver()
+        sess = tf.Session()
+        summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
+        sess.run(init)
+
+        coord = tf.train.Coordinator()
+
+
+        enqueue_thread = Thread(target=enqueueInputData, args=[sess, coord, TrainingReader, enqueue_op, queue_input_data, queue_input_label])
+        enqueue_thread.isDaemon()
+        enqueue_thread.start()
+
+        threads = tf.train.start_queue_runners(coord=coord, sess=sess)
+
+        min_loss = 100
+        try:	
+            for step in xrange(max_steps):
+                start_time = time.time()
+                #_, loss_value, v_step = sess.run([train_op, loss, global_step])
+                loss_value, _, v_step = sess.run([loss, train_op, global_step])
+                #_, loss_value, v_step, queue_size = sess.run([train_op, loss, global_step, queue.size()])
+                duration = time.time() - start_time
+                if (v_step) % 100 == 0 or (v_step) == max_steps:
+                    summary_str = sess.run(summary)
+                    summary_writer.add_summary(summary_str, v_step)
+                    summary_writer.flush()
+                    #Save Model only if loss decreasing
+                    if loss_value < min_loss:
+                        checkpoint_file = os.path.join(log_dir, 'model.ckpt')
+                        saver.save(sess, checkpoint_file, global_step = global_step)
+                        min_loss = loss_value
+                        print "Write A CheckPoint at %d"%(v_step)
+                    #loss_value = sess.run(loss, feed_dict=feed_dict)
+                    print 'Step %d Training loss = %.3f (%.3f sec); Saved loss = %.3f' % (v_step, loss_value, duration, min_loss)
+                elif v_step % 10 == 0: 
+                    print 'Step %d Training loss = %.3f (%.3f sec)' % (v_step, loss_value, duration)
+                    #print "Queue Size", queue_size 
+                    summary_str = sess.run(summary)
+                    summary_writer.add_summary(summary_str, v_step)
+                    summary_writer.flush()
+        except Exception, e:
+            coord.request_stop(e)
+        finally:
+            sess.run(queue.close(cancel_pending_enqueues=True))
+            coord.request_stop()
+            coord.join(threads)
+
 
 def main(argv=None):  # pylint: disable=unused-argument
 	if tf.gfile.Exists(FLAGS.eval_dir):
@@ -102,13 +175,12 @@ def main(argv=None):  # pylint: disable=unused-argument
 	
 	# Get File Name of TraingData, ValidationData and Testdata
 	TrainingData = FLAGS.TrainingData
-	ValidationData = FLAGS.ValidationData
 	TestingData = FLAGS.TestingData
 	# Get The Saved Model
 	# ModelCKPT = FLAGS.checkpoint_dir+'/model.ckpt-4599.meta'
 
 	ModelCKPT = GetCheckPoint()
-	Calling(TrainingData, ValidationData, TestingData, ModelCKPT)
+	Calling(TrainingData, TestingData, ModelCKPT)
 
 
 

@@ -98,7 +98,7 @@ class window_tensor():
         #p2 = np.array(map(lambda x: qual2code(x), self.Qual), dtype = npdtype)
         #p3 = np.fromiter(self.Strand, dtype = npdtype)
         #self.res = np.concatenate([p1, p2, p3])
-        self.res = decodeline.DecodeLine(self.window, WIDTH, HEIGHT) 
+        self.res = self.chrom, self.start, self.ref, self.alt, decodeline.DecodeLine(self.window, WIDTH, HEIGHT) 
         #return np.array(res)
 
 class RecordReader():
@@ -115,6 +115,20 @@ class RecordReader():
         #return record.res, record.label
         return decodeline.DecodeRecord(line, WIDTH, HEIGHT)
         #return [0]*30603, 0
+    def read2(self):
+        tensor, chroms, starts, refs, alts = [],[],[],[],[]
+        for i in xrange(FLAGS.batch_size):
+            line = self.hand.readline()
+            if line == '':
+                break
+            one_tensor, chrom, pos, ref, alt = decodeline.DecodeRecord2(line, WIDTH, HEIGHT)
+            tensor.append(one_tensor)
+            chroms.append(chrom)
+            starts.append(pos)
+            refs.append(ref)
+            alts.append(alt)
+            
+        return tensor, chroms, starts, refs, alts
     def read_without_processing(self):
         line = self.hand.readline()
         if line == '':
