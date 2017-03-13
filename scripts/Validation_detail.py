@@ -1,4 +1,4 @@
-#!/home/local/users/jw/bin/python2.7
+#!/home/local/users/jw/anaconda2/bin/python
 #Author: jywang	explorerwjy@gmail.com
 
 #========================================================================================================
@@ -16,16 +16,18 @@
 # 3. Genotype True  : Pos in Truth and allele1-allele2 also consistent with Truth
 #========================================================================================================
 
-from optparse import OptionParser
+import argparse
 import gzip
 import re
 
 def GetOptions():
-	parser = OptionParser()
-	parser.add_option('-t','--truth',dest = 'Truth', metavar = 'Truth', help = 'VCF file contains All Positive variants')
-	parser.add_option('-c','--candidate',dest = 'Candidate', metavar = 'Candidate', help = 'VCF file contains Candidate variants')
 	(options,args) = parser.parse_args()
-	return options.Truth,options.Candidate
+	parser = argparse.ArgumentParser()
+	parser.add_argument('-p','--positive', help = 'VCF file contains Positive variants')
+	parser.add_argument('-c','--candidate', help = 'VCF file contains Candidate variants')
+	parser.add_argument('-m','--mode',type=str, choices=['train','test','all'], help='mode for run. train will load chr1-19 from positive vcf. test will load chr20-22 from positive vcf. all will load all variants from positive vcf')
+	args = parser.parse_args()
+	return args.positive,options.candidate,options.mode
 
 def GetHand(filename):
 	if filename.endswith('.vcf.gz'):
@@ -103,26 +105,33 @@ def var2kv(l):
 	v = [ alleles[gt[0]], alleles[gt[1]] ]
 	return k, v
 
-def Classify(l, True_dict, counts):
+def Classify(l, True_dict, counts, TP_hand, FP_hand, FN_hand):
 	k, v = var2kv(l)
 	if k in True_dict:
 		if v[0] == True_dict[k][0] and v[1] == True_dict[k][1] and v[0] == v[1]: #Homozygous Alt
 			counts.two_two += 1
+			TP_hand.write(l)
 		elif v[0] == True_dict[k][0] and v[1] == True_dict[k][1] and v[0] != v[1]: #Hetrozygous
 			counts.one_one += 1
+			TP_hand.write(l)
 		elif v[1] == True_dict[k][1] and v[0] != True_dict[k][0] and True_dict[k][0] == True_dict[k][1]: # 0/1 - 1/1
 			counts.one_two += 1
+			FP_hand.write(l)
 		elif v[0] == v[1] and v[1] == True_dict[k][1] and True_dict[k][0] != True_dict[k][1]: # 1/1 - 0/1
 			counts.two_one += 1
+			FP_hand.write(l)
 		True_dict.pop(k)
 	else:
 		if v[0] == v[1]:
 			counts.two_zero += 1
+			FP_hand.write(l)
 		elif v[0] != v[1]:
 			counts.one_zero += 1
+			FP_hand.write(l)
 
-def GetFNs(counts, True_dict):
+def GetFNs(counts, True_dict, FN_hand):
 	for k,v in True_dict.items():
+		FN_hand.write(k+'\t'+'\t'.join(v)+'\n')
 		if v[0] == v[1]:
 			counts.zero_two += 1
 		elif v[0] != v[1]:
@@ -143,12 +152,16 @@ def GetTruthDict(PositiveVCF):
 				res[k] = v
 			else:
 				#raise KeyError("Multiple record in %s has same position: %s"%(vcf,p))
-				print "Multiple record in %s has same position: %s"%(vcf,p)
+				print "Multiple record in %s has same position: %s"%(PositiveVCF.split('/')[-1],k)
 	return res
 
 def Evaluation(PositiveVCF,CandidateVCF):
 	True_dict = GetTruthDict(PositiveVCF)
 	fin = GetHand(CandidateVCF)
+	basename = CandidateVCF.split('/')[-1].rstrip('.gz').rstrip('.vcf')
+	TP_hand = open(basename+'_TP.vcf','wb')
+	FP_hand = open(basename+'_FP.vcf','wb')
+	FN_hand = open(basename+'_FN.vcf','wb')
 	counts = Counts()
 	for l in fin:
 		if l.startswith('##'):
@@ -157,10 +170,10 @@ def Evaluation(PositiveVCF,CandidateVCF):
 			header = l
 		else:
 			try:
-				Classify(l, True_dict, counts)
+				Classify(l, True_dict, counts, TP_hand, FP_hand, FN_hand)
 			except:
 				print l
-	GetFNs(counts,True_dict)
+	GetFNs(counts,True_dict, FN_hand)
 	counts.Get_POS_Eval()
 	counts.Get_Genotype_Eval()
 	counts.show()
