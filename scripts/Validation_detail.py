@@ -1,4 +1,4 @@
-#!/home/local/users/jw/anaconda2/bin/python
+#!/home/yufengshen/anaconda2/bin/python
 #Author: jywang	explorerwjy@gmail.com
 
 #========================================================================================================
@@ -21,13 +21,12 @@ import gzip
 import re
 
 def GetOptions():
-	(options,args) = parser.parse_args()
 	parser = argparse.ArgumentParser()
 	parser.add_argument('-p','--positive', help = 'VCF file contains Positive variants')
 	parser.add_argument('-c','--candidate', help = 'VCF file contains Candidate variants')
 	parser.add_argument('-m','--mode',type=str, choices=['train','test','all'], help='mode for run. train will load chr1-19 from positive vcf. test will load chr20-22 from positive vcf. all will load all variants from positive vcf')
 	args = parser.parse_args()
-	return args.positive,options.candidate,options.mode
+	return args.positive,args.candidate,args.mode
 
 def GetHand(filename):
 	if filename.endswith('.vcf.gz'):
@@ -50,17 +49,20 @@ class Counts():
 		self.two_one = 0
 		self.two_two = 0
 	def Get_POS_Eval(self):
-		self.POS_TP = self.one_one + self.one_two + self.two_one + self.two_two
+                self.Positive = self.one_one + self.one_two + self.two_one + self.two_two
+                self.POS_TP = self.one_one + self.one_two + self.two_one + self.two_two
 		self.POS_FP = self.one_zero + self.two_zero
 		self.POS_FN = self.zero_one + self.zero_two
-		self.POS_SE = float(self.POS_TP)/(self.POS_TP + self.POS_FN)
+		#self.POS_SE = float(self.POS_TP)/(self.POS_TP + self.POS_FN)
+		self.POS_SE = float(self.POS_TP)/(self.Positive)
 		self.POS_PPV = float(self.POS_TP)/(self.POS_TP+self.POS_FP)
 		self.POS_F1 = float(2*self.POS_TP)/(2*self.POS_TP + self.POS_FN + self.POS_FP)
 	def Get_Genotype_Eval(self):
 		self.GT_TP = self.one_one + self.two_two
 		self.GT_FP = self.one_two + self.two_one + self.one_zero + self.two_zero
 		self.GT_FN = self.zero_one + self.zero_two
-		self.GT_SE = float(self.GT_TP)/(self.GT_TP + self.GT_FN)
+		#self.GT_SE = float(self.GT_TP)/(self.GT_TP + self.GT_FN)
+		self.GT_SE = float(self.GT_TP)/(self.Positive)
 		self.GT_PPV = float(self.GT_TP)/(self.GT_TP+self.GT_FP)
 		self.GT_F1 = float(2*self.GT_TP)/(2*self.GT_TP + self.GT_FN + self.GT_FP)
 	def show(self):
@@ -138,7 +140,7 @@ def GetFNs(counts, True_dict, FN_hand):
 			counts.zero_one += 1
 
 
-def GetTruthDict(PositiveVCF):
+def GetTruthDict_All(PositiveVCF):
 	res = {}
 	fin = GetHand(PositiveVCF)
 	for l in fin:
@@ -147,7 +149,7 @@ def GetTruthDict(PositiveVCF):
 		elif l.startswith("#"):
 			header = l
 		else:
-			k, v = var2kv(l)
+                        k, v = var2kv(l)
 			if k not in res:
 				res[k] = v
 			else:
@@ -155,8 +157,51 @@ def GetTruthDict(PositiveVCF):
 				print "Multiple record in %s has same position: %s"%(PositiveVCF.split('/')[-1],k)
 	return res
 
-def Evaluation(PositiveVCF,CandidateVCF):
-	True_dict = GetTruthDict(PositiveVCF)
+def GetTruthDict_Test(PositiveVCF):
+	res = {}
+	fin = GetHand(PositiveVCF)
+	for l in fin:
+		if l.startswith('##'):
+			continue
+		elif l.startswith("#"):
+			header = l
+		else:   
+                        if l.split('\t')[0] in ['20','21','22']:
+
+                                k, v = var2kv(l)
+			        if k not in res:
+				        res[k] = v
+			        else:
+				        #raise KeyError("Multiple record in %s has same position: %s"%(vcf,p))
+				        print "Multiple record in %s has same position: %s"%(PositiveVCF.split('/')[-1],k)
+	return res
+def GetTruthDict_Train(PositiveVCF):
+	res = {}
+	fin = GetHand(PositiveVCF)
+	for l in fin:
+		if l.startswith('##'):
+			continue
+		elif l.startswith("#"):
+			header = l
+		else:   
+                        if l.split('\t')[0] not in ['20','21','22']:
+
+                                k, v = var2kv(l)
+			        if k not in res:
+				        res[k] = v
+			        else:
+				        #raise KeyError("Multiple record in %s has same position: %s"%(vcf,p))
+				        print "Multiple record in %s has same position: %s"%(PositiveVCF.split('/')[-1],k)
+	return res
+
+    
+def Evaluation(PositiveVCF,CandidateVCF,mode):
+        if mode == 'all':
+                True_dict = GetTruthDict_All(PositiveVCF)
+        elif mode == 'test':
+                True_dict = GetTruthDict_Test(PositiveVCF)
+        elif mode == 'train':
+                True_dict = GetTruthDict_Train(PositiveVCF)
 	fin = GetHand(CandidateVCF)
 	basename = CandidateVCF.split('/')[-1].rstrip('.gz').rstrip('.vcf')
 	TP_hand = open(basename+'_TP.vcf','wb')
@@ -179,8 +224,8 @@ def Evaluation(PositiveVCF,CandidateVCF):
 	counts.show()
 
 def main():
-	PositiveVCF,CandidateVCF = GetOptions()
-	Evaluation(PositiveVCF,CandidateVCF)
+	PositiveVCF,CandidateVCF,Mode = GetOptions()
+	Evaluation(PositiveVCF,CandidateVCF,Mode)
 	
 
 if __name__=='__main__':
