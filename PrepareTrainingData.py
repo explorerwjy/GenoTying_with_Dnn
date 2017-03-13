@@ -1,4 +1,4 @@
-#!/home/local/users/jw/anaconda2/bin/python
+#!/home/yufengshen/anaconda2/bin/python
 #Author: jywang	explorerwjy@gmail.com
 
 #========================================================================================================
@@ -24,7 +24,8 @@ sys.stdout = sys.stderr
 
 def GetOptions():
 	parser = argparse.ArgumentParser()
-	parser.add_argument('-r','--ref',type=str, default='"/home/local/users/jw/resources/references/b37/hg19.fasta"' ,help = 'Reference Genome')
+	#parser.add_argument('-r','--ref',type=str, default='"/home/local/users/jw/resources/references/b37/hg19.fasta"' ,help = 'Reference Genome')
+	parser.add_argument('-r','--ref',type=str, default='/home/yufengshen/resources/reference_genomes/hg19/hg19.fasta' ,help = 'Reference Genome')
 	parser.add_argument('-b','--bam',type=str, help = 'Aligned bam file')
 	parser.add_argument('-v','--vcf',type=str, help = 'Candidate variants to scan')
 	parser.add_argument('-m','--mode',default=1, choices=[1,2], help = 'Mode. 1.VarScan 2.OneVar')
@@ -49,7 +50,7 @@ def Get_Positives(T_vcf):
 			if k not in res:
 				res[k] = v
 			else:
-				print "Multiple record in %s has same position: %s"%(vcf,p)
+				print "Multiple record in %s has same position: %s"%(T_vcf,p)
 	return res
 
 # Scan a candidate vcf file, generate window for the variant and mark genotype according to GIAB positives
