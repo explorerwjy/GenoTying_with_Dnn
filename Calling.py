@@ -1,4 +1,4 @@
-#!/home/local/users/jw/anaconda2/bin/python
+#!/home/yufengshen/anaconda2/bin/python
 #Author: jywang explorerwjy@gmail.com
 
 #========================================================================================================
@@ -13,10 +13,9 @@ import sys
 import os
 import numpy as np
 import tensorflow as tf
-import Window2Tensor
 from Input import *
 import Models
-
+sys.stdout = sys.stderr
 BATCH_SIZE = FLAGS.batch_size
 
 def GetCheckPoint():
@@ -40,31 +39,32 @@ def Form_record(chrom, start, ref, alt, gt, gl, fout):
 		GT = '0/1'
 	elif gt == 2:
 		GT = '1/1'
-	fout.write('\t'.join([chrom, start, ".", ref, alt, max(gl), ".", ".", "GT:GL", GT+':'+GL]+'\n'))
+	fout.write('\t'.join([chrom, start, ".", ref, alt, str(max(gl)), ".", ".", "GT:GL", GT+':'+GL])+'\n')
 
 # dataset: Window2Tensor.Data_Reader object, read BATCH_SIZE samples a time.
 def do_eval(sess, normed_logits, prediction, DataReader, tensor_pl, fout):
 	counter = 0
 	s_time = time.time()
 	while 1:
-		tensor, chroms, starts, refs, alts = DataReader.read2()
+		tensor, chroms, starts, refs, alts = DataReader.read3()
 		GL, GT = sess.run([normed_logits, prediction], feed_dict = {tensor_pl: tensor})
 		for chrom, start, ref, alt, gt, gl in zip(chroms, starts, refs, alts, GT, GL):
 			Form_record(chrom, start, ref, alt, gt, gl, fout)
 			#gl = map(str, gl)
 			#fout.write(str(gt)+'\t'+','.join(gl)+'\n')
 
-		if len(label) < BATCH_SIZE:
+		if len(chroms) < BATCH_SIZE:
 			return
 		if counter % 10 == 0:
-			duration = time.time()-s_time()
-			print "Read %d batches, %d records, used %.3fs per batch"%(counter,counter*BATCH_SIZE,duration)
+			duration = time.time() - s_time
+			print "Read %d batches, %d records, used %.3fs 10 batch"%(counter,counter*BATCH_SIZE,duration)
 			s_time = time.time()
 		counter += 1
 
 def Calling(Dataset, OutName, ModelCKPT):
+        s_time = time.time()
 	#with tf.Graph().as_default() as g:
-	with tf.device('/gpu:7'):
+	with tf.device('/gpu:6'):
 		#TrainingData = gzip.open(TrainingData,'rb')
 		Data = gzip.open(Dataset,'rb')
 		DataReader = RecordReader(Data)
@@ -84,12 +84,13 @@ def Calling(Dataset, OutName, ModelCKPT):
 			saver.restore(sess, ModelCKPT)
 			
 			print "Evaluating On",Dataset
-			fout.write('\t'.join(["#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", "SAMPLE"]+'\n'))
+			fout.write('\t'.join(["#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", "SAMPLE"])+'\n')
 			do_eval(sess, normed_logits, prediction, DataReader,TensorPL, fout)
 		fout.close()
+        print 'spend %.3fs on Calling %s'%(time.time() - s_time, OutName)
 
 def Calling_2(Dataset, ModelCKPT):
-	dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
+    dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
     BATCH_SIZE = FLAGS.batch_size
     DatasetHand=gzip.open(Dataset,'rb')
     DataReader = RecordReader(DatasetHand)
@@ -180,8 +181,16 @@ def main(argv=None):  # pylint: disable=unused-argument
 	# ModelCKPT = FLAGS.checkpoint_dir+'/model.ckpt-4599.meta'
 
 	ModelCKPT = GetCheckPoint()
-	Calling(TrainingData, TestingData, ModelCKPT)
-
+        try:
+                print "Calling on",TestingData
+                Calling(TestingData,"Testing3.vcf", ModelCKPT)
+        except Exception as e:
+                print e
+        try:
+                print "Calling on",TrainingData 
+	        #Calling(TrainingData,"Training.vcf", ModelCKPT)
+        except Exception as e:
+                print e
 
 
 if __name__ == '__main__':

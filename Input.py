@@ -39,13 +39,13 @@ FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('eval_dir', './tmp/TensorCaller_eval',
         """Directory where to write event logs.""")
 
-tf.app.flags.DEFINE_string('train_dir', './tmp/TensorCaller_train_4',
+tf.app.flags.DEFINE_string('train_dir', './tmp/TensorCaller_train_2',
         """Directory where to write event logs and checkpoint""")
 
-tf.app.flags.DEFINE_string('checkpoint_dir', './tmp/TensorCaller_train_4',
+tf.app.flags.DEFINE_string('checkpoint_dir', './tmp/TensorCaller_train_2',
         """Directory where to read model checkpoints.""")
 
-tf.app.flags.DEFINE_string('log_dir', './tmp/TensorCaller_train_4/log',
+tf.app.flags.DEFINE_string('log_dir', './tmp/TensorCaller_train_2/log',
         """Directory where to write event logs.""")
 
 tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
@@ -54,7 +54,7 @@ tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
 tf.app.flags.DEFINE_boolean('run_once', False,
         """Whether to run eval only once.""")
 
-tf.app.flags.DEFINE_integer('batch_size', 128,
+tf.app.flags.DEFINE_integer('batch_size', 64,
         """Number of WindowTensor to process in a batch.""")
 
 #tf.app.flags.DEFINE_integer('test_batch_size', 64,
@@ -129,6 +129,21 @@ class RecordReader():
             alts.append(alt)
             
         return tensor, chroms, starts, refs, alts
+   
+    def read3(self):
+        tensor, chroms, starts, refs, alts = [],[],[],[],[]
+        for i in xrange(FLAGS.batch_size):
+            line = self.hand.readline()
+            if line == '':
+                break
+            one_tensor, chrom, pos, ref, alt = decodeline.DecodeRecord3(line, WIDTH, HEIGHT)
+            tensor.append(one_tensor)
+            chroms.append(chrom)
+            starts.append(pos)
+            refs.append(ref)
+            alts.append(alt)
+        return tensor, chroms, starts, refs, alts
+   
     def read_without_processing(self):
         line = self.hand.readline()
         if line == '':
