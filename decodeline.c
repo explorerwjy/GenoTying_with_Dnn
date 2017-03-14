@@ -664,6 +664,19 @@ static CYTHON_INLINE Py_UCS4 __Pyx_PyUnicode_AsPy_UCS4(PyObject*);
 #endif
 static long __Pyx__PyObject_Ord(PyObject* c);
 
+/* pyobject_as_double.proto */
+static double __Pyx__PyObject_AsDouble(PyObject* obj);
+#if CYTHON_COMPILING_IN_PYPY
+#define __Pyx_PyObject_AsDouble(obj)\
+(likely(PyFloat_CheckExact(obj)) ? PyFloat_AS_DOUBLE(obj) :\
+ likely(PyInt_CheckExact(obj)) ?\
+ PyFloat_AsDouble(obj) : __Pyx__PyObject_AsDouble(obj))
+#else
+#define __Pyx_PyObject_AsDouble(obj)\
+((likely(PyFloat_CheckExact(obj))) ?\
+ PyFloat_AS_DOUBLE(obj) : __Pyx__PyObject_AsDouble(obj))
+#endif
+
 /* CodeObjectCache.proto */
 typedef struct {
     PyCodeObject* code_object;
@@ -728,12 +741,18 @@ static const char __pyx_k_window[] = "window";
 static const char __pyx_k_Alignment[] = "Alignment";
 static const char __pyx_k_DecodeLine[] = "DecodeLine";
 static const char __pyx_k_decodeline[] = "decodeline";
+static const char __pyx_k_DecodeLine2[] = "DecodeLine2";
 static const char __pyx_k_DecodeRecord[] = "DecodeRecord";
+static const char __pyx_k_DecodeRecord2[] = "DecodeRecord2";
+static const char __pyx_k_DecodeRecord3[] = "DecodeRecord3";
 static const char __pyx_k_home_yufengshen_TensorFlowCalle[] = "/home/yufengshen/TensorFlowCaller/TensorCaller/decodeline.pyx";
 static PyObject *__pyx_kp_s_;
 static PyObject *__pyx_n_s_Alignment;
 static PyObject *__pyx_n_s_DecodeLine;
+static PyObject *__pyx_n_s_DecodeLine2;
 static PyObject *__pyx_n_s_DecodeRecord;
+static PyObject *__pyx_n_s_DecodeRecord2;
+static PyObject *__pyx_n_s_DecodeRecord3;
 static PyObject *__pyx_n_s_HEIGHT;
 static PyObject *__pyx_n_s_Qual;
 static PyObject *__pyx_n_s_Strand;
@@ -757,15 +776,26 @@ static PyObject *__pyx_n_s_test;
 static PyObject *__pyx_n_s_window;
 static PyObject *__pyx_n_s_x;
 static PyObject *__pyx_pf_10decodeline_DecodeRecord(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_line, PyObject *__pyx_v_WIDTH, PyObject *__pyx_v_HEIGHT); /* proto */
-static PyObject *__pyx_pf_10decodeline_2DecodeLine(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_window, PyObject *__pyx_v_WIDTH, PyObject *__pyx_v_HEIGHT); /* proto */
+static PyObject *__pyx_pf_10decodeline_2DecodeRecord2(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_line, PyObject *__pyx_v_WIDTH, PyObject *__pyx_v_HEIGHT); /* proto */
+static PyObject *__pyx_pf_10decodeline_4DecodeRecord3(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_line, PyObject *__pyx_v_WIDTH, PyObject *__pyx_v_HEIGHT); /* proto */
+static PyObject *__pyx_pf_10decodeline_6DecodeLine(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_window, PyObject *__pyx_v_WIDTH, PyObject *__pyx_v_HEIGHT); /* proto */
+static PyObject *__pyx_pf_10decodeline_8DecodeLine2(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_window, PyObject *__pyx_v_WIDTH, PyObject *__pyx_v_HEIGHT); /* proto */
 static PyObject *__pyx_int_1;
 static PyObject *__pyx_int_2;
 static PyObject *__pyx_int_3;
 static PyObject *__pyx_tuple__2;
 static PyObject *__pyx_tuple__3;
+static PyObject *__pyx_tuple__4;
 static PyObject *__pyx_tuple__5;
-static PyObject *__pyx_codeobj__4;
+static PyObject *__pyx_tuple__7;
+static PyObject *__pyx_tuple__9;
+static PyObject *__pyx_tuple__11;
+static PyObject *__pyx_tuple__13;
 static PyObject *__pyx_codeobj__6;
+static PyObject *__pyx_codeobj__8;
+static PyObject *__pyx_codeobj__10;
+static PyObject *__pyx_codeobj__12;
+static PyObject *__pyx_codeobj__14;
 
 /* "decodeline.pyx":1
  * def DecodeRecord(line, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
@@ -1250,7 +1280,7 @@ static PyObject *__pyx_pf_10decodeline_DecodeRecord(CYTHON_UNUSED PyObject *__py
  *     p3 = [float(x) for x in Strand]
  *     return p1 + p2 + p3, label             # <<<<<<<<<<<<<<
  * 
- * def DecodeLine(window, WIDTH, HEIGHT):
+ * def DecodeRecord2(line, WIDTH, HEIGHT):
  */
   __Pyx_XDECREF(__pyx_r);
   __pyx_t_8 = PyNumber_Add(__pyx_v_p1, __pyx_v_p2); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 9, __pyx_L1_error)
@@ -1312,15 +1342,1130 @@ static PyObject *__pyx_pf_10decodeline_DecodeRecord(CYTHON_UNUSED PyObject *__py
 /* "decodeline.pyx":11
  *     return p1 + p2 + p3, label
  * 
- * def DecodeLine(window, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
- * 	#chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ * def DecodeRecord2(line, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
+ *     chrom, start, end, ref, alt, label, window = line.strip().split('\t')
  *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
  */
 
 /* Python wrapper */
-static PyObject *__pyx_pw_10decodeline_3DecodeLine(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
-static PyMethodDef __pyx_mdef_10decodeline_3DecodeLine = {"DecodeLine", (PyCFunction)__pyx_pw_10decodeline_3DecodeLine, METH_VARARGS|METH_KEYWORDS, 0};
-static PyObject *__pyx_pw_10decodeline_3DecodeLine(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+static PyObject *__pyx_pw_10decodeline_3DecodeRecord2(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_10decodeline_3DecodeRecord2 = {"DecodeRecord2", (PyCFunction)__pyx_pw_10decodeline_3DecodeRecord2, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_10decodeline_3DecodeRecord2(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  PyObject *__pyx_v_line = 0;
+  PyObject *__pyx_v_WIDTH = 0;
+  PyObject *__pyx_v_HEIGHT = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("DecodeRecord2 (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_line,&__pyx_n_s_WIDTH,&__pyx_n_s_HEIGHT,0};
+    PyObject* values[3] = {0,0,0};
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_line)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        case  1:
+        if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_WIDTH)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("DecodeRecord2", 1, 3, 3, 1); __PYX_ERR(0, 11, __pyx_L3_error)
+        }
+        case  2:
+        if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_HEIGHT)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("DecodeRecord2", 1, 3, 3, 2); __PYX_ERR(0, 11, __pyx_L3_error)
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "DecodeRecord2") < 0)) __PYX_ERR(0, 11, __pyx_L3_error)
+      }
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+      values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+    }
+    __pyx_v_line = values[0];
+    __pyx_v_WIDTH = values[1];
+    __pyx_v_HEIGHT = values[2];
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("DecodeRecord2", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 11, __pyx_L3_error)
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("decodeline.DecodeRecord2", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  __pyx_r = __pyx_pf_10decodeline_2DecodeRecord2(__pyx_self, __pyx_v_line, __pyx_v_WIDTH, __pyx_v_HEIGHT);
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_10decodeline_2DecodeRecord2(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_line, PyObject *__pyx_v_WIDTH, PyObject *__pyx_v_HEIGHT) {
+  PyObject *__pyx_v_chrom = NULL;
+  PyObject *__pyx_v_start = NULL;
+  CYTHON_UNUSED PyObject *__pyx_v_end = NULL;
+  PyObject *__pyx_v_ref = NULL;
+  PyObject *__pyx_v_alt = NULL;
+  CYTHON_UNUSED PyObject *__pyx_v_label = NULL;
+  PyObject *__pyx_v_window = NULL;
+  PyObject *__pyx_v_Alignment = NULL;
+  PyObject *__pyx_v_Qual = NULL;
+  PyObject *__pyx_v_Strand = NULL;
+  PyObject *__pyx_v_p1 = NULL;
+  PyObject *__pyx_v_p2 = NULL;
+  PyObject *__pyx_v_p3 = NULL;
+  PyObject *__pyx_v_x = NULL;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  PyObject *__pyx_t_5 = NULL;
+  PyObject *__pyx_t_6 = NULL;
+  PyObject *__pyx_t_7 = NULL;
+  PyObject *__pyx_t_8 = NULL;
+  PyObject *__pyx_t_9 = NULL;
+  PyObject *(*__pyx_t_10)(PyObject *);
+  Py_ssize_t __pyx_t_11;
+  PyObject *(*__pyx_t_12)(PyObject *);
+  long __pyx_t_13;
+  __Pyx_RefNannySetupContext("DecodeRecord2", 0);
+
+  /* "decodeline.pyx":12
+ * 
+ * def DecodeRecord2(line, WIDTH, HEIGHT):
+ *     chrom, start, end, ref, alt, label, window = line.strip().split('\t')             # <<<<<<<<<<<<<<
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ *     Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
+ */
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_line, __pyx_n_s_strip); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 12, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_3 = NULL;
+  if (CYTHON_COMPILING_IN_CPYTHON && likely(PyMethod_Check(__pyx_t_2))) {
+    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_2);
+    if (likely(__pyx_t_3)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
+      __Pyx_INCREF(__pyx_t_3);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_2, function);
+    }
+  }
+  if (__pyx_t_3) {
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 12, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  } else {
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 12, __pyx_L1_error)
+  }
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_split); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 12, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_tuple__3, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 12, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  if ((likely(PyTuple_CheckExact(__pyx_t_1))) || (PyList_CheckExact(__pyx_t_1))) {
+    PyObject* sequence = __pyx_t_1;
+    #if CYTHON_COMPILING_IN_CPYTHON
+    Py_ssize_t size = Py_SIZE(sequence);
+    #else
+    Py_ssize_t size = PySequence_Size(sequence);
+    #endif
+    if (unlikely(size != 7)) {
+      if (size > 7) __Pyx_RaiseTooManyValuesError(7);
+      else if (size >= 0) __Pyx_RaiseNeedMoreValuesError(size);
+      __PYX_ERR(0, 12, __pyx_L1_error)
+    }
+    #if CYTHON_COMPILING_IN_CPYTHON
+    if (likely(PyTuple_CheckExact(sequence))) {
+      __pyx_t_2 = PyTuple_GET_ITEM(sequence, 0); 
+      __pyx_t_3 = PyTuple_GET_ITEM(sequence, 1); 
+      __pyx_t_4 = PyTuple_GET_ITEM(sequence, 2); 
+      __pyx_t_5 = PyTuple_GET_ITEM(sequence, 3); 
+      __pyx_t_6 = PyTuple_GET_ITEM(sequence, 4); 
+      __pyx_t_7 = PyTuple_GET_ITEM(sequence, 5); 
+      __pyx_t_8 = PyTuple_GET_ITEM(sequence, 6); 
+    } else {
+      __pyx_t_2 = PyList_GET_ITEM(sequence, 0); 
+      __pyx_t_3 = PyList_GET_ITEM(sequence, 1); 
+      __pyx_t_4 = PyList_GET_ITEM(sequence, 2); 
+      __pyx_t_5 = PyList_GET_ITEM(sequence, 3); 
+      __pyx_t_6 = PyList_GET_ITEM(sequence, 4); 
+      __pyx_t_7 = PyList_GET_ITEM(sequence, 5); 
+      __pyx_t_8 = PyList_GET_ITEM(sequence, 6); 
+    }
+    __Pyx_INCREF(__pyx_t_2);
+    __Pyx_INCREF(__pyx_t_3);
+    __Pyx_INCREF(__pyx_t_4);
+    __Pyx_INCREF(__pyx_t_5);
+    __Pyx_INCREF(__pyx_t_6);
+    __Pyx_INCREF(__pyx_t_7);
+    __Pyx_INCREF(__pyx_t_8);
+    #else
+    {
+      Py_ssize_t i;
+      PyObject** temps[7] = {&__pyx_t_2,&__pyx_t_3,&__pyx_t_4,&__pyx_t_5,&__pyx_t_6,&__pyx_t_7,&__pyx_t_8};
+      for (i=0; i < 7; i++) {
+        PyObject* item = PySequence_ITEM(sequence, i); if (unlikely(!item)) __PYX_ERR(0, 12, __pyx_L1_error)
+        __Pyx_GOTREF(item);
+        *(temps[i]) = item;
+      }
+    }
+    #endif
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  } else {
+    Py_ssize_t index = -1;
+    PyObject** temps[7] = {&__pyx_t_2,&__pyx_t_3,&__pyx_t_4,&__pyx_t_5,&__pyx_t_6,&__pyx_t_7,&__pyx_t_8};
+    __pyx_t_9 = PyObject_GetIter(__pyx_t_1); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 12, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_9);
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    __pyx_t_10 = Py_TYPE(__pyx_t_9)->tp_iternext;
+    for (index=0; index < 7; index++) {
+      PyObject* item = __pyx_t_10(__pyx_t_9); if (unlikely(!item)) goto __pyx_L3_unpacking_failed;
+      __Pyx_GOTREF(item);
+      *(temps[index]) = item;
+    }
+    if (__Pyx_IternextUnpackEndCheck(__pyx_t_10(__pyx_t_9), 7) < 0) __PYX_ERR(0, 12, __pyx_L1_error)
+    __pyx_t_10 = NULL;
+    __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+    goto __pyx_L4_unpacking_done;
+    __pyx_L3_unpacking_failed:;
+    __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __pyx_t_10 = NULL;
+    if (__Pyx_IterFinish() == 0) __Pyx_RaiseNeedMoreValuesError(index);
+    __PYX_ERR(0, 12, __pyx_L1_error)
+    __pyx_L4_unpacking_done:;
+  }
+  __pyx_v_chrom = __pyx_t_2;
+  __pyx_t_2 = 0;
+  __pyx_v_start = __pyx_t_3;
+  __pyx_t_3 = 0;
+  __pyx_v_end = __pyx_t_4;
+  __pyx_t_4 = 0;
+  __pyx_v_ref = __pyx_t_5;
+  __pyx_t_5 = 0;
+  __pyx_v_alt = __pyx_t_6;
+  __pyx_t_6 = 0;
+  __pyx_v_label = __pyx_t_7;
+  __pyx_t_7 = 0;
+  __pyx_v_window = __pyx_t_8;
+  __pyx_t_8 = 0;
+
+  /* "decodeline.pyx":13
+ * def DecodeRecord2(line, WIDTH, HEIGHT):
+ *     chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]             # <<<<<<<<<<<<<<
+ *     Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
+ *     Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
+ */
+  __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 13, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_8 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 13, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_PyObject_GetSlice(__pyx_v_window, 0, 0, NULL, &__pyx_t_8, NULL, 1, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 13, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+  __pyx_v_Alignment = __pyx_t_1;
+  __pyx_t_1 = 0;
+
+  /* "decodeline.pyx":14
+ *     chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ *     Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]             # <<<<<<<<<<<<<<
+ *     Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
+ *     p1 = [float(x) for x in Alignment]
+ */
+  __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_8 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_7 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = PyNumber_Multiply(__pyx_t_7, __pyx_int_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  __pyx_t_7 = __Pyx_PyObject_GetSlice(__pyx_v_window, 0, 0, &__pyx_t_8, &__pyx_t_1, NULL, 0, 0, 1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_Qual = __pyx_t_7;
+  __pyx_t_7 = 0;
+
+  /* "decodeline.pyx":15
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ *     Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
+ *     Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]             # <<<<<<<<<<<<<<
+ *     p1 = [float(x) for x in Alignment]
+ *     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
+ */
+  __pyx_t_7 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __pyx_t_1 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_7); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  __pyx_t_7 = PyNumber_Multiply(__pyx_t_1, __pyx_int_2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_8 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = PyNumber_Multiply(__pyx_t_8, __pyx_int_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+  __pyx_t_8 = __Pyx_PyObject_GetSlice(__pyx_v_window, 0, 0, &__pyx_t_7, &__pyx_t_1, NULL, 0, 0, 1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_Strand = __pyx_t_8;
+  __pyx_t_8 = 0;
+
+  /* "decodeline.pyx":16
+ *     Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
+ *     Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
+ *     p1 = [float(x) for x in Alignment]             # <<<<<<<<<<<<<<
+ *     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
+ *     p3 = [float(x) for x in Strand]
+ */
+  __pyx_t_8 = PyList_New(0); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 16, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  if (likely(PyList_CheckExact(__pyx_v_Alignment)) || PyTuple_CheckExact(__pyx_v_Alignment)) {
+    __pyx_t_1 = __pyx_v_Alignment; __Pyx_INCREF(__pyx_t_1); __pyx_t_11 = 0;
+    __pyx_t_12 = NULL;
+  } else {
+    __pyx_t_11 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_Alignment); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 16, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __pyx_t_12 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 16, __pyx_L1_error)
+  }
+  for (;;) {
+    if (likely(!__pyx_t_12)) {
+      if (likely(PyList_CheckExact(__pyx_t_1))) {
+        if (__pyx_t_11 >= PyList_GET_SIZE(__pyx_t_1)) break;
+        #if CYTHON_COMPILING_IN_CPYTHON
+        __pyx_t_7 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_11); __Pyx_INCREF(__pyx_t_7); __pyx_t_11++; if (unlikely(0 < 0)) __PYX_ERR(0, 16, __pyx_L1_error)
+        #else
+        __pyx_t_7 = PySequence_ITEM(__pyx_t_1, __pyx_t_11); __pyx_t_11++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 16, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_7);
+        #endif
+      } else {
+        if (__pyx_t_11 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
+        #if CYTHON_COMPILING_IN_CPYTHON
+        __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_11); __Pyx_INCREF(__pyx_t_7); __pyx_t_11++; if (unlikely(0 < 0)) __PYX_ERR(0, 16, __pyx_L1_error)
+        #else
+        __pyx_t_7 = PySequence_ITEM(__pyx_t_1, __pyx_t_11); __pyx_t_11++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 16, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_7);
+        #endif
+      }
+    } else {
+      __pyx_t_7 = __pyx_t_12(__pyx_t_1);
+      if (unlikely(!__pyx_t_7)) {
+        PyObject* exc_type = PyErr_Occurred();
+        if (exc_type) {
+          if (likely(exc_type == PyExc_StopIteration || PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+          else __PYX_ERR(0, 16, __pyx_L1_error)
+        }
+        break;
+      }
+      __Pyx_GOTREF(__pyx_t_7);
+    }
+    __Pyx_XDECREF_SET(__pyx_v_x, __pyx_t_7);
+    __pyx_t_7 = 0;
+    __pyx_t_7 = __Pyx_PyNumber_Float(__pyx_v_x); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 16, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_7);
+    if (unlikely(__Pyx_ListComp_Append(__pyx_t_8, (PyObject*)__pyx_t_7))) __PYX_ERR(0, 16, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  }
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_p1 = ((PyObject*)__pyx_t_8);
+  __pyx_t_8 = 0;
+
+  /* "decodeline.pyx":17
+ *     Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
+ *     p1 = [float(x) for x in Alignment]
+ *     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]             # <<<<<<<<<<<<<<
+ *     p3 = [float(x) for x in Strand]
+ *     return p1 + p2 + p3, chrom, start, ref, alt
+ */
+  __pyx_t_8 = PyList_New(0); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 17, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  if (likely(PyList_CheckExact(__pyx_v_Qual)) || PyTuple_CheckExact(__pyx_v_Qual)) {
+    __pyx_t_1 = __pyx_v_Qual; __Pyx_INCREF(__pyx_t_1); __pyx_t_11 = 0;
+    __pyx_t_12 = NULL;
+  } else {
+    __pyx_t_11 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_Qual); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 17, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __pyx_t_12 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 17, __pyx_L1_error)
+  }
+  for (;;) {
+    if (likely(!__pyx_t_12)) {
+      if (likely(PyList_CheckExact(__pyx_t_1))) {
+        if (__pyx_t_11 >= PyList_GET_SIZE(__pyx_t_1)) break;
+        #if CYTHON_COMPILING_IN_CPYTHON
+        __pyx_t_7 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_11); __Pyx_INCREF(__pyx_t_7); __pyx_t_11++; if (unlikely(0 < 0)) __PYX_ERR(0, 17, __pyx_L1_error)
+        #else
+        __pyx_t_7 = PySequence_ITEM(__pyx_t_1, __pyx_t_11); __pyx_t_11++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 17, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_7);
+        #endif
+      } else {
+        if (__pyx_t_11 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
+        #if CYTHON_COMPILING_IN_CPYTHON
+        __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_11); __Pyx_INCREF(__pyx_t_7); __pyx_t_11++; if (unlikely(0 < 0)) __PYX_ERR(0, 17, __pyx_L1_error)
+        #else
+        __pyx_t_7 = PySequence_ITEM(__pyx_t_1, __pyx_t_11); __pyx_t_11++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 17, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_7);
+        #endif
+      }
+    } else {
+      __pyx_t_7 = __pyx_t_12(__pyx_t_1);
+      if (unlikely(!__pyx_t_7)) {
+        PyObject* exc_type = PyErr_Occurred();
+        if (exc_type) {
+          if (likely(exc_type == PyExc_StopIteration || PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+          else __PYX_ERR(0, 17, __pyx_L1_error)
+        }
+        break;
+      }
+      __Pyx_GOTREF(__pyx_t_7);
+    }
+    __Pyx_XDECREF_SET(__pyx_v_x, __pyx_t_7);
+    __pyx_t_7 = 0;
+    __pyx_t_13 = __Pyx_PyObject_Ord(__pyx_v_x); if (unlikely(__pyx_t_13 == (long)(Py_UCS4)-1)) __PYX_ERR(0, 17, __pyx_L1_error)
+    __pyx_t_7 = PyFloat_FromDouble(((((double)(__pyx_t_13 - 33)) / 60.0) - 0.5)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 17, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_7);
+    if (unlikely(__Pyx_ListComp_Append(__pyx_t_8, (PyObject*)__pyx_t_7))) __PYX_ERR(0, 17, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  }
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_p2 = ((PyObject*)__pyx_t_8);
+  __pyx_t_8 = 0;
+
+  /* "decodeline.pyx":18
+ *     p1 = [float(x) for x in Alignment]
+ *     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
+ *     p3 = [float(x) for x in Strand]             # <<<<<<<<<<<<<<
+ *     return p1 + p2 + p3, chrom, start, ref, alt
+ * 
+ */
+  __pyx_t_8 = PyList_New(0); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 18, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  if (likely(PyList_CheckExact(__pyx_v_Strand)) || PyTuple_CheckExact(__pyx_v_Strand)) {
+    __pyx_t_1 = __pyx_v_Strand; __Pyx_INCREF(__pyx_t_1); __pyx_t_11 = 0;
+    __pyx_t_12 = NULL;
+  } else {
+    __pyx_t_11 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_Strand); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 18, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __pyx_t_12 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 18, __pyx_L1_error)
+  }
+  for (;;) {
+    if (likely(!__pyx_t_12)) {
+      if (likely(PyList_CheckExact(__pyx_t_1))) {
+        if (__pyx_t_11 >= PyList_GET_SIZE(__pyx_t_1)) break;
+        #if CYTHON_COMPILING_IN_CPYTHON
+        __pyx_t_7 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_11); __Pyx_INCREF(__pyx_t_7); __pyx_t_11++; if (unlikely(0 < 0)) __PYX_ERR(0, 18, __pyx_L1_error)
+        #else
+        __pyx_t_7 = PySequence_ITEM(__pyx_t_1, __pyx_t_11); __pyx_t_11++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 18, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_7);
+        #endif
+      } else {
+        if (__pyx_t_11 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
+        #if CYTHON_COMPILING_IN_CPYTHON
+        __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_11); __Pyx_INCREF(__pyx_t_7); __pyx_t_11++; if (unlikely(0 < 0)) __PYX_ERR(0, 18, __pyx_L1_error)
+        #else
+        __pyx_t_7 = PySequence_ITEM(__pyx_t_1, __pyx_t_11); __pyx_t_11++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 18, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_7);
+        #endif
+      }
+    } else {
+      __pyx_t_7 = __pyx_t_12(__pyx_t_1);
+      if (unlikely(!__pyx_t_7)) {
+        PyObject* exc_type = PyErr_Occurred();
+        if (exc_type) {
+          if (likely(exc_type == PyExc_StopIteration || PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+          else __PYX_ERR(0, 18, __pyx_L1_error)
+        }
+        break;
+      }
+      __Pyx_GOTREF(__pyx_t_7);
+    }
+    __Pyx_XDECREF_SET(__pyx_v_x, __pyx_t_7);
+    __pyx_t_7 = 0;
+    __pyx_t_7 = __Pyx_PyNumber_Float(__pyx_v_x); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 18, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_7);
+    if (unlikely(__Pyx_ListComp_Append(__pyx_t_8, (PyObject*)__pyx_t_7))) __PYX_ERR(0, 18, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  }
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_p3 = ((PyObject*)__pyx_t_8);
+  __pyx_t_8 = 0;
+
+  /* "decodeline.pyx":19
+ *     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
+ *     p3 = [float(x) for x in Strand]
+ *     return p1 + p2 + p3, chrom, start, ref, alt             # <<<<<<<<<<<<<<
+ * 
+ * def DecodeRecord3(line, WIDTH, HEIGHT):
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_8 = PyNumber_Add(__pyx_v_p1, __pyx_v_p2); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 19, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __pyx_t_1 = PyNumber_Add(__pyx_t_8, __pyx_v_p3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 19, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+  __pyx_t_8 = PyTuple_New(5); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 19, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __Pyx_GIVEREF(__pyx_t_1);
+  PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_1);
+  __Pyx_INCREF(__pyx_v_chrom);
+  __Pyx_GIVEREF(__pyx_v_chrom);
+  PyTuple_SET_ITEM(__pyx_t_8, 1, __pyx_v_chrom);
+  __Pyx_INCREF(__pyx_v_start);
+  __Pyx_GIVEREF(__pyx_v_start);
+  PyTuple_SET_ITEM(__pyx_t_8, 2, __pyx_v_start);
+  __Pyx_INCREF(__pyx_v_ref);
+  __Pyx_GIVEREF(__pyx_v_ref);
+  PyTuple_SET_ITEM(__pyx_t_8, 3, __pyx_v_ref);
+  __Pyx_INCREF(__pyx_v_alt);
+  __Pyx_GIVEREF(__pyx_v_alt);
+  PyTuple_SET_ITEM(__pyx_t_8, 4, __pyx_v_alt);
+  __pyx_t_1 = 0;
+  __pyx_r = __pyx_t_8;
+  __pyx_t_8 = 0;
+  goto __pyx_L0;
+
+  /* "decodeline.pyx":11
+ *     return p1 + p2 + p3, label
+ * 
+ * def DecodeRecord2(line, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
+ *     chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_XDECREF(__pyx_t_5);
+  __Pyx_XDECREF(__pyx_t_6);
+  __Pyx_XDECREF(__pyx_t_7);
+  __Pyx_XDECREF(__pyx_t_8);
+  __Pyx_XDECREF(__pyx_t_9);
+  __Pyx_AddTraceback("decodeline.DecodeRecord2", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_chrom);
+  __Pyx_XDECREF(__pyx_v_start);
+  __Pyx_XDECREF(__pyx_v_end);
+  __Pyx_XDECREF(__pyx_v_ref);
+  __Pyx_XDECREF(__pyx_v_alt);
+  __Pyx_XDECREF(__pyx_v_label);
+  __Pyx_XDECREF(__pyx_v_window);
+  __Pyx_XDECREF(__pyx_v_Alignment);
+  __Pyx_XDECREF(__pyx_v_Qual);
+  __Pyx_XDECREF(__pyx_v_Strand);
+  __Pyx_XDECREF(__pyx_v_p1);
+  __Pyx_XDECREF(__pyx_v_p2);
+  __Pyx_XDECREF(__pyx_v_p3);
+  __Pyx_XDECREF(__pyx_v_x);
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "decodeline.pyx":21
+ *     return p1 + p2 + p3, chrom, start, ref, alt
+ * 
+ * def DecodeRecord3(line, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
+ *     chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_10decodeline_5DecodeRecord3(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_10decodeline_5DecodeRecord3 = {"DecodeRecord3", (PyCFunction)__pyx_pw_10decodeline_5DecodeRecord3, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_10decodeline_5DecodeRecord3(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  PyObject *__pyx_v_line = 0;
+  PyObject *__pyx_v_WIDTH = 0;
+  PyObject *__pyx_v_HEIGHT = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("DecodeRecord3 (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_line,&__pyx_n_s_WIDTH,&__pyx_n_s_HEIGHT,0};
+    PyObject* values[3] = {0,0,0};
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_line)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        case  1:
+        if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_WIDTH)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("DecodeRecord3", 1, 3, 3, 1); __PYX_ERR(0, 21, __pyx_L3_error)
+        }
+        case  2:
+        if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_HEIGHT)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("DecodeRecord3", 1, 3, 3, 2); __PYX_ERR(0, 21, __pyx_L3_error)
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "DecodeRecord3") < 0)) __PYX_ERR(0, 21, __pyx_L3_error)
+      }
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+      values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+    }
+    __pyx_v_line = values[0];
+    __pyx_v_WIDTH = values[1];
+    __pyx_v_HEIGHT = values[2];
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("DecodeRecord3", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 21, __pyx_L3_error)
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("decodeline.DecodeRecord3", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  __pyx_r = __pyx_pf_10decodeline_4DecodeRecord3(__pyx_self, __pyx_v_line, __pyx_v_WIDTH, __pyx_v_HEIGHT);
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_10decodeline_4DecodeRecord3(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_line, PyObject *__pyx_v_WIDTH, PyObject *__pyx_v_HEIGHT) {
+  PyObject *__pyx_v_chrom = NULL;
+  PyObject *__pyx_v_start = NULL;
+  CYTHON_UNUSED PyObject *__pyx_v_end = NULL;
+  PyObject *__pyx_v_ref = NULL;
+  PyObject *__pyx_v_alt = NULL;
+  CYTHON_UNUSED PyObject *__pyx_v_label = NULL;
+  PyObject *__pyx_v_window = NULL;
+  PyObject *__pyx_v_Alignment = NULL;
+  PyObject *__pyx_v_Qual = NULL;
+  PyObject *__pyx_v_Strand = NULL;
+  PyObject *__pyx_v_p1 = NULL;
+  PyObject *__pyx_v_p2 = NULL;
+  PyObject *__pyx_v_p3 = NULL;
+  PyObject *__pyx_v_x = NULL;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  PyObject *__pyx_t_4 = NULL;
+  PyObject *__pyx_t_5 = NULL;
+  PyObject *__pyx_t_6 = NULL;
+  PyObject *__pyx_t_7 = NULL;
+  PyObject *__pyx_t_8 = NULL;
+  PyObject *__pyx_t_9 = NULL;
+  PyObject *(*__pyx_t_10)(PyObject *);
+  Py_ssize_t __pyx_t_11;
+  PyObject *(*__pyx_t_12)(PyObject *);
+  double __pyx_t_13;
+  long __pyx_t_14;
+  __Pyx_RefNannySetupContext("DecodeRecord3", 0);
+
+  /* "decodeline.pyx":22
+ * 
+ * def DecodeRecord3(line, WIDTH, HEIGHT):
+ *     chrom, start, end, ref, alt, label, window = line.strip().split('\t')             # <<<<<<<<<<<<<<
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ *     Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
+ */
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_v_line, __pyx_n_s_strip); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 22, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_3 = NULL;
+  if (CYTHON_COMPILING_IN_CPYTHON && likely(PyMethod_Check(__pyx_t_2))) {
+    __pyx_t_3 = PyMethod_GET_SELF(__pyx_t_2);
+    if (likely(__pyx_t_3)) {
+      PyObject* function = PyMethod_GET_FUNCTION(__pyx_t_2);
+      __Pyx_INCREF(__pyx_t_3);
+      __Pyx_INCREF(function);
+      __Pyx_DECREF_SET(__pyx_t_2, function);
+    }
+  }
+  if (__pyx_t_3) {
+    __pyx_t_1 = __Pyx_PyObject_CallOneArg(__pyx_t_2, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 22, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  } else {
+    __pyx_t_1 = __Pyx_PyObject_CallNoArg(__pyx_t_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 22, __pyx_L1_error)
+  }
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_2 = __Pyx_PyObject_GetAttrStr(__pyx_t_1, __pyx_n_s_split); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 22, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_PyObject_Call(__pyx_t_2, __pyx_tuple__4, NULL); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 22, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  if ((likely(PyTuple_CheckExact(__pyx_t_1))) || (PyList_CheckExact(__pyx_t_1))) {
+    PyObject* sequence = __pyx_t_1;
+    #if CYTHON_COMPILING_IN_CPYTHON
+    Py_ssize_t size = Py_SIZE(sequence);
+    #else
+    Py_ssize_t size = PySequence_Size(sequence);
+    #endif
+    if (unlikely(size != 7)) {
+      if (size > 7) __Pyx_RaiseTooManyValuesError(7);
+      else if (size >= 0) __Pyx_RaiseNeedMoreValuesError(size);
+      __PYX_ERR(0, 22, __pyx_L1_error)
+    }
+    #if CYTHON_COMPILING_IN_CPYTHON
+    if (likely(PyTuple_CheckExact(sequence))) {
+      __pyx_t_2 = PyTuple_GET_ITEM(sequence, 0); 
+      __pyx_t_3 = PyTuple_GET_ITEM(sequence, 1); 
+      __pyx_t_4 = PyTuple_GET_ITEM(sequence, 2); 
+      __pyx_t_5 = PyTuple_GET_ITEM(sequence, 3); 
+      __pyx_t_6 = PyTuple_GET_ITEM(sequence, 4); 
+      __pyx_t_7 = PyTuple_GET_ITEM(sequence, 5); 
+      __pyx_t_8 = PyTuple_GET_ITEM(sequence, 6); 
+    } else {
+      __pyx_t_2 = PyList_GET_ITEM(sequence, 0); 
+      __pyx_t_3 = PyList_GET_ITEM(sequence, 1); 
+      __pyx_t_4 = PyList_GET_ITEM(sequence, 2); 
+      __pyx_t_5 = PyList_GET_ITEM(sequence, 3); 
+      __pyx_t_6 = PyList_GET_ITEM(sequence, 4); 
+      __pyx_t_7 = PyList_GET_ITEM(sequence, 5); 
+      __pyx_t_8 = PyList_GET_ITEM(sequence, 6); 
+    }
+    __Pyx_INCREF(__pyx_t_2);
+    __Pyx_INCREF(__pyx_t_3);
+    __Pyx_INCREF(__pyx_t_4);
+    __Pyx_INCREF(__pyx_t_5);
+    __Pyx_INCREF(__pyx_t_6);
+    __Pyx_INCREF(__pyx_t_7);
+    __Pyx_INCREF(__pyx_t_8);
+    #else
+    {
+      Py_ssize_t i;
+      PyObject** temps[7] = {&__pyx_t_2,&__pyx_t_3,&__pyx_t_4,&__pyx_t_5,&__pyx_t_6,&__pyx_t_7,&__pyx_t_8};
+      for (i=0; i < 7; i++) {
+        PyObject* item = PySequence_ITEM(sequence, i); if (unlikely(!item)) __PYX_ERR(0, 22, __pyx_L1_error)
+        __Pyx_GOTREF(item);
+        *(temps[i]) = item;
+      }
+    }
+    #endif
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  } else {
+    Py_ssize_t index = -1;
+    PyObject** temps[7] = {&__pyx_t_2,&__pyx_t_3,&__pyx_t_4,&__pyx_t_5,&__pyx_t_6,&__pyx_t_7,&__pyx_t_8};
+    __pyx_t_9 = PyObject_GetIter(__pyx_t_1); if (unlikely(!__pyx_t_9)) __PYX_ERR(0, 22, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_9);
+    __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+    __pyx_t_10 = Py_TYPE(__pyx_t_9)->tp_iternext;
+    for (index=0; index < 7; index++) {
+      PyObject* item = __pyx_t_10(__pyx_t_9); if (unlikely(!item)) goto __pyx_L3_unpacking_failed;
+      __Pyx_GOTREF(item);
+      *(temps[index]) = item;
+    }
+    if (__Pyx_IternextUnpackEndCheck(__pyx_t_10(__pyx_t_9), 7) < 0) __PYX_ERR(0, 22, __pyx_L1_error)
+    __pyx_t_10 = NULL;
+    __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+    goto __pyx_L4_unpacking_done;
+    __pyx_L3_unpacking_failed:;
+    __Pyx_DECREF(__pyx_t_9); __pyx_t_9 = 0;
+    __pyx_t_10 = NULL;
+    if (__Pyx_IterFinish() == 0) __Pyx_RaiseNeedMoreValuesError(index);
+    __PYX_ERR(0, 22, __pyx_L1_error)
+    __pyx_L4_unpacking_done:;
+  }
+  __pyx_v_chrom = __pyx_t_2;
+  __pyx_t_2 = 0;
+  __pyx_v_start = __pyx_t_3;
+  __pyx_t_3 = 0;
+  __pyx_v_end = __pyx_t_4;
+  __pyx_t_4 = 0;
+  __pyx_v_ref = __pyx_t_5;
+  __pyx_t_5 = 0;
+  __pyx_v_alt = __pyx_t_6;
+  __pyx_t_6 = 0;
+  __pyx_v_label = __pyx_t_7;
+  __pyx_t_7 = 0;
+  __pyx_v_window = __pyx_t_8;
+  __pyx_t_8 = 0;
+
+  /* "decodeline.pyx":23
+ * def DecodeRecord3(line, WIDTH, HEIGHT):
+ *     chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]             # <<<<<<<<<<<<<<
+ *     Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
+ *     Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
+ */
+  __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 23, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_8 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 23, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_PyObject_GetSlice(__pyx_v_window, 0, 0, NULL, &__pyx_t_8, NULL, 1, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 23, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+  __pyx_v_Alignment = __pyx_t_1;
+  __pyx_t_1 = 0;
+
+  /* "decodeline.pyx":24
+ *     chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ *     Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]             # <<<<<<<<<<<<<<
+ *     Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
+ *     p1 = [float(x)/6-0.5 for x in Alignment]
+ */
+  __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 24, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_8 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 24, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 24, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_7 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 24, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = PyNumber_Multiply(__pyx_t_7, __pyx_int_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 24, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  __pyx_t_7 = __Pyx_PyObject_GetSlice(__pyx_v_window, 0, 0, &__pyx_t_8, &__pyx_t_1, NULL, 0, 0, 1); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 24, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_Qual = __pyx_t_7;
+  __pyx_t_7 = 0;
+
+  /* "decodeline.pyx":25
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ *     Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
+ *     Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]             # <<<<<<<<<<<<<<
+ *     p1 = [float(x)/6-0.5 for x in Alignment]
+ *     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
+ */
+  __pyx_t_7 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 25, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __pyx_t_1 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_7); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 25, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  __pyx_t_7 = PyNumber_Multiply(__pyx_t_1, __pyx_int_2); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 25, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_7);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 25, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_8 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 25, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = PyNumber_Multiply(__pyx_t_8, __pyx_int_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 25, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+  __pyx_t_8 = __Pyx_PyObject_GetSlice(__pyx_v_window, 0, 0, &__pyx_t_7, &__pyx_t_1, NULL, 0, 0, 1); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 25, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_Strand = __pyx_t_8;
+  __pyx_t_8 = 0;
+
+  /* "decodeline.pyx":26
+ *     Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
+ *     Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
+ *     p1 = [float(x)/6-0.5 for x in Alignment]             # <<<<<<<<<<<<<<
+ *     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
+ *     p3 = [float(x)/2-0.5 for x in Strand]
+ */
+  __pyx_t_8 = PyList_New(0); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 26, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  if (likely(PyList_CheckExact(__pyx_v_Alignment)) || PyTuple_CheckExact(__pyx_v_Alignment)) {
+    __pyx_t_1 = __pyx_v_Alignment; __Pyx_INCREF(__pyx_t_1); __pyx_t_11 = 0;
+    __pyx_t_12 = NULL;
+  } else {
+    __pyx_t_11 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_Alignment); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 26, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __pyx_t_12 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 26, __pyx_L1_error)
+  }
+  for (;;) {
+    if (likely(!__pyx_t_12)) {
+      if (likely(PyList_CheckExact(__pyx_t_1))) {
+        if (__pyx_t_11 >= PyList_GET_SIZE(__pyx_t_1)) break;
+        #if CYTHON_COMPILING_IN_CPYTHON
+        __pyx_t_7 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_11); __Pyx_INCREF(__pyx_t_7); __pyx_t_11++; if (unlikely(0 < 0)) __PYX_ERR(0, 26, __pyx_L1_error)
+        #else
+        __pyx_t_7 = PySequence_ITEM(__pyx_t_1, __pyx_t_11); __pyx_t_11++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 26, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_7);
+        #endif
+      } else {
+        if (__pyx_t_11 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
+        #if CYTHON_COMPILING_IN_CPYTHON
+        __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_11); __Pyx_INCREF(__pyx_t_7); __pyx_t_11++; if (unlikely(0 < 0)) __PYX_ERR(0, 26, __pyx_L1_error)
+        #else
+        __pyx_t_7 = PySequence_ITEM(__pyx_t_1, __pyx_t_11); __pyx_t_11++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 26, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_7);
+        #endif
+      }
+    } else {
+      __pyx_t_7 = __pyx_t_12(__pyx_t_1);
+      if (unlikely(!__pyx_t_7)) {
+        PyObject* exc_type = PyErr_Occurred();
+        if (exc_type) {
+          if (likely(exc_type == PyExc_StopIteration || PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+          else __PYX_ERR(0, 26, __pyx_L1_error)
+        }
+        break;
+      }
+      __Pyx_GOTREF(__pyx_t_7);
+    }
+    __Pyx_XDECREF_SET(__pyx_v_x, __pyx_t_7);
+    __pyx_t_7 = 0;
+    __pyx_t_13 = __Pyx_PyObject_AsDouble(__pyx_v_x); if (unlikely(__pyx_t_13 == ((double)-1) && PyErr_Occurred())) __PYX_ERR(0, 26, __pyx_L1_error)
+    __pyx_t_7 = PyFloat_FromDouble(((__pyx_t_13 / 6.0) - 0.5)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 26, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_7);
+    if (unlikely(__Pyx_ListComp_Append(__pyx_t_8, (PyObject*)__pyx_t_7))) __PYX_ERR(0, 26, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  }
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_p1 = ((PyObject*)__pyx_t_8);
+  __pyx_t_8 = 0;
+
+  /* "decodeline.pyx":27
+ *     Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
+ *     p1 = [float(x)/6-0.5 for x in Alignment]
+ *     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]             # <<<<<<<<<<<<<<
+ *     p3 = [float(x)/2-0.5 for x in Strand]
+ *     return p1 + p2 + p3, chrom, start, ref, alt
+ */
+  __pyx_t_8 = PyList_New(0); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 27, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  if (likely(PyList_CheckExact(__pyx_v_Qual)) || PyTuple_CheckExact(__pyx_v_Qual)) {
+    __pyx_t_1 = __pyx_v_Qual; __Pyx_INCREF(__pyx_t_1); __pyx_t_11 = 0;
+    __pyx_t_12 = NULL;
+  } else {
+    __pyx_t_11 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_Qual); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 27, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __pyx_t_12 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 27, __pyx_L1_error)
+  }
+  for (;;) {
+    if (likely(!__pyx_t_12)) {
+      if (likely(PyList_CheckExact(__pyx_t_1))) {
+        if (__pyx_t_11 >= PyList_GET_SIZE(__pyx_t_1)) break;
+        #if CYTHON_COMPILING_IN_CPYTHON
+        __pyx_t_7 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_11); __Pyx_INCREF(__pyx_t_7); __pyx_t_11++; if (unlikely(0 < 0)) __PYX_ERR(0, 27, __pyx_L1_error)
+        #else
+        __pyx_t_7 = PySequence_ITEM(__pyx_t_1, __pyx_t_11); __pyx_t_11++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 27, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_7);
+        #endif
+      } else {
+        if (__pyx_t_11 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
+        #if CYTHON_COMPILING_IN_CPYTHON
+        __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_11); __Pyx_INCREF(__pyx_t_7); __pyx_t_11++; if (unlikely(0 < 0)) __PYX_ERR(0, 27, __pyx_L1_error)
+        #else
+        __pyx_t_7 = PySequence_ITEM(__pyx_t_1, __pyx_t_11); __pyx_t_11++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 27, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_7);
+        #endif
+      }
+    } else {
+      __pyx_t_7 = __pyx_t_12(__pyx_t_1);
+      if (unlikely(!__pyx_t_7)) {
+        PyObject* exc_type = PyErr_Occurred();
+        if (exc_type) {
+          if (likely(exc_type == PyExc_StopIteration || PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+          else __PYX_ERR(0, 27, __pyx_L1_error)
+        }
+        break;
+      }
+      __Pyx_GOTREF(__pyx_t_7);
+    }
+    __Pyx_XDECREF_SET(__pyx_v_x, __pyx_t_7);
+    __pyx_t_7 = 0;
+    __pyx_t_14 = __Pyx_PyObject_Ord(__pyx_v_x); if (unlikely(__pyx_t_14 == (long)(Py_UCS4)-1)) __PYX_ERR(0, 27, __pyx_L1_error)
+    __pyx_t_7 = PyFloat_FromDouble(((((double)(__pyx_t_14 - 33)) / 60.0) - 0.5)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 27, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_7);
+    if (unlikely(__Pyx_ListComp_Append(__pyx_t_8, (PyObject*)__pyx_t_7))) __PYX_ERR(0, 27, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  }
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_p2 = ((PyObject*)__pyx_t_8);
+  __pyx_t_8 = 0;
+
+  /* "decodeline.pyx":28
+ *     p1 = [float(x)/6-0.5 for x in Alignment]
+ *     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
+ *     p3 = [float(x)/2-0.5 for x in Strand]             # <<<<<<<<<<<<<<
+ *     return p1 + p2 + p3, chrom, start, ref, alt
+ * 
+ */
+  __pyx_t_8 = PyList_New(0); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 28, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  if (likely(PyList_CheckExact(__pyx_v_Strand)) || PyTuple_CheckExact(__pyx_v_Strand)) {
+    __pyx_t_1 = __pyx_v_Strand; __Pyx_INCREF(__pyx_t_1); __pyx_t_11 = 0;
+    __pyx_t_12 = NULL;
+  } else {
+    __pyx_t_11 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_Strand); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 28, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __pyx_t_12 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_12)) __PYX_ERR(0, 28, __pyx_L1_error)
+  }
+  for (;;) {
+    if (likely(!__pyx_t_12)) {
+      if (likely(PyList_CheckExact(__pyx_t_1))) {
+        if (__pyx_t_11 >= PyList_GET_SIZE(__pyx_t_1)) break;
+        #if CYTHON_COMPILING_IN_CPYTHON
+        __pyx_t_7 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_11); __Pyx_INCREF(__pyx_t_7); __pyx_t_11++; if (unlikely(0 < 0)) __PYX_ERR(0, 28, __pyx_L1_error)
+        #else
+        __pyx_t_7 = PySequence_ITEM(__pyx_t_1, __pyx_t_11); __pyx_t_11++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 28, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_7);
+        #endif
+      } else {
+        if (__pyx_t_11 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
+        #if CYTHON_COMPILING_IN_CPYTHON
+        __pyx_t_7 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_11); __Pyx_INCREF(__pyx_t_7); __pyx_t_11++; if (unlikely(0 < 0)) __PYX_ERR(0, 28, __pyx_L1_error)
+        #else
+        __pyx_t_7 = PySequence_ITEM(__pyx_t_1, __pyx_t_11); __pyx_t_11++; if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 28, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_7);
+        #endif
+      }
+    } else {
+      __pyx_t_7 = __pyx_t_12(__pyx_t_1);
+      if (unlikely(!__pyx_t_7)) {
+        PyObject* exc_type = PyErr_Occurred();
+        if (exc_type) {
+          if (likely(exc_type == PyExc_StopIteration || PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+          else __PYX_ERR(0, 28, __pyx_L1_error)
+        }
+        break;
+      }
+      __Pyx_GOTREF(__pyx_t_7);
+    }
+    __Pyx_XDECREF_SET(__pyx_v_x, __pyx_t_7);
+    __pyx_t_7 = 0;
+    __pyx_t_13 = __Pyx_PyObject_AsDouble(__pyx_v_x); if (unlikely(__pyx_t_13 == ((double)-1) && PyErr_Occurred())) __PYX_ERR(0, 28, __pyx_L1_error)
+    __pyx_t_7 = PyFloat_FromDouble(((__pyx_t_13 / 2.0) - 0.5)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 28, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_7);
+    if (unlikely(__Pyx_ListComp_Append(__pyx_t_8, (PyObject*)__pyx_t_7))) __PYX_ERR(0, 28, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
+  }
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_p3 = ((PyObject*)__pyx_t_8);
+  __pyx_t_8 = 0;
+
+  /* "decodeline.pyx":29
+ *     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
+ *     p3 = [float(x)/2-0.5 for x in Strand]
+ *     return p1 + p2 + p3, chrom, start, ref, alt             # <<<<<<<<<<<<<<
+ * 
+ * def DecodeLine(window, WIDTH, HEIGHT):
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_8 = PyNumber_Add(__pyx_v_p1, __pyx_v_p2); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 29, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __pyx_t_1 = PyNumber_Add(__pyx_t_8, __pyx_v_p3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 29, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_8); __pyx_t_8 = 0;
+  __pyx_t_8 = PyTuple_New(5); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 29, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_8);
+  __Pyx_GIVEREF(__pyx_t_1);
+  PyTuple_SET_ITEM(__pyx_t_8, 0, __pyx_t_1);
+  __Pyx_INCREF(__pyx_v_chrom);
+  __Pyx_GIVEREF(__pyx_v_chrom);
+  PyTuple_SET_ITEM(__pyx_t_8, 1, __pyx_v_chrom);
+  __Pyx_INCREF(__pyx_v_start);
+  __Pyx_GIVEREF(__pyx_v_start);
+  PyTuple_SET_ITEM(__pyx_t_8, 2, __pyx_v_start);
+  __Pyx_INCREF(__pyx_v_ref);
+  __Pyx_GIVEREF(__pyx_v_ref);
+  PyTuple_SET_ITEM(__pyx_t_8, 3, __pyx_v_ref);
+  __Pyx_INCREF(__pyx_v_alt);
+  __Pyx_GIVEREF(__pyx_v_alt);
+  PyTuple_SET_ITEM(__pyx_t_8, 4, __pyx_v_alt);
+  __pyx_t_1 = 0;
+  __pyx_r = __pyx_t_8;
+  __pyx_t_8 = 0;
+  goto __pyx_L0;
+
+  /* "decodeline.pyx":21
+ *     return p1 + p2 + p3, chrom, start, ref, alt
+ * 
+ * def DecodeRecord3(line, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
+ *     chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_XDECREF(__pyx_t_4);
+  __Pyx_XDECREF(__pyx_t_5);
+  __Pyx_XDECREF(__pyx_t_6);
+  __Pyx_XDECREF(__pyx_t_7);
+  __Pyx_XDECREF(__pyx_t_8);
+  __Pyx_XDECREF(__pyx_t_9);
+  __Pyx_AddTraceback("decodeline.DecodeRecord3", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_chrom);
+  __Pyx_XDECREF(__pyx_v_start);
+  __Pyx_XDECREF(__pyx_v_end);
+  __Pyx_XDECREF(__pyx_v_ref);
+  __Pyx_XDECREF(__pyx_v_alt);
+  __Pyx_XDECREF(__pyx_v_label);
+  __Pyx_XDECREF(__pyx_v_window);
+  __Pyx_XDECREF(__pyx_v_Alignment);
+  __Pyx_XDECREF(__pyx_v_Qual);
+  __Pyx_XDECREF(__pyx_v_Strand);
+  __Pyx_XDECREF(__pyx_v_p1);
+  __Pyx_XDECREF(__pyx_v_p2);
+  __Pyx_XDECREF(__pyx_v_p3);
+  __Pyx_XDECREF(__pyx_v_x);
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "decodeline.pyx":31
+ *     return p1 + p2 + p3, chrom, start, ref, alt
+ * 
+ * def DecodeLine(window, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
+ *     #chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_10decodeline_7DecodeLine(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_10decodeline_7DecodeLine = {"DecodeLine", (PyCFunction)__pyx_pw_10decodeline_7DecodeLine, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_10decodeline_7DecodeLine(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
   PyObject *__pyx_v_window = 0;
   PyObject *__pyx_v_WIDTH = 0;
   PyObject *__pyx_v_HEIGHT = 0;
@@ -1348,16 +2493,16 @@ static PyObject *__pyx_pw_10decodeline_3DecodeLine(PyObject *__pyx_self, PyObjec
         case  1:
         if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_WIDTH)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("DecodeLine", 1, 3, 3, 1); __PYX_ERR(0, 11, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("DecodeLine", 1, 3, 3, 1); __PYX_ERR(0, 31, __pyx_L3_error)
         }
         case  2:
         if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_HEIGHT)) != 0)) kw_args--;
         else {
-          __Pyx_RaiseArgtupleInvalid("DecodeLine", 1, 3, 3, 2); __PYX_ERR(0, 11, __pyx_L3_error)
+          __Pyx_RaiseArgtupleInvalid("DecodeLine", 1, 3, 3, 2); __PYX_ERR(0, 31, __pyx_L3_error)
         }
       }
       if (unlikely(kw_args > 0)) {
-        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "DecodeLine") < 0)) __PYX_ERR(0, 11, __pyx_L3_error)
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "DecodeLine") < 0)) __PYX_ERR(0, 31, __pyx_L3_error)
       }
     } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
       goto __pyx_L5_argtuple_error;
@@ -1372,20 +2517,20 @@ static PyObject *__pyx_pw_10decodeline_3DecodeLine(PyObject *__pyx_self, PyObjec
   }
   goto __pyx_L4_argument_unpacking_done;
   __pyx_L5_argtuple_error:;
-  __Pyx_RaiseArgtupleInvalid("DecodeLine", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 11, __pyx_L3_error)
+  __Pyx_RaiseArgtupleInvalid("DecodeLine", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 31, __pyx_L3_error)
   __pyx_L3_error:;
   __Pyx_AddTraceback("decodeline.DecodeLine", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __Pyx_RefNannyFinishContext();
   return NULL;
   __pyx_L4_argument_unpacking_done:;
-  __pyx_r = __pyx_pf_10decodeline_2DecodeLine(__pyx_self, __pyx_v_window, __pyx_v_WIDTH, __pyx_v_HEIGHT);
+  __pyx_r = __pyx_pf_10decodeline_6DecodeLine(__pyx_self, __pyx_v_window, __pyx_v_WIDTH, __pyx_v_HEIGHT);
 
   /* function exit code */
   __Pyx_RefNannyFinishContext();
   return __pyx_r;
 }
 
-static PyObject *__pyx_pf_10decodeline_2DecodeLine(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_window, PyObject *__pyx_v_WIDTH, PyObject *__pyx_v_HEIGHT) {
+static PyObject *__pyx_pf_10decodeline_6DecodeLine(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_window, PyObject *__pyx_v_WIDTH, PyObject *__pyx_v_HEIGHT) {
   PyObject *__pyx_v_Alignment = NULL;
   PyObject *__pyx_v_Qual = NULL;
   PyObject *__pyx_v_Strand = NULL;
@@ -1403,114 +2548,114 @@ static PyObject *__pyx_pf_10decodeline_2DecodeLine(CYTHON_UNUSED PyObject *__pyx
   long __pyx_t_6;
   __Pyx_RefNannySetupContext("DecodeLine", 0);
 
-  /* "decodeline.pyx":13
+  /* "decodeline.pyx":33
  * def DecodeLine(window, WIDTH, HEIGHT):
- * 	#chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ *     #chrom, start, end, ref, alt, label, window = line.strip().split('\t')
  *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]             # <<<<<<<<<<<<<<
  *     Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
  *     Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
  */
-  __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 13, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 33, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 13, __pyx_L1_error)
+  __pyx_t_2 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 33, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_PyObject_GetSlice(__pyx_v_window, 0, 0, NULL, &__pyx_t_2, NULL, 1, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 13, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyObject_GetSlice(__pyx_v_window, 0, 0, NULL, &__pyx_t_2, NULL, 1, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 33, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_v_Alignment = __pyx_t_1;
   __pyx_t_1 = 0;
 
-  /* "decodeline.pyx":14
- * 	#chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+  /* "decodeline.pyx":34
+ *     #chrom, start, end, ref, alt, label, window = line.strip().split('\t')
  *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
  *     Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]             # <<<<<<<<<<<<<<
  *     Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
  *     p1 = [float(x) for x in Alignment]
  */
-  __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 34, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __pyx_t_2 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 34, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 34, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_3 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __pyx_t_3 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 34, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyNumber_Multiply(__pyx_t_3, __pyx_int_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __pyx_t_1 = PyNumber_Multiply(__pyx_t_3, __pyx_int_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 34, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = __Pyx_PyObject_GetSlice(__pyx_v_window, 0, 0, &__pyx_t_2, &__pyx_t_1, NULL, 0, 0, 1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 14, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyObject_GetSlice(__pyx_v_window, 0, 0, &__pyx_t_2, &__pyx_t_1, NULL, 0, 0, 1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 34, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_Qual = __pyx_t_3;
   __pyx_t_3 = 0;
 
-  /* "decodeline.pyx":15
+  /* "decodeline.pyx":35
  *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
  *     Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
  *     Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]             # <<<<<<<<<<<<<<
  *     p1 = [float(x) for x in Alignment]
  *     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
  */
-  __pyx_t_3 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_t_3 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 35, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
-  __pyx_t_1 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_t_1 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 35, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
-  __pyx_t_3 = PyNumber_Multiply(__pyx_t_1, __pyx_int_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_t_3 = PyNumber_Multiply(__pyx_t_1, __pyx_int_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 35, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_3);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 35, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  __pyx_t_2 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_t_2 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 35, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
-  __pyx_t_1 = PyNumber_Multiply(__pyx_t_2, __pyx_int_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_t_1 = PyNumber_Multiply(__pyx_t_2, __pyx_int_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 35, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
-  __pyx_t_2 = __Pyx_PyObject_GetSlice(__pyx_v_window, 0, 0, &__pyx_t_3, &__pyx_t_1, NULL, 0, 0, 1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 15, __pyx_L1_error)
+  __pyx_t_2 = __Pyx_PyObject_GetSlice(__pyx_v_window, 0, 0, &__pyx_t_3, &__pyx_t_1, NULL, 0, 0, 1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 35, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_Strand = __pyx_t_2;
   __pyx_t_2 = 0;
 
-  /* "decodeline.pyx":16
+  /* "decodeline.pyx":36
  *     Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
  *     Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
  *     p1 = [float(x) for x in Alignment]             # <<<<<<<<<<<<<<
  *     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
  *     p3 = [float(x) for x in Strand]
  */
-  __pyx_t_2 = PyList_New(0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 16, __pyx_L1_error)
+  __pyx_t_2 = PyList_New(0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 36, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   if (likely(PyList_CheckExact(__pyx_v_Alignment)) || PyTuple_CheckExact(__pyx_v_Alignment)) {
     __pyx_t_1 = __pyx_v_Alignment; __Pyx_INCREF(__pyx_t_1); __pyx_t_4 = 0;
     __pyx_t_5 = NULL;
   } else {
-    __pyx_t_4 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_Alignment); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 16, __pyx_L1_error)
+    __pyx_t_4 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_Alignment); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 36, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_5 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 16, __pyx_L1_error)
+    __pyx_t_5 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 36, __pyx_L1_error)
   }
   for (;;) {
     if (likely(!__pyx_t_5)) {
       if (likely(PyList_CheckExact(__pyx_t_1))) {
         if (__pyx_t_4 >= PyList_GET_SIZE(__pyx_t_1)) break;
         #if CYTHON_COMPILING_IN_CPYTHON
-        __pyx_t_3 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_4); __Pyx_INCREF(__pyx_t_3); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 16, __pyx_L1_error)
+        __pyx_t_3 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_4); __Pyx_INCREF(__pyx_t_3); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 36, __pyx_L1_error)
         #else
-        __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 16, __pyx_L1_error)
+        __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 36, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         #endif
       } else {
         if (__pyx_t_4 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
         #if CYTHON_COMPILING_IN_CPYTHON
-        __pyx_t_3 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_4); __Pyx_INCREF(__pyx_t_3); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 16, __pyx_L1_error)
+        __pyx_t_3 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_4); __Pyx_INCREF(__pyx_t_3); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 36, __pyx_L1_error)
         #else
-        __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 16, __pyx_L1_error)
+        __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 36, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         #endif
       }
@@ -1520,7 +2665,7 @@ static PyObject *__pyx_pf_10decodeline_2DecodeLine(CYTHON_UNUSED PyObject *__pyx
         PyObject* exc_type = PyErr_Occurred();
         if (exc_type) {
           if (likely(exc_type == PyExc_StopIteration || PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-          else __PYX_ERR(0, 16, __pyx_L1_error)
+          else __PYX_ERR(0, 36, __pyx_L1_error)
         }
         break;
       }
@@ -1528,48 +2673,48 @@ static PyObject *__pyx_pf_10decodeline_2DecodeLine(CYTHON_UNUSED PyObject *__pyx
     }
     __Pyx_XDECREF_SET(__pyx_v_x, __pyx_t_3);
     __pyx_t_3 = 0;
-    __pyx_t_3 = __Pyx_PyNumber_Float(__pyx_v_x); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 16, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyNumber_Float(__pyx_v_x); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 36, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    if (unlikely(__Pyx_ListComp_Append(__pyx_t_2, (PyObject*)__pyx_t_3))) __PYX_ERR(0, 16, __pyx_L1_error)
+    if (unlikely(__Pyx_ListComp_Append(__pyx_t_2, (PyObject*)__pyx_t_3))) __PYX_ERR(0, 36, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   }
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_p1 = ((PyObject*)__pyx_t_2);
   __pyx_t_2 = 0;
 
-  /* "decodeline.pyx":17
+  /* "decodeline.pyx":37
  *     Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
  *     p1 = [float(x) for x in Alignment]
  *     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]             # <<<<<<<<<<<<<<
  *     p3 = [float(x) for x in Strand]
  *     return p1 + p2 + p3
  */
-  __pyx_t_2 = PyList_New(0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 17, __pyx_L1_error)
+  __pyx_t_2 = PyList_New(0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 37, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   if (likely(PyList_CheckExact(__pyx_v_Qual)) || PyTuple_CheckExact(__pyx_v_Qual)) {
     __pyx_t_1 = __pyx_v_Qual; __Pyx_INCREF(__pyx_t_1); __pyx_t_4 = 0;
     __pyx_t_5 = NULL;
   } else {
-    __pyx_t_4 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_Qual); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 17, __pyx_L1_error)
+    __pyx_t_4 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_Qual); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 37, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_5 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 17, __pyx_L1_error)
+    __pyx_t_5 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 37, __pyx_L1_error)
   }
   for (;;) {
     if (likely(!__pyx_t_5)) {
       if (likely(PyList_CheckExact(__pyx_t_1))) {
         if (__pyx_t_4 >= PyList_GET_SIZE(__pyx_t_1)) break;
         #if CYTHON_COMPILING_IN_CPYTHON
-        __pyx_t_3 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_4); __Pyx_INCREF(__pyx_t_3); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 17, __pyx_L1_error)
+        __pyx_t_3 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_4); __Pyx_INCREF(__pyx_t_3); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 37, __pyx_L1_error)
         #else
-        __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 17, __pyx_L1_error)
+        __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 37, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         #endif
       } else {
         if (__pyx_t_4 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
         #if CYTHON_COMPILING_IN_CPYTHON
-        __pyx_t_3 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_4); __Pyx_INCREF(__pyx_t_3); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 17, __pyx_L1_error)
+        __pyx_t_3 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_4); __Pyx_INCREF(__pyx_t_3); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 37, __pyx_L1_error)
         #else
-        __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 17, __pyx_L1_error)
+        __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 37, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         #endif
       }
@@ -1579,7 +2724,7 @@ static PyObject *__pyx_pf_10decodeline_2DecodeLine(CYTHON_UNUSED PyObject *__pyx
         PyObject* exc_type = PyErr_Occurred();
         if (exc_type) {
           if (likely(exc_type == PyExc_StopIteration || PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-          else __PYX_ERR(0, 17, __pyx_L1_error)
+          else __PYX_ERR(0, 37, __pyx_L1_error)
         }
         break;
       }
@@ -1587,48 +2732,49 @@ static PyObject *__pyx_pf_10decodeline_2DecodeLine(CYTHON_UNUSED PyObject *__pyx
     }
     __Pyx_XDECREF_SET(__pyx_v_x, __pyx_t_3);
     __pyx_t_3 = 0;
-    __pyx_t_6 = __Pyx_PyObject_Ord(__pyx_v_x); if (unlikely(__pyx_t_6 == (long)(Py_UCS4)-1)) __PYX_ERR(0, 17, __pyx_L1_error)
-    __pyx_t_3 = PyFloat_FromDouble(((((double)(__pyx_t_6 - 33)) / 60.0) - 0.5)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 17, __pyx_L1_error)
+    __pyx_t_6 = __Pyx_PyObject_Ord(__pyx_v_x); if (unlikely(__pyx_t_6 == (long)(Py_UCS4)-1)) __PYX_ERR(0, 37, __pyx_L1_error)
+    __pyx_t_3 = PyFloat_FromDouble(((((double)(__pyx_t_6 - 33)) / 60.0) - 0.5)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 37, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    if (unlikely(__Pyx_ListComp_Append(__pyx_t_2, (PyObject*)__pyx_t_3))) __PYX_ERR(0, 17, __pyx_L1_error)
+    if (unlikely(__Pyx_ListComp_Append(__pyx_t_2, (PyObject*)__pyx_t_3))) __PYX_ERR(0, 37, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   }
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_p2 = ((PyObject*)__pyx_t_2);
   __pyx_t_2 = 0;
 
-  /* "decodeline.pyx":18
+  /* "decodeline.pyx":38
  *     p1 = [float(x) for x in Alignment]
  *     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
  *     p3 = [float(x) for x in Strand]             # <<<<<<<<<<<<<<
  *     return p1 + p2 + p3
+ * 
  */
-  __pyx_t_2 = PyList_New(0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 18, __pyx_L1_error)
+  __pyx_t_2 = PyList_New(0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 38, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
   if (likely(PyList_CheckExact(__pyx_v_Strand)) || PyTuple_CheckExact(__pyx_v_Strand)) {
     __pyx_t_1 = __pyx_v_Strand; __Pyx_INCREF(__pyx_t_1); __pyx_t_4 = 0;
     __pyx_t_5 = NULL;
   } else {
-    __pyx_t_4 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_Strand); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 18, __pyx_L1_error)
+    __pyx_t_4 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_Strand); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 38, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_1);
-    __pyx_t_5 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 18, __pyx_L1_error)
+    __pyx_t_5 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 38, __pyx_L1_error)
   }
   for (;;) {
     if (likely(!__pyx_t_5)) {
       if (likely(PyList_CheckExact(__pyx_t_1))) {
         if (__pyx_t_4 >= PyList_GET_SIZE(__pyx_t_1)) break;
         #if CYTHON_COMPILING_IN_CPYTHON
-        __pyx_t_3 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_4); __Pyx_INCREF(__pyx_t_3); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 18, __pyx_L1_error)
+        __pyx_t_3 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_4); __Pyx_INCREF(__pyx_t_3); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 38, __pyx_L1_error)
         #else
-        __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 18, __pyx_L1_error)
+        __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 38, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         #endif
       } else {
         if (__pyx_t_4 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
         #if CYTHON_COMPILING_IN_CPYTHON
-        __pyx_t_3 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_4); __Pyx_INCREF(__pyx_t_3); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 18, __pyx_L1_error)
+        __pyx_t_3 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_4); __Pyx_INCREF(__pyx_t_3); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 38, __pyx_L1_error)
         #else
-        __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 18, __pyx_L1_error)
+        __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 38, __pyx_L1_error)
         __Pyx_GOTREF(__pyx_t_3);
         #endif
       }
@@ -1638,7 +2784,7 @@ static PyObject *__pyx_pf_10decodeline_2DecodeLine(CYTHON_UNUSED PyObject *__pyx
         PyObject* exc_type = PyErr_Occurred();
         if (exc_type) {
           if (likely(exc_type == PyExc_StopIteration || PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
-          else __PYX_ERR(0, 18, __pyx_L1_error)
+          else __PYX_ERR(0, 38, __pyx_L1_error)
         }
         break;
       }
@@ -1646,35 +2792,37 @@ static PyObject *__pyx_pf_10decodeline_2DecodeLine(CYTHON_UNUSED PyObject *__pyx
     }
     __Pyx_XDECREF_SET(__pyx_v_x, __pyx_t_3);
     __pyx_t_3 = 0;
-    __pyx_t_3 = __Pyx_PyNumber_Float(__pyx_v_x); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 18, __pyx_L1_error)
+    __pyx_t_3 = __Pyx_PyNumber_Float(__pyx_v_x); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 38, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_3);
-    if (unlikely(__Pyx_ListComp_Append(__pyx_t_2, (PyObject*)__pyx_t_3))) __PYX_ERR(0, 18, __pyx_L1_error)
+    if (unlikely(__Pyx_ListComp_Append(__pyx_t_2, (PyObject*)__pyx_t_3))) __PYX_ERR(0, 38, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
   }
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
   __pyx_v_p3 = ((PyObject*)__pyx_t_2);
   __pyx_t_2 = 0;
 
-  /* "decodeline.pyx":19
+  /* "decodeline.pyx":39
  *     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
  *     p3 = [float(x) for x in Strand]
  *     return p1 + p2 + p3             # <<<<<<<<<<<<<<
+ * 
+ * def DecodeLine2(window, WIDTH, HEIGHT):
  */
   __Pyx_XDECREF(__pyx_r);
-  __pyx_t_2 = PyNumber_Add(__pyx_v_p1, __pyx_v_p2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 19, __pyx_L1_error)
+  __pyx_t_2 = PyNumber_Add(__pyx_v_p1, __pyx_v_p2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_2);
-  __pyx_t_1 = PyNumber_Add(__pyx_t_2, __pyx_v_p3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 19, __pyx_L1_error)
+  __pyx_t_1 = PyNumber_Add(__pyx_t_2, __pyx_v_p3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 39, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
   __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
   __pyx_r = __pyx_t_1;
   __pyx_t_1 = 0;
   goto __pyx_L0;
 
-  /* "decodeline.pyx":11
- *     return p1 + p2 + p3, label
+  /* "decodeline.pyx":31
+ *     return p1 + p2 + p3, chrom, start, ref, alt
  * 
  * def DecodeLine(window, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
- * 	#chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ *     #chrom, start, end, ref, alt, label, window = line.strip().split('\t')
  *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
  */
 
@@ -1684,6 +2832,398 @@ static PyObject *__pyx_pf_10decodeline_2DecodeLine(CYTHON_UNUSED PyObject *__pyx
   __Pyx_XDECREF(__pyx_t_2);
   __Pyx_XDECREF(__pyx_t_3);
   __Pyx_AddTraceback("decodeline.DecodeLine", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __pyx_r = NULL;
+  __pyx_L0:;
+  __Pyx_XDECREF(__pyx_v_Alignment);
+  __Pyx_XDECREF(__pyx_v_Qual);
+  __Pyx_XDECREF(__pyx_v_Strand);
+  __Pyx_XDECREF(__pyx_v_p1);
+  __Pyx_XDECREF(__pyx_v_p2);
+  __Pyx_XDECREF(__pyx_v_p3);
+  __Pyx_XDECREF(__pyx_v_x);
+  __Pyx_XGIVEREF(__pyx_r);
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+/* "decodeline.pyx":41
+ *     return p1 + p2 + p3
+ * 
+ * def DecodeLine2(window, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
+ *     #chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ */
+
+/* Python wrapper */
+static PyObject *__pyx_pw_10decodeline_9DecodeLine2(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds); /*proto*/
+static PyMethodDef __pyx_mdef_10decodeline_9DecodeLine2 = {"DecodeLine2", (PyCFunction)__pyx_pw_10decodeline_9DecodeLine2, METH_VARARGS|METH_KEYWORDS, 0};
+static PyObject *__pyx_pw_10decodeline_9DecodeLine2(PyObject *__pyx_self, PyObject *__pyx_args, PyObject *__pyx_kwds) {
+  PyObject *__pyx_v_window = 0;
+  PyObject *__pyx_v_WIDTH = 0;
+  PyObject *__pyx_v_HEIGHT = 0;
+  PyObject *__pyx_r = 0;
+  __Pyx_RefNannyDeclarations
+  __Pyx_RefNannySetupContext("DecodeLine2 (wrapper)", 0);
+  {
+    static PyObject **__pyx_pyargnames[] = {&__pyx_n_s_window,&__pyx_n_s_WIDTH,&__pyx_n_s_HEIGHT,0};
+    PyObject* values[3] = {0,0,0};
+    if (unlikely(__pyx_kwds)) {
+      Py_ssize_t kw_args;
+      const Py_ssize_t pos_args = PyTuple_GET_SIZE(__pyx_args);
+      switch (pos_args) {
+        case  3: values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+        case  2: values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+        case  1: values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+        case  0: break;
+        default: goto __pyx_L5_argtuple_error;
+      }
+      kw_args = PyDict_Size(__pyx_kwds);
+      switch (pos_args) {
+        case  0:
+        if (likely((values[0] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_window)) != 0)) kw_args--;
+        else goto __pyx_L5_argtuple_error;
+        case  1:
+        if (likely((values[1] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_WIDTH)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("DecodeLine2", 1, 3, 3, 1); __PYX_ERR(0, 41, __pyx_L3_error)
+        }
+        case  2:
+        if (likely((values[2] = PyDict_GetItem(__pyx_kwds, __pyx_n_s_HEIGHT)) != 0)) kw_args--;
+        else {
+          __Pyx_RaiseArgtupleInvalid("DecodeLine2", 1, 3, 3, 2); __PYX_ERR(0, 41, __pyx_L3_error)
+        }
+      }
+      if (unlikely(kw_args > 0)) {
+        if (unlikely(__Pyx_ParseOptionalKeywords(__pyx_kwds, __pyx_pyargnames, 0, values, pos_args, "DecodeLine2") < 0)) __PYX_ERR(0, 41, __pyx_L3_error)
+      }
+    } else if (PyTuple_GET_SIZE(__pyx_args) != 3) {
+      goto __pyx_L5_argtuple_error;
+    } else {
+      values[0] = PyTuple_GET_ITEM(__pyx_args, 0);
+      values[1] = PyTuple_GET_ITEM(__pyx_args, 1);
+      values[2] = PyTuple_GET_ITEM(__pyx_args, 2);
+    }
+    __pyx_v_window = values[0];
+    __pyx_v_WIDTH = values[1];
+    __pyx_v_HEIGHT = values[2];
+  }
+  goto __pyx_L4_argument_unpacking_done;
+  __pyx_L5_argtuple_error:;
+  __Pyx_RaiseArgtupleInvalid("DecodeLine2", 1, 3, 3, PyTuple_GET_SIZE(__pyx_args)); __PYX_ERR(0, 41, __pyx_L3_error)
+  __pyx_L3_error:;
+  __Pyx_AddTraceback("decodeline.DecodeLine2", __pyx_clineno, __pyx_lineno, __pyx_filename);
+  __Pyx_RefNannyFinishContext();
+  return NULL;
+  __pyx_L4_argument_unpacking_done:;
+  __pyx_r = __pyx_pf_10decodeline_8DecodeLine2(__pyx_self, __pyx_v_window, __pyx_v_WIDTH, __pyx_v_HEIGHT);
+
+  /* function exit code */
+  __Pyx_RefNannyFinishContext();
+  return __pyx_r;
+}
+
+static PyObject *__pyx_pf_10decodeline_8DecodeLine2(CYTHON_UNUSED PyObject *__pyx_self, PyObject *__pyx_v_window, PyObject *__pyx_v_WIDTH, PyObject *__pyx_v_HEIGHT) {
+  PyObject *__pyx_v_Alignment = NULL;
+  PyObject *__pyx_v_Qual = NULL;
+  PyObject *__pyx_v_Strand = NULL;
+  PyObject *__pyx_v_p1 = NULL;
+  PyObject *__pyx_v_p2 = NULL;
+  PyObject *__pyx_v_p3 = NULL;
+  PyObject *__pyx_v_x = NULL;
+  PyObject *__pyx_r = NULL;
+  __Pyx_RefNannyDeclarations
+  PyObject *__pyx_t_1 = NULL;
+  PyObject *__pyx_t_2 = NULL;
+  PyObject *__pyx_t_3 = NULL;
+  Py_ssize_t __pyx_t_4;
+  PyObject *(*__pyx_t_5)(PyObject *);
+  double __pyx_t_6;
+  long __pyx_t_7;
+  __Pyx_RefNannySetupContext("DecodeLine2", 0);
+
+  /* "decodeline.pyx":43
+ * def DecodeLine2(window, WIDTH, HEIGHT):
+ *     #chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]             # <<<<<<<<<<<<<<
+ *     Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
+ *     Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
+ */
+  __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 43, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_2 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 43, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_PyObject_GetSlice(__pyx_v_window, 0, 0, NULL, &__pyx_t_2, NULL, 1, 0, 1); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 43, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_v_Alignment = __pyx_t_1;
+  __pyx_t_1 = 0;
+
+  /* "decodeline.pyx":44
+ *     #chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ *     Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]             # <<<<<<<<<<<<<<
+ *     Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
+ *     p1 = [float(x)/6 - 0.5 for x in Alignment]
+ */
+  __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_2 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_3 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = PyNumber_Multiply(__pyx_t_3, __pyx_int_2); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __pyx_t_3 = __Pyx_PyObject_GetSlice(__pyx_v_window, 0, 0, &__pyx_t_2, &__pyx_t_1, NULL, 0, 0, 1); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 44, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_Qual = __pyx_t_3;
+  __pyx_t_3 = 0;
+
+  /* "decodeline.pyx":45
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ *     Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
+ *     Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]             # <<<<<<<<<<<<<<
+ *     p1 = [float(x)/6 - 0.5 for x in Alignment]
+ *     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
+ */
+  __pyx_t_3 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 45, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __pyx_t_1 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 45, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __pyx_t_3 = PyNumber_Multiply(__pyx_t_1, __pyx_int_2); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 45, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_3);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = __Pyx_PyInt_AddObjC(__pyx_v_HEIGHT, __pyx_int_1, 1, 0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 45, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __pyx_t_2 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_t_1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 45, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_t_1 = PyNumber_Multiply(__pyx_t_2, __pyx_int_3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 45, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_t_2 = __Pyx_PyObject_GetSlice(__pyx_v_window, 0, 0, &__pyx_t_3, &__pyx_t_1, NULL, 0, 0, 1); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 45, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_Strand = __pyx_t_2;
+  __pyx_t_2 = 0;
+
+  /* "decodeline.pyx":46
+ *     Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
+ *     Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
+ *     p1 = [float(x)/6 - 0.5 for x in Alignment]             # <<<<<<<<<<<<<<
+ *     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
+ *     p3 = [float(x)/2 - 0.5 for x in Strand]
+ */
+  __pyx_t_2 = PyList_New(0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 46, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  if (likely(PyList_CheckExact(__pyx_v_Alignment)) || PyTuple_CheckExact(__pyx_v_Alignment)) {
+    __pyx_t_1 = __pyx_v_Alignment; __Pyx_INCREF(__pyx_t_1); __pyx_t_4 = 0;
+    __pyx_t_5 = NULL;
+  } else {
+    __pyx_t_4 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_Alignment); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 46, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __pyx_t_5 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 46, __pyx_L1_error)
+  }
+  for (;;) {
+    if (likely(!__pyx_t_5)) {
+      if (likely(PyList_CheckExact(__pyx_t_1))) {
+        if (__pyx_t_4 >= PyList_GET_SIZE(__pyx_t_1)) break;
+        #if CYTHON_COMPILING_IN_CPYTHON
+        __pyx_t_3 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_4); __Pyx_INCREF(__pyx_t_3); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 46, __pyx_L1_error)
+        #else
+        __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 46, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_3);
+        #endif
+      } else {
+        if (__pyx_t_4 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
+        #if CYTHON_COMPILING_IN_CPYTHON
+        __pyx_t_3 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_4); __Pyx_INCREF(__pyx_t_3); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 46, __pyx_L1_error)
+        #else
+        __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 46, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_3);
+        #endif
+      }
+    } else {
+      __pyx_t_3 = __pyx_t_5(__pyx_t_1);
+      if (unlikely(!__pyx_t_3)) {
+        PyObject* exc_type = PyErr_Occurred();
+        if (exc_type) {
+          if (likely(exc_type == PyExc_StopIteration || PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+          else __PYX_ERR(0, 46, __pyx_L1_error)
+        }
+        break;
+      }
+      __Pyx_GOTREF(__pyx_t_3);
+    }
+    __Pyx_XDECREF_SET(__pyx_v_x, __pyx_t_3);
+    __pyx_t_3 = 0;
+    __pyx_t_6 = __Pyx_PyObject_AsDouble(__pyx_v_x); if (unlikely(__pyx_t_6 == ((double)-1) && PyErr_Occurred())) __PYX_ERR(0, 46, __pyx_L1_error)
+    __pyx_t_3 = PyFloat_FromDouble(((__pyx_t_6 / 6.0) - 0.5)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 46, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_3);
+    if (unlikely(__Pyx_ListComp_Append(__pyx_t_2, (PyObject*)__pyx_t_3))) __PYX_ERR(0, 46, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  }
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_p1 = ((PyObject*)__pyx_t_2);
+  __pyx_t_2 = 0;
+
+  /* "decodeline.pyx":47
+ *     Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
+ *     p1 = [float(x)/6 - 0.5 for x in Alignment]
+ *     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]             # <<<<<<<<<<<<<<
+ *     p3 = [float(x)/2 - 0.5 for x in Strand]
+ *     return p1 + p2 + p3
+ */
+  __pyx_t_2 = PyList_New(0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 47, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  if (likely(PyList_CheckExact(__pyx_v_Qual)) || PyTuple_CheckExact(__pyx_v_Qual)) {
+    __pyx_t_1 = __pyx_v_Qual; __Pyx_INCREF(__pyx_t_1); __pyx_t_4 = 0;
+    __pyx_t_5 = NULL;
+  } else {
+    __pyx_t_4 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_Qual); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 47, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __pyx_t_5 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 47, __pyx_L1_error)
+  }
+  for (;;) {
+    if (likely(!__pyx_t_5)) {
+      if (likely(PyList_CheckExact(__pyx_t_1))) {
+        if (__pyx_t_4 >= PyList_GET_SIZE(__pyx_t_1)) break;
+        #if CYTHON_COMPILING_IN_CPYTHON
+        __pyx_t_3 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_4); __Pyx_INCREF(__pyx_t_3); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 47, __pyx_L1_error)
+        #else
+        __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 47, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_3);
+        #endif
+      } else {
+        if (__pyx_t_4 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
+        #if CYTHON_COMPILING_IN_CPYTHON
+        __pyx_t_3 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_4); __Pyx_INCREF(__pyx_t_3); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 47, __pyx_L1_error)
+        #else
+        __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 47, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_3);
+        #endif
+      }
+    } else {
+      __pyx_t_3 = __pyx_t_5(__pyx_t_1);
+      if (unlikely(!__pyx_t_3)) {
+        PyObject* exc_type = PyErr_Occurred();
+        if (exc_type) {
+          if (likely(exc_type == PyExc_StopIteration || PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+          else __PYX_ERR(0, 47, __pyx_L1_error)
+        }
+        break;
+      }
+      __Pyx_GOTREF(__pyx_t_3);
+    }
+    __Pyx_XDECREF_SET(__pyx_v_x, __pyx_t_3);
+    __pyx_t_3 = 0;
+    __pyx_t_7 = __Pyx_PyObject_Ord(__pyx_v_x); if (unlikely(__pyx_t_7 == (long)(Py_UCS4)-1)) __PYX_ERR(0, 47, __pyx_L1_error)
+    __pyx_t_3 = PyFloat_FromDouble(((((double)(__pyx_t_7 - 33)) / 60.0) - 0.5)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 47, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_3);
+    if (unlikely(__Pyx_ListComp_Append(__pyx_t_2, (PyObject*)__pyx_t_3))) __PYX_ERR(0, 47, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  }
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_p2 = ((PyObject*)__pyx_t_2);
+  __pyx_t_2 = 0;
+
+  /* "decodeline.pyx":48
+ *     p1 = [float(x)/6 - 0.5 for x in Alignment]
+ *     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
+ *     p3 = [float(x)/2 - 0.5 for x in Strand]             # <<<<<<<<<<<<<<
+ *     return p1 + p2 + p3
+ */
+  __pyx_t_2 = PyList_New(0); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 48, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  if (likely(PyList_CheckExact(__pyx_v_Strand)) || PyTuple_CheckExact(__pyx_v_Strand)) {
+    __pyx_t_1 = __pyx_v_Strand; __Pyx_INCREF(__pyx_t_1); __pyx_t_4 = 0;
+    __pyx_t_5 = NULL;
+  } else {
+    __pyx_t_4 = -1; __pyx_t_1 = PyObject_GetIter(__pyx_v_Strand); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 48, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_1);
+    __pyx_t_5 = Py_TYPE(__pyx_t_1)->tp_iternext; if (unlikely(!__pyx_t_5)) __PYX_ERR(0, 48, __pyx_L1_error)
+  }
+  for (;;) {
+    if (likely(!__pyx_t_5)) {
+      if (likely(PyList_CheckExact(__pyx_t_1))) {
+        if (__pyx_t_4 >= PyList_GET_SIZE(__pyx_t_1)) break;
+        #if CYTHON_COMPILING_IN_CPYTHON
+        __pyx_t_3 = PyList_GET_ITEM(__pyx_t_1, __pyx_t_4); __Pyx_INCREF(__pyx_t_3); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 48, __pyx_L1_error)
+        #else
+        __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 48, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_3);
+        #endif
+      } else {
+        if (__pyx_t_4 >= PyTuple_GET_SIZE(__pyx_t_1)) break;
+        #if CYTHON_COMPILING_IN_CPYTHON
+        __pyx_t_3 = PyTuple_GET_ITEM(__pyx_t_1, __pyx_t_4); __Pyx_INCREF(__pyx_t_3); __pyx_t_4++; if (unlikely(0 < 0)) __PYX_ERR(0, 48, __pyx_L1_error)
+        #else
+        __pyx_t_3 = PySequence_ITEM(__pyx_t_1, __pyx_t_4); __pyx_t_4++; if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 48, __pyx_L1_error)
+        __Pyx_GOTREF(__pyx_t_3);
+        #endif
+      }
+    } else {
+      __pyx_t_3 = __pyx_t_5(__pyx_t_1);
+      if (unlikely(!__pyx_t_3)) {
+        PyObject* exc_type = PyErr_Occurred();
+        if (exc_type) {
+          if (likely(exc_type == PyExc_StopIteration || PyErr_GivenExceptionMatches(exc_type, PyExc_StopIteration))) PyErr_Clear();
+          else __PYX_ERR(0, 48, __pyx_L1_error)
+        }
+        break;
+      }
+      __Pyx_GOTREF(__pyx_t_3);
+    }
+    __Pyx_XDECREF_SET(__pyx_v_x, __pyx_t_3);
+    __pyx_t_3 = 0;
+    __pyx_t_6 = __Pyx_PyObject_AsDouble(__pyx_v_x); if (unlikely(__pyx_t_6 == ((double)-1) && PyErr_Occurred())) __PYX_ERR(0, 48, __pyx_L1_error)
+    __pyx_t_3 = PyFloat_FromDouble(((__pyx_t_6 / 2.0) - 0.5)); if (unlikely(!__pyx_t_3)) __PYX_ERR(0, 48, __pyx_L1_error)
+    __Pyx_GOTREF(__pyx_t_3);
+    if (unlikely(__Pyx_ListComp_Append(__pyx_t_2, (PyObject*)__pyx_t_3))) __PYX_ERR(0, 48, __pyx_L1_error)
+    __Pyx_DECREF(__pyx_t_3); __pyx_t_3 = 0;
+  }
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+  __pyx_v_p3 = ((PyObject*)__pyx_t_2);
+  __pyx_t_2 = 0;
+
+  /* "decodeline.pyx":49
+ *     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
+ *     p3 = [float(x)/2 - 0.5 for x in Strand]
+ *     return p1 + p2 + p3             # <<<<<<<<<<<<<<
+ */
+  __Pyx_XDECREF(__pyx_r);
+  __pyx_t_2 = PyNumber_Add(__pyx_v_p1, __pyx_v_p2); if (unlikely(!__pyx_t_2)) __PYX_ERR(0, 49, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_2);
+  __pyx_t_1 = PyNumber_Add(__pyx_t_2, __pyx_v_p3); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 49, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  __Pyx_DECREF(__pyx_t_2); __pyx_t_2 = 0;
+  __pyx_r = __pyx_t_1;
+  __pyx_t_1 = 0;
+  goto __pyx_L0;
+
+  /* "decodeline.pyx":41
+ *     return p1 + p2 + p3
+ * 
+ * def DecodeLine2(window, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
+ *     #chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ */
+
+  /* function exit code */
+  __pyx_L1_error:;
+  __Pyx_XDECREF(__pyx_t_1);
+  __Pyx_XDECREF(__pyx_t_2);
+  __Pyx_XDECREF(__pyx_t_3);
+  __Pyx_AddTraceback("decodeline.DecodeLine2", __pyx_clineno, __pyx_lineno, __pyx_filename);
   __pyx_r = NULL;
   __pyx_L0:;
   __Pyx_XDECREF(__pyx_v_Alignment);
@@ -1724,7 +3264,10 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_kp_s_, __pyx_k_, sizeof(__pyx_k_), 0, 0, 1, 0},
   {&__pyx_n_s_Alignment, __pyx_k_Alignment, sizeof(__pyx_k_Alignment), 0, 0, 1, 1},
   {&__pyx_n_s_DecodeLine, __pyx_k_DecodeLine, sizeof(__pyx_k_DecodeLine), 0, 0, 1, 1},
+  {&__pyx_n_s_DecodeLine2, __pyx_k_DecodeLine2, sizeof(__pyx_k_DecodeLine2), 0, 0, 1, 1},
   {&__pyx_n_s_DecodeRecord, __pyx_k_DecodeRecord, sizeof(__pyx_k_DecodeRecord), 0, 0, 1, 1},
+  {&__pyx_n_s_DecodeRecord2, __pyx_k_DecodeRecord2, sizeof(__pyx_k_DecodeRecord2), 0, 0, 1, 1},
+  {&__pyx_n_s_DecodeRecord3, __pyx_k_DecodeRecord3, sizeof(__pyx_k_DecodeRecord3), 0, 0, 1, 1},
   {&__pyx_n_s_HEIGHT, __pyx_k_HEIGHT, sizeof(__pyx_k_HEIGHT), 0, 0, 1, 1},
   {&__pyx_n_s_Qual, __pyx_k_Qual, sizeof(__pyx_k_Qual), 0, 0, 1, 1},
   {&__pyx_n_s_Strand, __pyx_k_Strand, sizeof(__pyx_k_Strand), 0, 0, 1, 1},
@@ -1767,27 +3310,85 @@ static int __Pyx_InitCachedConstants(void) {
   __Pyx_GOTREF(__pyx_tuple__2);
   __Pyx_GIVEREF(__pyx_tuple__2);
 
+  /* "decodeline.pyx":12
+ * 
+ * def DecodeRecord2(line, WIDTH, HEIGHT):
+ *     chrom, start, end, ref, alt, label, window = line.strip().split('\t')             # <<<<<<<<<<<<<<
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ *     Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
+ */
+  __pyx_tuple__3 = PyTuple_Pack(1, __pyx_kp_s_); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(0, 12, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__3);
+  __Pyx_GIVEREF(__pyx_tuple__3);
+
+  /* "decodeline.pyx":22
+ * 
+ * def DecodeRecord3(line, WIDTH, HEIGHT):
+ *     chrom, start, end, ref, alt, label, window = line.strip().split('\t')             # <<<<<<<<<<<<<<
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ *     Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
+ */
+  __pyx_tuple__4 = PyTuple_Pack(1, __pyx_kp_s_); if (unlikely(!__pyx_tuple__4)) __PYX_ERR(0, 22, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__4);
+  __Pyx_GIVEREF(__pyx_tuple__4);
+
   /* "decodeline.pyx":1
  * def DecodeRecord(line, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
  *     chrom, start, end, ref, alt, label, window = line.strip().split('\t')
  *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
  */
-  __pyx_tuple__3 = PyTuple_Pack(17, __pyx_n_s_line, __pyx_n_s_WIDTH, __pyx_n_s_HEIGHT, __pyx_n_s_chrom, __pyx_n_s_start, __pyx_n_s_end, __pyx_n_s_ref, __pyx_n_s_alt, __pyx_n_s_label, __pyx_n_s_window, __pyx_n_s_Alignment, __pyx_n_s_Qual, __pyx_n_s_Strand, __pyx_n_s_p1, __pyx_n_s_p2, __pyx_n_s_p3, __pyx_n_s_x); if (unlikely(!__pyx_tuple__3)) __PYX_ERR(0, 1, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__3);
-  __Pyx_GIVEREF(__pyx_tuple__3);
-  __pyx_codeobj__4 = (PyObject*)__Pyx_PyCode_New(3, 0, 17, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__3, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_yufengshen_TensorFlowCalle, __pyx_n_s_DecodeRecord, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__4)) __PYX_ERR(0, 1, __pyx_L1_error)
+  __pyx_tuple__5 = PyTuple_Pack(17, __pyx_n_s_line, __pyx_n_s_WIDTH, __pyx_n_s_HEIGHT, __pyx_n_s_chrom, __pyx_n_s_start, __pyx_n_s_end, __pyx_n_s_ref, __pyx_n_s_alt, __pyx_n_s_label, __pyx_n_s_window, __pyx_n_s_Alignment, __pyx_n_s_Qual, __pyx_n_s_Strand, __pyx_n_s_p1, __pyx_n_s_p2, __pyx_n_s_p3, __pyx_n_s_x); if (unlikely(!__pyx_tuple__5)) __PYX_ERR(0, 1, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__5);
+  __Pyx_GIVEREF(__pyx_tuple__5);
+  __pyx_codeobj__6 = (PyObject*)__Pyx_PyCode_New(3, 0, 17, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__5, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_yufengshen_TensorFlowCalle, __pyx_n_s_DecodeRecord, 1, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__6)) __PYX_ERR(0, 1, __pyx_L1_error)
 
   /* "decodeline.pyx":11
  *     return p1 + p2 + p3, label
  * 
- * def DecodeLine(window, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
- * 	#chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ * def DecodeRecord2(line, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
+ *     chrom, start, end, ref, alt, label, window = line.strip().split('\t')
  *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
  */
-  __pyx_tuple__5 = PyTuple_Pack(10, __pyx_n_s_window, __pyx_n_s_WIDTH, __pyx_n_s_HEIGHT, __pyx_n_s_Alignment, __pyx_n_s_Qual, __pyx_n_s_Strand, __pyx_n_s_p1, __pyx_n_s_p2, __pyx_n_s_p3, __pyx_n_s_x); if (unlikely(!__pyx_tuple__5)) __PYX_ERR(0, 11, __pyx_L1_error)
-  __Pyx_GOTREF(__pyx_tuple__5);
-  __Pyx_GIVEREF(__pyx_tuple__5);
-  __pyx_codeobj__6 = (PyObject*)__Pyx_PyCode_New(3, 0, 10, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__5, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_yufengshen_TensorFlowCalle, __pyx_n_s_DecodeLine, 11, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__6)) __PYX_ERR(0, 11, __pyx_L1_error)
+  __pyx_tuple__7 = PyTuple_Pack(17, __pyx_n_s_line, __pyx_n_s_WIDTH, __pyx_n_s_HEIGHT, __pyx_n_s_chrom, __pyx_n_s_start, __pyx_n_s_end, __pyx_n_s_ref, __pyx_n_s_alt, __pyx_n_s_label, __pyx_n_s_window, __pyx_n_s_Alignment, __pyx_n_s_Qual, __pyx_n_s_Strand, __pyx_n_s_p1, __pyx_n_s_p2, __pyx_n_s_p3, __pyx_n_s_x); if (unlikely(!__pyx_tuple__7)) __PYX_ERR(0, 11, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__7);
+  __Pyx_GIVEREF(__pyx_tuple__7);
+  __pyx_codeobj__8 = (PyObject*)__Pyx_PyCode_New(3, 0, 17, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__7, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_yufengshen_TensorFlowCalle, __pyx_n_s_DecodeRecord2, 11, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__8)) __PYX_ERR(0, 11, __pyx_L1_error)
+
+  /* "decodeline.pyx":21
+ *     return p1 + p2 + p3, chrom, start, ref, alt
+ * 
+ * def DecodeRecord3(line, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
+ *     chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ */
+  __pyx_tuple__9 = PyTuple_Pack(17, __pyx_n_s_line, __pyx_n_s_WIDTH, __pyx_n_s_HEIGHT, __pyx_n_s_chrom, __pyx_n_s_start, __pyx_n_s_end, __pyx_n_s_ref, __pyx_n_s_alt, __pyx_n_s_label, __pyx_n_s_window, __pyx_n_s_Alignment, __pyx_n_s_Qual, __pyx_n_s_Strand, __pyx_n_s_p1, __pyx_n_s_p2, __pyx_n_s_p3, __pyx_n_s_x); if (unlikely(!__pyx_tuple__9)) __PYX_ERR(0, 21, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__9);
+  __Pyx_GIVEREF(__pyx_tuple__9);
+  __pyx_codeobj__10 = (PyObject*)__Pyx_PyCode_New(3, 0, 17, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__9, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_yufengshen_TensorFlowCalle, __pyx_n_s_DecodeRecord3, 21, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__10)) __PYX_ERR(0, 21, __pyx_L1_error)
+
+  /* "decodeline.pyx":31
+ *     return p1 + p2 + p3, chrom, start, ref, alt
+ * 
+ * def DecodeLine(window, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
+ *     #chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ */
+  __pyx_tuple__11 = PyTuple_Pack(10, __pyx_n_s_window, __pyx_n_s_WIDTH, __pyx_n_s_HEIGHT, __pyx_n_s_Alignment, __pyx_n_s_Qual, __pyx_n_s_Strand, __pyx_n_s_p1, __pyx_n_s_p2, __pyx_n_s_p3, __pyx_n_s_x); if (unlikely(!__pyx_tuple__11)) __PYX_ERR(0, 31, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__11);
+  __Pyx_GIVEREF(__pyx_tuple__11);
+  __pyx_codeobj__12 = (PyObject*)__Pyx_PyCode_New(3, 0, 10, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__11, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_yufengshen_TensorFlowCalle, __pyx_n_s_DecodeLine, 31, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__12)) __PYX_ERR(0, 31, __pyx_L1_error)
+
+  /* "decodeline.pyx":41
+ *     return p1 + p2 + p3
+ * 
+ * def DecodeLine2(window, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
+ *     #chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ */
+  __pyx_tuple__13 = PyTuple_Pack(10, __pyx_n_s_window, __pyx_n_s_WIDTH, __pyx_n_s_HEIGHT, __pyx_n_s_Alignment, __pyx_n_s_Qual, __pyx_n_s_Strand, __pyx_n_s_p1, __pyx_n_s_p2, __pyx_n_s_p3, __pyx_n_s_x); if (unlikely(!__pyx_tuple__13)) __PYX_ERR(0, 41, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_tuple__13);
+  __Pyx_GIVEREF(__pyx_tuple__13);
+  __pyx_codeobj__14 = (PyObject*)__Pyx_PyCode_New(3, 0, 10, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__13, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_yufengshen_TensorFlowCalle, __pyx_n_s_DecodeLine2, 41, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__14)) __PYX_ERR(0, 41, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
@@ -1910,13 +3511,49 @@ PyMODINIT_FUNC PyInit_decodeline(void)
   /* "decodeline.pyx":11
  *     return p1 + p2 + p3, label
  * 
- * def DecodeLine(window, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
- * 	#chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ * def DecodeRecord2(line, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
+ *     chrom, start, end, ref, alt, label, window = line.strip().split('\t')
  *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
  */
-  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_10decodeline_3DecodeLine, NULL, __pyx_n_s_decodeline); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 11, __pyx_L1_error)
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_10decodeline_3DecodeRecord2, NULL, __pyx_n_s_decodeline); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 11, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
-  if (PyDict_SetItem(__pyx_d, __pyx_n_s_DecodeLine, __pyx_t_1) < 0) __PYX_ERR(0, 11, __pyx_L1_error)
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_DecodeRecord2, __pyx_t_1) < 0) __PYX_ERR(0, 11, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "decodeline.pyx":21
+ *     return p1 + p2 + p3, chrom, start, ref, alt
+ * 
+ * def DecodeRecord3(line, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
+ *     chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ */
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_10decodeline_5DecodeRecord3, NULL, __pyx_n_s_decodeline); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 21, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_DecodeRecord3, __pyx_t_1) < 0) __PYX_ERR(0, 21, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "decodeline.pyx":31
+ *     return p1 + p2 + p3, chrom, start, ref, alt
+ * 
+ * def DecodeLine(window, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
+ *     #chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ */
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_10decodeline_7DecodeLine, NULL, __pyx_n_s_decodeline); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 31, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_DecodeLine, __pyx_t_1) < 0) __PYX_ERR(0, 31, __pyx_L1_error)
+  __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
+
+  /* "decodeline.pyx":41
+ *     return p1 + p2 + p3
+ * 
+ * def DecodeLine2(window, WIDTH, HEIGHT):             # <<<<<<<<<<<<<<
+ *     #chrom, start, end, ref, alt, label, window = line.strip().split('\t')
+ *     Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
+ */
+  __pyx_t_1 = PyCFunction_NewEx(&__pyx_mdef_10decodeline_9DecodeLine2, NULL, __pyx_n_s_decodeline); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 41, __pyx_L1_error)
+  __Pyx_GOTREF(__pyx_t_1);
+  if (PyDict_SetItem(__pyx_d, __pyx_n_s_DecodeLine2, __pyx_t_1) < 0) __PYX_ERR(0, 41, __pyx_L1_error)
   __Pyx_DECREF(__pyx_t_1); __pyx_t_1 = 0;
 
   /* "decodeline.pyx":1
@@ -2515,6 +4152,46 @@ bad:
     PyErr_Format(PyExc_TypeError,
         "ord() expected a character, but string of length %zd found", size);
     return (long)(Py_UCS4)-1;
+}
+
+/* pyobject_as_double */
+    static double __Pyx__PyObject_AsDouble(PyObject* obj) {
+    PyObject* float_value;
+#if CYTHON_COMPILING_IN_PYPY
+    float_value = PyNumber_Float(obj);  if (0) goto bad;
+#else
+    PyNumberMethods *nb = Py_TYPE(obj)->tp_as_number;
+    if (likely(nb) && likely(nb->nb_float)) {
+        float_value = nb->nb_float(obj);
+        if (likely(float_value) && unlikely(!PyFloat_Check(float_value))) {
+            PyErr_Format(PyExc_TypeError,
+                "__float__ returned non-float (type %.200s)",
+                Py_TYPE(float_value)->tp_name);
+            Py_DECREF(float_value);
+            goto bad;
+        }
+    } else if (PyUnicode_CheckExact(obj) || PyBytes_CheckExact(obj)) {
+#if PY_MAJOR_VERSION >= 3
+        float_value = PyFloat_FromString(obj);
+#else
+        float_value = PyFloat_FromString(obj, 0);
+#endif
+    } else {
+        PyObject* args = PyTuple_New(1);
+        if (unlikely(!args)) goto bad;
+        PyTuple_SET_ITEM(args, 0, obj);
+        float_value = PyObject_Call((PyObject*)&PyFloat_Type, args, 0);
+        PyTuple_SET_ITEM(args, 0, 0);
+        Py_DECREF(args);
+    }
+#endif
+    if (likely(float_value)) {
+        double value = PyFloat_AS_DOUBLE(float_value);
+        Py_DECREF(float_value);
+        return value;
+    }
+bad:
+    return (double)-1;
 }
 
 /* CodeObjectCache */

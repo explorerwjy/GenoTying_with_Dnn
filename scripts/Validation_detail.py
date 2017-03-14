@@ -49,7 +49,7 @@ class Counts():
 		self.two_one = 0
 		self.two_two = 0
 	def Get_POS_Eval(self):
-                self.Positive = self.one_one + self.one_two + self.two_one + self.two_two
+                self.Positive = self.zero_one + self.zero_two + self.one_one + self.one_two + self.two_one + self.two_two
                 self.POS_TP = self.one_one + self.one_two + self.two_one + self.two_two
 		self.POS_FP = self.one_zero + self.two_zero
 		self.POS_FN = self.zero_one + self.zero_two
