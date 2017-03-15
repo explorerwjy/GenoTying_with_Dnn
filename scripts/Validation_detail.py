@@ -124,7 +124,7 @@ def Classify(l, True_dict, counts, TP_hand, FP_hand, FN_hand):
 			FP_hand.write(l)
 		True_dict.pop(k)
 	else:
-		if v[0] == v[1]:
+		if v[0] == v[1] and v[0] == 1:
 			counts.two_zero += 1
 			FP_hand.write(l)
 		elif v[0] != v[1]:
@@ -155,7 +155,8 @@ def GetTruthDict_All(PositiveVCF):
 			else:
 				#raise KeyError("Multiple record in %s has same position: %s"%(vcf,p))
 				print "Multiple record in %s has same position: %s"%(PositiveVCF.split('/')[-1],k)
-	return res
+	print len(res)
+        return res
 
 def GetTruthDict_Test(PositiveVCF):
 	res = {}
@@ -202,7 +203,8 @@ def Evaluation(PositiveVCF,CandidateVCF,mode):
                 True_dict = GetTruthDict_Test(PositiveVCF)
         elif mode == 'train':
                 True_dict = GetTruthDict_Train(PositiveVCF)
-	fin = GetHand(CandidateVCF)
+	print len(True_dict)
+        fin = GetHand(CandidateVCF)
 	basename = CandidateVCF.split('/')[-1].rstrip('.gz').rstrip('.vcf')
 	TP_hand = open(basename+'_TP.vcf','wb')
 	FP_hand = open(basename+'_FP.vcf','wb')
