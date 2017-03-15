@@ -72,6 +72,14 @@ class ConvNets():
             conv5 = tf.nn.relu(pre_activation, name=scope.name)
             _activation_summary(conv5)
         print conv5
+        with tf.variable_scope('conv6') as scope:
+            kernel = _variable_with_weight_decay('weights', shape=[5,5,128,256], stddev=5e-2, wd=0.0)
+            conv = tf.nn.conv2d(conv4, kernel, [1,1,1,1], padding='SAME')
+            biases = _variable_on_cpu('biases', [256], tf.constant_initializer(0.1))
+            pre_activation = tf.nn.bias_add(conv, biases)
+            conv5 = tf.nn.relu(pre_activation, name=scope.name)
+            _activation_summary(conv5)
+        print conv5
         # norm2
         # norm2 = tf.nn.lrn(conv2, 4, bias=1.0, alpha=0.001/9.0, beta=0.75, name='norm2')
         # pool2
