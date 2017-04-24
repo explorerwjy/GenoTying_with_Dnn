@@ -325,9 +325,8 @@ class ConvNets():
 
 
 def _variable_on_cpu(name, shape, initializer):
-    with tf.device('/cpu:2'):
-        dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
-        var = tf.get_variable(
+    dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
+    var = tf.get_variable(
             name,
             shape,
             initializer=initializer,
