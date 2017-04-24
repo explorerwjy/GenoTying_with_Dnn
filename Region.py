@@ -199,7 +199,7 @@ def get_overlapping(SamFile, BamoutFile, chrom, pos, start, end):
         raw_reads = SamFile.fetch(chrom, narrow_start, narrow_end)
     else:
         raw_reads = BamoutFile.fetch(chrom, narrow_start, narrow_end)
-        if len(raw_reads) == 0:
+        if Getlen(raw_reads) == 0:
             raw_reads = SamFile.fetch(chrom, narrow_start, narrow_end)
     res = []
     for read in raw_reads:
@@ -211,6 +211,13 @@ def get_overlapping(SamFile, BamoutFile, chrom, pos, start, end):
         res.sort(key=lambda x: x.reference_start, reverse=False)
     return res
 
+def Getlen(raw_reads):
+    res = 0
+    for reads in raw_reads:
+        res += 1
+        if res > 0:
+            return res
+    return 0
 
 def is_usable_read(read):
     return (
