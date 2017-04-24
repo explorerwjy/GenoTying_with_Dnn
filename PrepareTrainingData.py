@@ -32,13 +32,14 @@ def GetOptions():
         type=str,
         default='/home/yufengshen/resources/reference_genomes/hg19/hg19.fasta',
         help='Reference Genome')
-    parser.add_argument('-b', '--bam', type=str, help='Aligned bam file')
-    parser.add_argument('--bamout', type=str, help='Aligned bamout file, re-assembly result from GATK')
+    parser.add_argument('-b', '--bam', type=str, required=True, help='Aligned bam file')
+    parser.add_argument('--bamout', type=str, help='Aligned bamout file, re-assembly result from GATK. If this option is specified, This script will first try to make up a Region from bamout bam, if no reads from bamout, it will make up Region from original bam.')
     #parser.add_argument('--bamoutRegion', type=str, help='Aligned bamout file, re-assembly result from GATK')
     parser.add_argument(
         '-v',
         '--vcf',
         type=str,
+        required=True,
         help='Candidate variants to scan')
     parser.add_argument(
         '-m',
@@ -47,12 +48,13 @@ def GetOptions():
         choices=[
             1,
             2],
-        help='Mode. 1.VarScan 2.OneVar')
+        help='Mode. 1.VarScan(Scan through all variants from a vcf file) 2.OneVar (make up Region at a particular site)')
     parser.add_argument(
         '-t',
         '--true',
         type=str,
-        help='True Positive Variant VCF')
+        required=True,
+        help='True Positive Variant VCF. All candidate regions will be labeled according to this file')
     parser.add_argument(
         '-p',
         '--process',
