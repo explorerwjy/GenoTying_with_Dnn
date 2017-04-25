@@ -119,18 +119,22 @@ def runTesting(Data, ModelCKPT):
                 stime = time.time()
                 true_count = 0
                 num_examples = 0
+                steps = 0
                 while 1:
-                    true_count += sess.run(eval_correct)
+                    true_count += sess.run(correct)
                     num_examples += BATCH_SIZE
+                    steps += 1
+                    if steps % 10 == 0:
+                        print "{} steps run. {} examples read. {} Predicted Correctly. Current Accuracy: {}".format(steps, num_examples, true_count, float(true_count)/num_examples)
             except Exception as e:
                 coord.request_stop(e)
+                precision = float(true_count) / num_examples
+                print '\tNum examples: %d\tNum correct: %d\tPrecision @ 1: %.04f' % (num_examples, true_count, precision)
+                print "Finish Evaluating Testing Dataset. %.3f" % (time.time() - stime)
             finally:
                 sess.run(queue.close(cancel_pending_enqueues=True))
                 coord.request_stop()
                 coord.join(threads)
-                precision = float(true_count) / num_examples
-                print '\tNum examples: %d\tNum correct: %d\tPrecision @ 1: %.04f' % (num_examples, true_count, precision)
-                print "Finish Evaluating Testing Dataset. %.3f" % (time.time() - stime)
 
 def main(argv=None):  # pylint: disable=unused-argument
     if tf.gfile.Exists(FLAGS.eval_dir):
