@@ -60,12 +60,12 @@ def evaluation(logits, labels):
     correct = tf.nn.in_top_k(logits, labels, 1)
     return tf.reduce_sum(tf.cast(correct, tf.int32))
 
-def do_eval(sess, eval_correct, data_batch, label_batch,):
+def do_eval(sess, eval_correct, data_batch, label_batch):
     true_count = 0
-    steps_per_epoch = Total // BATCH_SIZE
-    num_examples = steps_per_epoch * BATCH_SIZE
-    for step in xrange(steps_per_epoch):
+    num_examples = 0
+    while 1:
         true_count += sess.run(eval_correct)
+        num_examples += BATCH_SIZE
     precision = float(true_count) / num_examples
     print '\tNum examples: %d\tNum correct: %d\tPrecision @ 1: %.04f' % (num_examples, true_count, precision)
 
@@ -97,8 +97,6 @@ def runTesting(Data, ModelCKPT):
 
         saver = tf.train.Saver()
 
-
-
         config = tf.ConfigProto(allow_soft_placement=True)
         with tf.Session(config=config) as sess:
             saver.restore(sess, ModelCKPT)
@@ -119,18 +117,20 @@ def runTesting(Data, ModelCKPT):
             try:
                 print "Evaluating On {}".format(Data)
                 stime = time.time()
-                do_eval(
-                    sess,
-                    correct,
-                    data_batch,
-                    label_batch)
-                print "Finish Evaluating Testing Dataset. %.3f" % (time.time() - stime)
+                true_count = 0
+                num_examples = 0
+                while 1:
+                    true_count += sess.run(eval_correct)
+                    num_examples += BATCH_SIZE
             except Exception as e:
                 coord.request_stop(e)
             finally:
                 sess.run(queue.close(cancel_pending_enqueues=True))
                 coord.request_stop()
                 coord.join(threads)
+                precision = float(true_count) / num_examples
+                print '\tNum examples: %d\tNum correct: %d\tPrecision @ 1: %.04f' % (num_examples, true_count, precision)
+                print "Finish Evaluating Testing Dataset. %.3f" % (time.time() - stime)
 
 def main(argv=None):  # pylint: disable=unused-argument
     if tf.gfile.Exists(FLAGS.eval_dir):
