@@ -15,6 +15,7 @@ import numpy as np
 import tensorflow as tf
 import Window2Tensor
 from Input import *
+from Training import DataReaderThread
 import Models
 
 BATCH_SIZE = FLAGS.batch_size
@@ -31,6 +32,28 @@ def GetCheckPoint():
     prefix = os.path.abspath(FLAGS.checkpoint_dir + '/log/')
     ckpt = prefix + '/' + ckpt
     return ckpt
+
+def enqueueInputData(
+        sess,
+        coord,
+        Reader,
+        enqueue_op,
+        queue_input_data,
+        queue_input_target):
+    try:
+        while True:
+            curr_data, curr_label = Reader.OnceRead()
+            if curr_data == None:
+                raise Exception('Finish Reading the file')
+            sess.run(
+                enqueue_op,
+                feed_dict={
+                    queue_input_data: curr_data,
+                    queue_input_target: curr_label})
+    except Exception as e:
+        print e
+        print("finished enqueueing")
+        coord.request_stop(e)
 
 def evaluation(logits, labels):
     correct = tf.nn.in_top_k(logits, labels, 1)
@@ -73,22 +96,40 @@ def runTesting(Data, ModelCKPT):
 
         saver = tf.train.Saver()
 
+
+
         config = tf.ConfigProto(allow_soft_placement=True)
         with tf.Session(config=config) as sess:
             saver.restore(sess, ModelCKPT)
+            coord = tf.train.Coordinator()
 
-            # print TrainingLabel
-            # print sess.run(logits,feed_dict = {TensorPL:TrainingTensor})
-
-            print "Evaluating On {}".format(Data)
-            stime = time.time()
-            do_eval(
-                sess,
-                correct,
-                data_batch,
-                label_batch)
-            print "Finish Evaluating Testing Dataset. %.3f" % (time.time() - stime)
-
+            enqueue_thread = Thread(
+                target=enqueueInputData,
+                args=[
+                    sess,
+                    coord,
+                    TrainingReader,
+                    enqueue_op,
+                    queue_input_data,
+                    queue_input_label])
+            enqueue_thread.isDaemon()
+            enqueue_thread.start()
+            threads = tf.train.start_queue_runners(coord=coord, sess=sess)
+            try:
+                print "Evaluating On {}".format(Data)
+                stime = time.time()
+                do_eval(
+                    sess,
+                    correct,
+                    data_batch,
+                    label_batch)
+                print "Finish Evaluating Testing Dataset. %.3f" % (time.time() - stime)
+            except Exception as e:
+                coord.request_stop(e)
+            finally:
+                sess.run(queue.close(cancel_pending_enqueues=True))
+                coord.request_stop()
+                coord.join(threads)
 
 def main(argv=None):  # pylint: disable=unused-argument
     if tf.gfile.Exists(FLAGS.eval_dir):
