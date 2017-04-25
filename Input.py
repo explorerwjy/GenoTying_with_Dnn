@@ -113,7 +113,7 @@ class RecordReader():
     def __init__(self, handle):
         self.hand = handle
 
-    def read(self):
+    def LoopRead(self):
         line = self.hand.readline()
         if line == '':
             self.hand.seek(0)
@@ -123,7 +123,12 @@ class RecordReader():
         # print len(record.res)
         # return record.res, record.label
         return decodeline.DecodeRecord(line, WIDTH, HEIGHT)
-        # return [0]*30603, 0
+    
+    def OnceRead(self):
+        line = self.hand.readline()
+        if line == '':
+            return None, None 
+        return decodeline.DecodeRecord(line, WIDTH, HEIGHT)
 
     def read2(self):
         tensor, chroms, starts, refs, alts = [], [], [], [], []

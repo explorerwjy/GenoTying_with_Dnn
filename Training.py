@@ -84,7 +84,7 @@ def enqueueInputData(
         queue_input_target):
     try:
         while True:
-            curr_data, curr_label = Reader.read()
+            curr_data, curr_label = Reader.LoopRead()
             sess.run(
                 enqueue_op,
                 feed_dict={
