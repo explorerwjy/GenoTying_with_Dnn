@@ -15,6 +15,7 @@ import numpy as np
 import tensorflow as tf
 import Window2Tensor
 from Input import *
+from threading import Thread
 from Training import DataReaderThread
 import Models
 
@@ -108,7 +109,7 @@ def runTesting(Data, ModelCKPT):
                 args=[
                     sess,
                     coord,
-                    TrainingReader,
+                    DataReader,
                     enqueue_op,
                     queue_input_data,
                     queue_input_label])
