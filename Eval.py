@@ -1,4 +1,4 @@
-#!/home/local/users/jw/anaconda2/bin/python
+#!/home/yufengshen/anaconda2/bin/python
 # Author: jywang explorerwjy@gmail.com
 
 #=========================================================================
@@ -18,7 +18,7 @@ from Input import *
 import Models
 
 BATCH_SIZE = FLAGS.batch_size
-
+dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
 
 def GetCheckPoint():
     ckptfile = FLAGS.checkpoint_dir + '/log/checkpoint'
@@ -46,6 +46,7 @@ def do_eval(sess, eval_correct, data_batch, label_batch,):
     print '\tNum examples: %d\tNum correct: %d\tPrecision @ 1: %.04f' % (num_examples, true_count, precision)
 
 def runTesting(Data, ModelCKPT):
+     
     DataHand = gzip.open(Data, 'rb')
     DataReader = RecordReader(DataHand)
     # with tf.Graph().as_default() as g:
@@ -79,7 +80,7 @@ def runTesting(Data, ModelCKPT):
             # print TrainingLabel
             # print sess.run(logits,feed_dict = {TensorPL:TrainingTensor})
 
-            print "Evaluating On {}}".format(Data)
+            print "Evaluating On {}".format(Data)
             stime = time.time()
             do_eval(
                 sess,
@@ -99,7 +100,7 @@ def main(argv=None):  # pylint: disable=unused-argument
     TestingData = FLAGS.TestingData
     #ModelCKPT = FLAGS.checkpoint_dir+'/model.ckpt-4599.meta'
     ModelCKPT = GetCheckPoint()
-    runTesting(TrainingData, ValidationData, TestingData, ModelCKPT)
+    runTesting(TestingData, ModelCKPT)
 
 
 if __name__ == '__main__':
