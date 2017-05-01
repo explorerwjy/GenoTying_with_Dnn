@@ -26,7 +26,7 @@ def DecodeRecord3(line, WIDTH, HEIGHT):
     p1 = [float(x)/6-0.5 for x in Alignment]
     p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
     p3 = [float(x)/2-0.5 for x in Strand]
-    return p1 + p2 + p3, chrom, start, ref, alt
+    return p1 + p2 + p3, chrom, start, ref, alt, label
 
 def DecodeLine(window, WIDTH, HEIGHT):
     #chrom, start, end, ref, alt, label, window = line.strip().split('\t')

@@ -242,7 +242,7 @@ def GetOptions():
 # Convert a line into readable window
 
 
-def Line2Window(l):
+def Line2Window_1(l):
     flag = l[:13]
     data = l[13:]
     print 'Label: %s\tChrom: %s\tPos: %s' % (flag[0], Byte2Chrom(flag[1:3]), Byte2Pos(flag[3:13]))
@@ -260,6 +260,23 @@ def Line2Window(l):
         start += WIDTH
         height += 1
 
+
+def Line2Window(l):
+    Chr, Start, End, Ref, Alt, Label, Data = l.strip().split('\t')
+    print 'Label: %s\tChrom: %s\tPos: %s\t%s->%s' % (Label, Chr, End, Ref, Alt)
+    start = 0
+    height = 0
+    depth = 0
+    while depth < 3:
+        if height > HEIGHT:
+            depth += 1
+            height = 0
+        if depth == 0:
+            print ''.join(map(lambda x: BASE2[x], list(Data[start:start + WIDTH])))
+        else:
+            print Data[start:start + WIDTH]
+        start += WIDTH
+        height += 1
 
 def Dump(InpFil):
     if InpFil.endswith('.gz'):

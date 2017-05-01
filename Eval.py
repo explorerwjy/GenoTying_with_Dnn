@@ -23,14 +23,16 @@ BATCH_SIZE = FLAGS.batch_size
 dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
 
 def GetCheckPoint():
-    ckptfile = FLAGS.checkpoint_dir + '/log/checkpoint'
+    # Get CheckPoint File
+    ckptfile = FLAGS.log_dir + '/checkpoint'
     if not os.path.isfile(ckptfile):
         print "Model checkpoint not exists."
         exit()
+    # Get the Model File
     f = open(ckptfile, 'rb')
     ckpt = f.readline().split(':')[1].strip().strip('"')
     f.close()
-    prefix = os.path.abspath(FLAGS.checkpoint_dir + '/log/')
+    prefix = os.path.abspath(FLAGS.log_dir)
     ckpt = prefix + '/' + ckpt
     return ckpt
 
@@ -146,7 +148,8 @@ def main(argv=None):  # pylint: disable=unused-argument
     TestingData = FLAGS.TestingData
     #ModelCKPT = FLAGS.checkpoint_dir+'/model.ckpt-4599.meta'
     ModelCKPT = GetCheckPoint()
-    runTesting(TestingData, ModelCKPT)
+    #runTesting(TestingData, ModelCKPT)
+    runTesting(TrainingData, ModelCKPT)
 
 
 if __name__ == '__main__':

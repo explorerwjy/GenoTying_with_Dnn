@@ -145,7 +145,7 @@ class ConvNets():
         print softmax_linear
         return softmax_linear
     
-    def Inference_2(self, RawTensor):
+    def Inference(self, RawTensor):
         print RawTensor
         InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT + 1, 3])
         print InputTensor
@@ -272,7 +272,7 @@ class ConvNets():
         print softmax_linear
         return softmax_linear
 
-    def Inference(self, RawTensor):
+    def Inference_3(self, RawTensor):
         print RawTensor
         InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT + 1, 3])
         print InputTensor

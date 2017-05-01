@@ -11,6 +11,7 @@ import math
 import time
 import sys
 import os
+import traceback
 import numpy as np
 import tensorflow as tf
 from Input import *
@@ -20,19 +21,19 @@ BATCH_SIZE = FLAGS.batch_size
 
 
 def GetCheckPoint():
-    ckptfile = FLAGS.checkpoint_dir + '/log/checkpoint'
+    ckptfile = FLAGS.log_dir + '/checkpoint'
     if not os.path.isfile(ckptfile):
         print "Model checkpoint not exists."
         exit()
     f = open(ckptfile, 'rb')
     ckpt = f.readline().split(':')[1].strip().strip('"')
     f.close()
-    prefix = os.path.abspath(FLAGS.checkpoint_dir + '/log/')
+    prefix = os.path.abspath(FLAGS.log_dir)
     ckpt = prefix + '/' + ckpt
     return ckpt
 
 
-def Form_record(chrom, start, ref, alt, gt, gl, fout):
+def Form_record(chrom, start, ref, alt, label, gt, gl, fout):
     string_gl = map(str, gl)
     GL = ','.join(string_gl)
     if gt == 0:
@@ -42,7 +43,7 @@ def Form_record(chrom, start, ref, alt, gt, gl, fout):
     elif gt == 2:
         GT = '1/1'
     fout.write('\t'.join([chrom, start, ".", ref, alt, str(
-        max(gl)), ".", ".", "GT:GL", GT + ':' + GL]) + '\n')
+        max(gl)), ".", "Label={}".format(str(label)), "GT:GL", GT + ':' + GL]) + '\n')
 
 # dataset: Window2Tensor.Data_Reader object, read BATCH_SIZE samples a time.
 
@@ -51,12 +52,12 @@ def do_eval(sess, normed_logits, prediction, DataReader, tensor_pl, fout):
     counter = 0
     s_time = time.time()
     while True:
-        tensor, chroms, starts, refs, alts = DataReader.read3()
+        tensor, chroms, starts, refs, alts, labels = DataReader.read3()
         GL, GT = sess.run([normed_logits, prediction],
                           feed_dict={tensor_pl: tensor})
-        for chrom, start, ref, alt, gt, gl in zip(
-                chroms, starts, refs, alts, GT, GL):
-            Form_record(chrom, start, ref, alt, gt, gl, fout)
+        for chrom, start, ref, alt, label, gt, gl in zip(
+                chroms, starts, refs, alts, labels, GT, GL):
+            Form_record(chrom, start, ref, alt, label, gt, gl, fout)
             #gl = map(str, gl)
             # fout.write(str(gt)+'\t'+','.join(gl)+'\n')
 
@@ -227,6 +228,7 @@ def main(argv=None):  # pylint: disable=unused-argument
         Calling(TestingData, "Testing3.vcf", ModelCKPT)
     except Exception as e:
         print e
+        traceback.print_exc()
     try:
         print "Calling on", TrainingData
         #Calling(TrainingData,"Training.vcf", ModelCKPT)
