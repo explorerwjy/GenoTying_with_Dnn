@@ -14,6 +14,10 @@ import numpy as np
 import decodeline
 import tensorflow as tf
 
+gpu = 0
+available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
+os.environ['CUDA_VISIBLE_DEVICES'] = available_devices[gpu]
+
 # Basic model parameters.
 WIDTH = Region.WIDTH
 HEIGHT = Region.HEIGHT
@@ -56,9 +60,7 @@ tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
 tf.app.flags.DEFINE_boolean('run_once', False,
                             """Whether to run eval only once.""")
 
-tf.app.flags.DEFINE_integer(
-    'batch_size',
-    64,
+tf.app.flags.DEFINE_integer('batch_size', 128,
     """Number of WindowTensor to process in a batch.""")
 
 # tf.app.flags.DEFINE_integer('test_batch_size', 64,
@@ -147,19 +149,19 @@ class RecordReader():
         return tensor, chroms, starts, refs, alts
 
     def read3(self):
-        tensor, chroms, starts, refs, alts = [], [], [], [], []
+        tensor, chroms, starts, refs, alts, labels = [], [], [], [], [], []
         for i in xrange(FLAGS.batch_size):
             line = self.hand.readline()
             if line == '':
                 break
-            one_tensor, chrom, pos, ref, alt = decodeline.DecodeRecord3(
-                line, WIDTH, HEIGHT)
+            one_tensor, chrom, pos, ref, alt, label = decodeline.DecodeRecord3(line, WIDTH, HEIGHT)
             tensor.append(one_tensor)
             chroms.append(chrom)
             starts.append(pos)
             refs.append(ref)
             alts.append(alt)
-        return tensor, chroms, starts, refs, alts
+            labels.append(label)
+        return tensor, chroms, starts, refs, alts, labels
 
     def read_without_processing(self):
         line = self.hand.readline()
