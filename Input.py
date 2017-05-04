@@ -14,10 +14,6 @@ import numpy as np
 import decodeline
 import tensorflow as tf
 
-gpu = 0
-available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
-os.environ['CUDA_VISIBLE_DEVICES'] = available_devices[gpu]
-
 # Basic model parameters.
 WIDTH = Region.WIDTH
 HEIGHT = Region.HEIGHT

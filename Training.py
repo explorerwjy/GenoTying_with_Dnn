@@ -18,14 +18,19 @@ import sys
 import pysam
 sys.stdout = sys.stderr
 
+GPUs = [3]
+available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
+os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
+print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
+
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('train_dir', './train_3',
+tf.app.flags.DEFINE_string('train_dir', './train',
                            """Directory where to write event logs """
                            """and checkpoint.""")
 tf.app.flags.DEFINE_integer('max_steps', 1000000,
                             """Number of batches to run.""")
-tf.app.flags.DEFINE_integer('num_gpus', 2,
+tf.app.flags.DEFINE_integer('num_gpus', 1,
                             """How many GPUs to use.""")
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
@@ -106,50 +111,40 @@ class Train():
         self.TrainingDataFile = TrainingDataFile
         self.TestingDataFile = TestingDataFile
         self.batch_size = batch_size
-        self.InputData = INPUT(self.TrainingDataFile)
         self.model = model
 
     def run(self, continueModel=None):
         dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
-        TrainingHand = gzip.open(FLAGS.TrainingData, 'rb')
+        TrainingHand = gzip.open(self.TrainingDataFile, 'rb')
         TrainingReader = RecordReader(TrainingHand)
         with tf.Graph().as_default():
-            queue_input_data = tf.placeholder(
-            dtype, shape=[DEPTH * (HEIGHT + 1) * WIDTH])
+            queue_input_data = tf.placeholder(dtype, shape=[DEPTH * (HEIGHT + 1) * WIDTH])
             queue_input_label = tf.placeholder(tf.int32, shape=[])
             queue = tf.RandomShuffleQueue(capacity=FLAGS.batch_size * 10,
-                                      dtypes=[dtype,
-                                              tf.int32],
-                                      shapes=[[DEPTH * (HEIGHT + 1) * WIDTH],
-                                              []],
+                                      dtypes=[dtype, tf.int32],
+                                      shapes=[[DEPTH * (HEIGHT + 1) * WIDTH], []],
                                       min_after_dequeue=FLAGS.batch_size,
                                       name='RandomShuffleQueue')
             enqueue_op = queue.enqueue([queue_input_data, queue_input_label])
             dequeue_op = queue.dequeue()
             # Get Tensors and labels for Training data.
-            data_batch, label_batch = tf.train.batch(
-            dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size * 8)
+            data_batch, label_batch = tf.train.batch(dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size * 8)
             #data_batch_reshape = tf.transpose(data_batch, [0,2,3,1])
 
             global_step = tf.Variable(0, trainable=False, name='global_step')
-            logits = self.model.Inference(images)
-            loss = self.model.loss(logits, labels)
-            accuracy = self.model.accuracy(logits, labels)
-            train_op = self.model.train(loss, global_step)
-            top_k_op = tf.nn.in_top_k(logits, labels, 1)
+            logits = self.model.Inference(data_batch)
+            loss = self.model.loss(logits, label_batch)
+            #accuracy = self.model.Accuracy(logits, label_batch)
+            train_op = self.model.Train(loss, global_step)
+            top_k_op = tf.nn.in_top_k(logits, label_batch, 1)
             summary_op = tf.summary.merge_all()
             init = tf.global_variables_initializer()
             saver = tf.train.Saver()
-            sess = tf.Session(config=tf.ConfigProto(
-                allow_soft_placement=True,
-                log_device_placement=FLAGS.log_device_placement))
-            
-            # Continue to train from a checkpoint
-            sess.run(init)
-            # Start the queue runners.
-            tf.train.start_queue_runners(sess=sess)
+            sess = tf.Session()
             summary_writer = tf.summary.FileWriter(FLAGS.train_dir, sess.graph)
-
+            sess.run(init)
+            print "Before Queue"
+            # Start the queue runners.
             coord = tf.train.Coordinator()
             enqueue_thread = Thread(
                 target=enqueueInputData,
@@ -162,10 +157,11 @@ class Train():
                     queue_input_label])
             enqueue_thread.isDaemon()
             enqueue_thread.start()
-
+            print "Before Threads"
             threads = tf.train.start_queue_runners(coord=coord, sess=sess)
             min_loss = 500
             try:    
+                print "Start"
                 if continueModel != None:
                     saver.restore(sess, continueModel)
                     print sess.run(global_step)
@@ -174,7 +170,8 @@ class Train():
                     if coord.should_stop():
                         break
                     start_time = time.time()
-                    _, loss_value, _acc, v_step = sess.run([train_op, loss, accuracy ,global_step])
+                    #_, loss_value, _acc, v_step = sess.run([train_op, loss, accuracy ,global_step])
+                    _, loss_value, v_step = sess.run([train_op, loss, global_step])
                     duration = time.time() - start_time
 
                     assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
@@ -190,8 +187,8 @@ class Train():
                     
                     if v_step % 100 == 0:
                         prediction = float((np.sum(sess.run(top_k_op))))
-                        print '{} in {} Correct, Batch precision @ 1 ={}'.format(prediction, self.batch_size, prediction/self.batch_size)
-                        print accuracy
+                        print '@ Step {}: \t {} in {} Correct, Batch precision @ 1 ={}'.format(v_step, prediction, self.batch_size, prediction/self.batch_size)
+                        #print accuracy
                         summary_str = sess.run(summary_op)
                         summary_writer.add_summary(summary_str, v_step)
 
@@ -394,102 +391,6 @@ class Train():
                         min_loss = loss_value
                         print "Write A CheckPoint at %d" % (v_step)
 
-
-def train():
-    dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
-    BATCH_SIZE = FLAGS.batch_size
-    TrainingHand = gzip.open(FLAGS.TrainingData, 'rb')
-    TrainingReader = RecordReader(TrainingHand)
-
-    with tf.Graph().as_default():
-        queue_input_data = tf.placeholder(
-            dtype, shape=[DEPTH * (HEIGHT + 1) * WIDTH])
-        queue_input_label = tf.placeholder(tf.int32, shape=[])
-        queue = tf.RandomShuffleQueue(capacity=FLAGS.batch_size * 10,
-                                      dtypes=[dtype,
-                                              tf.int32],
-                                      shapes=[[DEPTH * (HEIGHT + 1) * WIDTH],
-                                              []],
-                                      min_after_dequeue=FLAGS.batch_size,
-                                      name='RandomShuffleQueue')
-        enqueue_op = queue.enqueue([queue_input_data, queue_input_label])
-        dequeue_op = queue.dequeue()
-        # Get Tensors and labels for Training data.
-        data_batch, label_batch = tf.train.batch(
-            dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size * 8)
-        #data_batch_reshape = tf.transpose(data_batch, [0,2,3,1])
-
-        global_step = tf.Variable(0, trainable=False, name='global_step')
-
-        # Build a Graph that computes the logits predictions from the
-        # inference model.
-        convnets = Models.ConvNets()
-        logits = convnets.Inference(data_batch)
-
-        # Calculate loss.
-        loss = convnets.loss(logits, label_batch)
-
-        # Build a Graph that trains the model with one batch of examples and
-        # updates the model parameters.
-        train_op = convnets.Train(loss, global_step)
-        summary = tf.summary.merge_all()
-
-        init = tf.global_variables_initializer()
-        saver = tf.train.Saver()
-        sess = tf.Session()
-        summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
-        sess.run(init)
-
-        coord = tf.train.Coordinator()
-
-        enqueue_thread = Thread(
-            target=enqueueInputData,
-            args=[
-                sess,
-                coord,
-                TrainingReader,
-                enqueue_op,
-                queue_input_data,
-                queue_input_label])
-        enqueue_thread.isDaemon()
-        enqueue_thread.start()
-
-        threads = tf.train.start_queue_runners(coord=coord, sess=sess)
-
-        min_loss = 100
-        try:
-            for step in xrange(max_steps):
-                start_time = time.time()
-                #_, loss_value, v_step = sess.run([train_op, loss, global_step])
-                loss_value, _, v_step = sess.run([loss, train_op, global_step])
-                #_, loss_value, v_step, queue_size = sess.run([train_op, loss, global_step, queue.size()])
-                duration = time.time() - start_time
-                if (v_step) % 100 == 0 or (v_step) == max_steps:
-                    summary_str = sess.run(summary)
-                    summary_writer.add_summary(summary_str, v_step)
-                    summary_writer.flush()
-                    # Save Model only if loss decreasing
-                    if loss_value < min_loss:
-                        checkpoint_file = os.path.join(log_dir, 'model.ckpt')
-                        saver.save(
-                            sess, checkpoint_file, global_step=global_step)
-                        min_loss = loss_value
-                        print "Write A CheckPoint at %d" % (v_step)
-                    #loss_value = sess.run(loss, feed_dict=feed_dict)
-                    print 'Step %d Training loss = %.3f (%.3f sec); Saved loss = %.3f' % (v_step, loss_value, duration, min_loss)
-                elif v_step % 10 == 0:
-                    print 'Step %d Training loss = %.3f (%.3f sec)' % (v_step, loss_value, duration)
-                    # print "Queue Size", queue_size
-                    summary_str = sess.run(summary)
-                    summary_writer.add_summary(summary_str, v_step)
-                    summary_writer.flush()
-        except Exception as e:
-            coord.request_stop(e)
-        finally:
-            sess.run(queue.close(cancel_pending_enqueues=True))
-            coord.request_stop()
-            coord.join(threads)
-
 def TestInput():
     dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
     BATCH_SIZE = FLAGS.batch_size
@@ -571,112 +472,6 @@ def TestInput():
             coord.request_stop()
             coord.join(threads)
 
-def continue_train(ModelCKPT):
-    dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
-    BATCH_SIZE = FLAGS.batch_size
-    TrainingHand = gzip.open(FLAGS.TrainingData, 'rb')
-    TrainingReader = RecordReader(TrainingHand)
-
-    with tf.Graph().as_default():
-        queue_input_data = tf.placeholder(
-            dtype, shape=[DEPTH * (HEIGHT + 1) * WIDTH])
-        queue_input_label = tf.placeholder(tf.int32, shape=[])
-        queue = tf.RandomShuffleQueue(capacity=FLAGS.batch_size * 10,
-                                      dtypes=[dtype,
-                                              tf.int32],
-                                      shapes=[[DEPTH * (HEIGHT + 1) * WIDTH],
-                                              []],
-                                      min_after_dequeue=FLAGS.batch_size,
-                                      name='RandomShuffleQueue')
-        enqueue_op = queue.enqueue([queue_input_data, queue_input_label])
-        dequeue_op = queue.dequeue()
-        # Get Tensors and labels for Training data.
-        data_batch, label_batch = tf.train.batch(
-            dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size * 4)
-        #data_batch_reshape = tf.transpose(data_batch, [0,2,3,1])
-
-        global_step = tf.Variable(0, trainable=False, name='global_step')
-
-        # Build a Graph that computes the logits predictions from the
-        # inference model.
-        convnets = Models.ConvNets()
-        logits = convnets.Inference(data_batch)
-
-        # Calculate loss.
-        loss = convnets.loss(logits, label_batch)
-
-        # Build a Graph that trains the model with one batch of examples and
-        # updates the model parameters.
-        train_op = convnets.Train(loss, global_step)
-        summary = tf.summary.merge_all()
-
-        init = tf.global_variables_initializer()
-        saver = tf.train.Saver()
-        sess = tf.Session()
-        saver.restore(sess, ModelCKPT)
-        summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
-        sess.run(init)
-
-        coord = tf.train.Coordinator()
-
-        enqueue_thread = Thread(
-            target=enqueueInputData,
-            args=[
-                sess,
-                coord,
-                TrainingReader,
-                enqueue_op,
-                queue_input_data,
-                queue_input_label])
-        enqueue_thread.isDaemon()
-        enqueue_thread.start()
-
-        threads = tf.train.start_queue_runners(coord=coord, sess=sess)
-
-        min_loss = 100
-        try:
-            for step in xrange(max_steps):
-                start_time = time.time()
-                #_, loss_value, v_step = sess.run([train_op, loss, global_step])
-                loss_value, _, v_step = sess.run([loss, train_op, global_step])
-                #_, loss_value, v_step, queue_size = sess.run([train_op, loss, global_step, queue.size()])
-                duration = time.time() - start_time
-                if (v_step) % 100 == 0 or (v_step) == max_steps:
-                    summary_str = sess.run(summary)
-                    summary_writer.add_summary(summary_str, v_step)
-                    summary_writer.flush()
-                    # Save Model only if loss decreasing
-                    if loss_value < min_loss:
-                        checkpoint_file = os.path.join(log_dir, 'model.ckpt')
-                        saver.save(
-                            sess, checkpoint_file, global_step=global_step)
-                        min_loss = loss_value
-                        print "Write A CheckPoint at %d" % (v_step)
-                    #loss_value = sess.run(loss, feed_dict=feed_dict)
-                    print 'Step %d Training loss = %.3f (%.3f sec); Saved loss = %.3f' % (v_step, loss_value, duration, min_loss)
-                elif v_step % 10 == 0:
-                    print 'Step %d Training loss = %.3f (%.3f sec)' % (v_step, loss_value, duration)
-                    # print "Queue Size", queue_size
-                    summary_str = sess.run(summary)
-                    summary_writer.add_summary(summary_str, v_step)
-                    summary_writer.flush()
-        except Exception as e:
-            coord.request_stop(e)
-        finally:
-            sess.run(queue.close(cancel_pending_enqueues=True))
-            coord.request_stop()
-            coord.join(threads)
-
-
-    def getCheckPoint(self):
-        ckptfile = FLAGS.train_dir + '/checkpoint'
-        f = open(ckptfile, 'rb')
-        ckpt = f.readline().split(':')[1].strip().strip('"')
-        f.close()
-        prefix = os.path.abspath(FLAGS.train_dir)
-        ckpt = prefix + '/' + ckpt
-        return ckpt        
-
 def GetOptions():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -689,7 +484,7 @@ def GetOptions():
 def main(argv=None):  # pylint: disable=unused-argument
     Continue = GetOptions()
     model = Models.ConvNets()
-    train = Train(BATCH_SIZE, EPOCHS, model, TrainingDataFile, TestingDataFile)
+    train = Train(FLAGS.batch_size, model, FLAGS.TrainingData, FLAGS.TestingData)
     if Continue:
         ckpt = train.getCheckPoint()
         print "Train From a Check Point:", ckpt

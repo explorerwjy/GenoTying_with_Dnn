@@ -274,7 +274,7 @@ class ConvNets():
 
     def VGGv1(self, RawTensor):
         print RawTensor
-        InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT, 3])
+        InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT+1, 3])
         print InputTensor
         # ==========================================================================================
         # conv1 3-64
