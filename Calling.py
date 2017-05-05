@@ -23,6 +23,8 @@ available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
 
+FLAGS = tf.app.flags.FLAGS
+
 tf.app.flags.DEFINE_string('train_dir', './train_2',
                            """Directory where to checkpoint.""")
 
@@ -92,10 +94,11 @@ def Calling(Dataset, OutName, ModelCKPT):
         logits = convnets.Inference(TensorPL)
         normed_logits = tf.nn.softmax(logits, dim=-1, name=None)
         prediction = tf.argmax(normed_logits, 1)
-
+        init = tf.global_variables_initializer()
         saver = tf.train.Saver()
         config = tf.ConfigProto(allow_soft_placement=True)
         with tf.Session(config=config) as sess:
+            sess.run(init)
             saver.restore(sess, ModelCKPT)
 
             print "Evaluating On", Dataset
