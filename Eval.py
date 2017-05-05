@@ -19,7 +19,21 @@ from threading import Thread
 from Training import DataReaderThread
 import Models
 
-BATCH_SIZE = FLAGS.batch_size
+GPUs = [5]
+available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
+os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
+
+FLAGS = tf.app.flags.FLAGS
+tf.app.flags.DEFINE_string('eval_dir', './test',
+                           """Directory where to write event logs.""")
+tf.app.flags.DEFINE_string('eval_data', 'test',
+                           """Either 'test' or 'train_eval'.""")
+tf.app.flags.DEFINE_string('checkpoint_dir', './train_3',
+                           """Directory where to read model checkpoints.""")
+tf.app.flags.DEFINE_integer('eval_interval_secs', 60,
+                            """How often to run the eval.""")
+tf.app.flags.DEFINE_integer('num_examples', 640,
+                            """Number of examples to run.""")
 dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
 
 def GetCheckPoint():
@@ -138,18 +152,107 @@ def runTesting(Data, ModelCKPT):
                 coord.request_stop()
                 coord.join(threads)
 
+class Evaluate():
+    def __init__(self, batch_size, epochs, model, DataFile):
+        self.batch_size = batch_size
+        print "=" * 50
+        print "InputData is:", DataFile
+        print "=" * 50
+        self.DataFile = DataFile
+        self.model = model
+
+    def run(self):
+        dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
+        Hand = gzip.open(self.DataFile, 'rb')
+        Reader = RecordReader(Hand)
+        with tf.Graph().as_default():
+            global_step = tf.Variable(0, trainable=False, name='global_step')
+            queue_input_data = tf.placeholder(dtype, shape=[DEPTH * (HEIGHT + 1) * WIDTH])
+            queue_input_label = tf.placeholder(tf.int32, shape=[])
+            queue = tf.RandomShuffleQueue(capacity=FLAGS.batch_size * 10,
+                                      dtypes=[dtype, tf.int32],
+                                      shapes=[[DEPTH * (HEIGHT + 1) * WIDTH], []],
+                                      min_after_dequeue=FLAGS.batch_size,
+                                      name='RandomShuffleQueue')
+            enqueue_op = queue.enqueue([queue_input_data, queue_input_label])
+            dequeue_op = queue.dequeue()
+            # Get Tensors and labels for Training data.
+            data_batch, label_batch = tf.train.batch(dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size * 8)
+            logits = self.model.Inference(data_batch)
+            loss = self.model.loss(logits, label_batch)
+            #accuracy = self.model.Accuracy(logits, label_batch)
+            train_op = self.model.Train(loss, global_step)
+            top_k_op = tf.nn.in_top_k(logits, label_batch, 1)
+
+            summary_op = tf.summary.merge_all()
+            init = tf.global_variables_initializer()
+            saver = tf.train.Saver()
+            sess = tf.Session()
+            summary_writer = tf.summary.FileWriter(FLAGS.train_dir, sess.graph)
+            sess.run(init)
+            coord = tf.train.Coordinator()
+            enqueue_thread = Thread(
+                target=enqueueInputData,
+                args=[
+                    sess,
+                    coord,
+                    TrainingReader,
+                    enqueue_op,
+                    queue_input_data,
+                    queue_input_label])
+            enqueue_thread.isDaemon()
+            enqueue_thread.start()
+            print "Before Threads"
+            threads = tf.train.start_queue_runners(coord=coord, sess=sess)
+            try:    
+                num_iter = int(math.ceil(FLAGS.num_examples / FLAGS.batch_size))
+                true_count = 0  # Counts the number of correct predictions.
+                total_sample_count = num_iter * FLAGS.batch_size
+                step = 0
+                print self.getCheckPoint()
+                saver.restore(sess, self.getCheckPoint())
+                print "CKPT starts with step",(sess.run(global_step))
+                while step < num_iter and not coord.should_stop():
+                    _labels, _logits, _loss, predictions = sess.run([labels, normed_logits, loss, predict])
+                    #print "labels:",_labels
+                    #print "logits:",_logits
+                    #print "predict", predictions
+                    #print "loss:",_loss
+                    true_count += np.sum(predictions)
+                    step += 1
+
+                # Compute precision @ 1.
+                print "Predicted Right:{}\t\tTotal:{}".format(true_count, total_sample_count)
+                precision = float(true_count) / total_sample_count
+                print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
+
+                summary = tf.Summary()
+                summary.ParseFromString(sess.run(summary_op))
+                summary.value.add(tag='Precision @ 1', simple_value=precision)
+                summary_writer.add_summary(summary, step)
+            except Exception, e:
+                coord.request_stop(e)
+            finally:
+                coord.request_stop()
+                coord.join()
+
+    def getCheckPoint(self):
+        ckptfile = FLAGS.checkpoint_dir + '/checkpoint'
+        f = open(ckptfile, 'rb')
+        ckpt = f.readline().split(':')[1].strip().strip('"')
+        f.close()
+        prefix = os.path.abspath(FLAGS.checkpoint_dir)
+        ckpt = prefix + '/' + ckpt
+        return ckpt
+
 def main(argv=None):  # pylint: disable=unused-argument
     if tf.gfile.Exists(FLAGS.eval_dir):
         tf.gfile.DeleteRecursively(FLAGS.eval_dir)
     tf.gfile.MakeDirs(FLAGS.eval_dir)
-    # evaluate()
-    TrainingData = FLAGS.TrainingData
-    ValidationData = FLAGS.ValidationData
-    TestingData = FLAGS.TestingData
-    #ModelCKPT = FLAGS.checkpoint_dir+'/model.ckpt-4599.meta'
-    ModelCKPT = GetCheckPoint()
-    #runTesting(TestingData, ModelCKPT)
-    runTesting(TrainingData, ModelCKPT)
+    model = Models.ConvNets()
+    #evaluate = Evaluate(FLAGS.batch_size, EPOCHS, model, TrainingDataFile)
+    evaluate = Evaluate(FLAGS.batch_size, model, TestingDataFile)
+    evaluate.run()
 
 
 if __name__ == '__main__':
