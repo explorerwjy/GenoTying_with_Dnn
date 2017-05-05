@@ -56,7 +56,7 @@ def Form_record(chrom, start, ref, alt, label, gt, gl, fout):
 # dataset: Window2Tensor.Data_Reader object, read BATCH_SIZE samples a time.
 
 
-def do_eval(sess, normed_logits, prediction, DataReader, tensor_pl, fout):
+def do_eval(sess, global_step, normed_logits, prediction, DataReader, tensor_pl, fout):
     counter = 0
     s_time = time.time()
     while True:
@@ -73,6 +73,7 @@ def do_eval(sess, normed_logits, prediction, DataReader, tensor_pl, fout):
             return
         if counter % 10 == 0:
             duration = time.time() - s_time
+            print (sess.run(global_step))
             print "Read %d batches, %d records, used %.3fs 10 batch" % (counter, counter * FLAGS.batch_size, duration)
             s_time = time.time()
         counter += 1
@@ -94,6 +95,7 @@ def Calling(Dataset, OutName, ModelCKPT):
         logits = convnets.Inference(TensorPL)
         normed_logits = tf.nn.softmax(logits, dim=-1, name=None)
         prediction = tf.argmax(normed_logits, 1)
+        global_step = tf.Variable(0, trainable=False, name='global_step')
         init = tf.global_variables_initializer()
         saver = tf.train.Saver()
         config = tf.ConfigProto(allow_soft_placement=True)
@@ -114,6 +116,7 @@ def Calling(Dataset, OutName, ModelCKPT):
                                   "SAMPLE"]) + '\n')
             do_eval(
                 sess,
+                global_step,
                 normed_logits,
                 prediction,
                 DataReader,
