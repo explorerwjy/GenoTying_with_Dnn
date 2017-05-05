@@ -19,20 +19,22 @@ from threading import Thread
 from Training import DataReaderThread
 import Models
 
-GPUs = [5]
+GPUs = [0]
 available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 
 FLAGS = tf.app.flags.FLAGS
+tf.app.flags.DEFINE_string('DataFile', './Training.windows.txt.gz',
+                           """Data File to Predict.""")
 tf.app.flags.DEFINE_string('eval_dir', './test',
                            """Directory where to write event logs.""")
 tf.app.flags.DEFINE_string('eval_data', 'test',
                            """Either 'test' or 'train_eval'.""")
-tf.app.flags.DEFINE_string('checkpoint_dir', './train_3',
+tf.app.flags.DEFINE_string('checkpoint_dir', './train_2',
                            """Directory where to read model checkpoints.""")
 tf.app.flags.DEFINE_integer('eval_interval_secs', 60,
                             """How often to run the eval.""")
-tf.app.flags.DEFINE_integer('num_examples', 640,
+tf.app.flags.DEFINE_integer('num_examples', 6400,
                             """Number of examples to run.""")
 dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
 
@@ -153,7 +155,7 @@ def runTesting(Data, ModelCKPT):
                 coord.join(threads)
 
 class Evaluate():
-    def __init__(self, batch_size, epochs, model, DataFile):
+    def __init__(self, batch_size, model, DataFile):
         self.batch_size = batch_size
         print "=" * 50
         print "InputData is:", DataFile
@@ -196,7 +198,7 @@ class Evaluate():
                 args=[
                     sess,
                     coord,
-                    TrainingReader,
+                    Reader,
                     enqueue_op,
                     queue_input_data,
                     queue_input_label])
@@ -213,11 +215,11 @@ class Evaluate():
                 saver.restore(sess, self.getCheckPoint())
                 print "CKPT starts with step",(sess.run(global_step))
                 while step < num_iter and not coord.should_stop():
-                    _labels, _logits, _loss, predictions = sess.run([labels, normed_logits, loss, predict])
+                    _labels, _logits, _loss, predictions = sess.run([label_batch, logits, loss, top_k_op])
                     #print "labels:",_labels
                     #print "logits:",_logits
                     #print "predict", predictions
-                    #print "loss:",_loss
+                    print "loss:",_loss
                     true_count += np.sum(predictions)
                     step += 1
 
@@ -251,7 +253,7 @@ def main(argv=None):  # pylint: disable=unused-argument
     tf.gfile.MakeDirs(FLAGS.eval_dir)
     model = Models.ConvNets()
     #evaluate = Evaluate(FLAGS.batch_size, EPOCHS, model, TrainingDataFile)
-    evaluate = Evaluate(FLAGS.batch_size, model, TestingDataFile)
+    evaluate = Evaluate(FLAGS.batch_size, model, FLAGS.DataFile)
     evaluate.run()
 
 
