@@ -17,18 +17,24 @@ import tensorflow as tf
 from Input import *
 import Models
 sys.stdout = sys.stderr
-BATCH_SIZE = FLAGS.batch_size
 
+GPUs = [6]
+available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
+os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
+print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
+
+tf.app.flags.DEFINE_string('train_dir', './train_2',
+                           """Directory where to checkpoint.""")
 
 def GetCheckPoint():
-    ckptfile = FLAGS.log_dir + '/checkpoint'
+    ckptfile = FLAGS.train_dir + '/checkpoint'
     if not os.path.isfile(ckptfile):
         print "Model checkpoint not exists."
         exit()
     f = open(ckptfile, 'rb')
     ckpt = f.readline().split(':')[1].strip().strip('"')
     f.close()
-    prefix = os.path.abspath(FLAGS.log_dir)
+    prefix = os.path.abspath(FLAGS.train_dir)
     ckpt = prefix + '/' + ckpt
     return ckpt
 
@@ -61,11 +67,11 @@ def do_eval(sess, normed_logits, prediction, DataReader, tensor_pl, fout):
             #gl = map(str, gl)
             # fout.write(str(gt)+'\t'+','.join(gl)+'\n')
 
-        if len(chroms) < BATCH_SIZE:
+        if len(chroms) < FLAGS.batch_size:
             return
         if counter % 10 == 0:
             duration = time.time() - s_time
-            print "Read %d batches, %d records, used %.3fs 10 batch" % (counter, counter * BATCH_SIZE, duration)
+            print "Read %d batches, %d records, used %.3fs 10 batch" % (counter, counter * FLAGS.batch_size, duration)
             s_time = time.time()
         counter += 1
 
@@ -80,8 +86,7 @@ def Calling(Dataset, OutName, ModelCKPT):
         #fout_training = open('Calling_training.txt','wb')
         fout = open(OutName, 'wb')
 
-        TensorPL = tf.placeholder(tf.float32, shape=(
-            BATCH_SIZE, WIDTH * (HEIGHT + 1) * 3))
+        TensorPL = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, WIDTH * (HEIGHT + 1) * 3))
 
         convnets = Models.ConvNets()
         logits = convnets.Inference(TensorPL)
@@ -117,7 +122,6 @@ def Calling(Dataset, OutName, ModelCKPT):
 
 def Calling_2(Dataset, ModelCKPT):
     dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
-    BATCH_SIZE = FLAGS.batch_size
     DatasetHand = gzip.open(Dataset, 'rb')
     DataReader = RecordReader(DatasetHand)
 
@@ -212,9 +216,9 @@ def Calling_2(Dataset, ModelCKPT):
 
 
 def main(argv=None):  # pylint: disable=unused-argument
-    if tf.gfile.Exists(FLAGS.eval_dir):
-        tf.gfile.DeleteRecursively(FLAGS.eval_dir)
-    tf.gfile.MakeDirs(FLAGS.eval_dir)
+    #if tf.gfile.Exists(FLAGS.eval_dir):
+    #    tf.gfile.DeleteRecursively(FLAGS.eval_dir)
+    #tf.gfile.MakeDirs(FLAGS.eval_dir)
 
     # Get File Name of TraingData, ValidationData and Testdata
     TrainingData = FLAGS.TrainingData
@@ -225,13 +229,13 @@ def main(argv=None):  # pylint: disable=unused-argument
     ModelCKPT = GetCheckPoint()
     try:
         print "Calling on", TestingData
-        Calling(TestingData, "Testing3.vcf", ModelCKPT)
+        #Calling(TestingData, "Testing.vcf", ModelCKPT)
     except Exception as e:
         print e
         traceback.print_exc()
     try:
         print "Calling on", TrainingData
-        #Calling(TrainingData,"Training.vcf", ModelCKPT)
+        Calling(TrainingData,"Training.vcf", ModelCKPT)
     except Exception as e:
         print e
 
