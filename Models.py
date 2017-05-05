@@ -842,19 +842,24 @@ class ConvNets():
             tf.summary.scalar(l.op.name, loss_averages.average(l))
         return loss_averages_op
 
-    def Train(self, total_loss, global_step):
+    def Train(self, total_loss, global_step, init_lr=1e-4, optimizer='RMSProp'):
         #num_batches_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
         #decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
         decay_steps = LEARNING_RATE_DECAY_STEP
         #lr = tf.train.exponential_decay(INITIAL_LEARNING_RATE , global_step, decay_steps, LEARNING_RATE_DECAY_FACTOR, staircase=True)
-        lr = tf.constant(1e-3)
+        lr = tf.constant(init_lr)
         tf.summary.scalar('learning_rate', lr)
         loss_averages_op = self.add_loss_summaries(total_loss)
 
         with tf.control_dependencies([loss_averages_op]):
             #opt = tf.train.GradientDescentOptimizer(lr)
-            #opt = tf.train.RMSPropOptimizer(lr, decay=0.9, momentum=0.8, epsilon=1e-10, centered=False)
-            opt = tf.train.AdamOptimizer(lr)
+            if optimizer == 'RMSProp':
+                opt = tf.train.RMSPropOptimizer(lr, decay=0.9, momentum=0.8, epsilon=1e-10, centered=False)
+            elif optimizer == 'Adam':
+                opt = tf.train.AdamOptimizer(lr)
+            else:
+                print "No Such Optimizer"
+                exit()
             grads = opt.compute_gradients(total_loss)
 
         apply_gradient_op = opt.apply_gradients(grads, global_step=global_step)
@@ -887,13 +892,11 @@ def _variable_on_cpu(name, shape, initializer):
             dtype=dtype)
     return var
 
-
 def _activation_summary(x):
     TOWER_NAME = 'Tower'
     tensor_name = re.sub('%s_[0-9]/' % TOWER_NAME, '', x.op.name)
     tf.summary.histogram(tensor_name + '/activations', x)
     tf.summary.scalar(tensor_name + '/sparsity', tf.nn.zero_fraction(x))
-
 
 def _variable_with_weight_decay(name, shape, stddev, wd):
     dtype = tf.float16 if FLAGS.use_fl16 else tf.float32

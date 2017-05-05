@@ -16,24 +16,29 @@ import Models
 from Input import *
 import sys
 import pysam
+import argparse
 sys.stdout = sys.stderr
 
-GPUs = [6]
-available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
-os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
-print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('train_dir', './train_2',
-                           """Directory where to write event logs """
-                           """and checkpoint.""")
+tf.app.flags.DEFINE_integer('GPU', 1 ,"""Which GPU to lunch""")
+tf.app.flags.DEFINE_string('train_dir', './train_6',
+                           """Directory where to write event logs and checkpoint.""")
 tf.app.flags.DEFINE_integer('max_steps', 1000000,
                             """Number of batches to run.""")
 tf.app.flags.DEFINE_integer('num_gpus', 1,
                             """How many GPUs to use.""")
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
+GPUs = [5]
+available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
+os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
+print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
+init_lr = 1e-4
+optimizer = 'RMSProp'
+#optimizer = 'Adam'
+print "Optimizer is {}, init learning rate is {}.".format(optimizer, init_lr)
 
 class DataReaderThread(Thread):
     def __init__(
@@ -112,6 +117,9 @@ class Train():
         self.TestingDataFile = TestingDataFile
         self.batch_size = batch_size
         self.model = model
+        print "TrainingData:", TrainingDataFile
+        print "Batch Size:", self.batch_size
+        print "Train/Log Dir", FLAGS.train_dir
 
     def run(self, continueModel=None):
         dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
@@ -135,7 +143,7 @@ class Train():
             logits = self.model.Inference(data_batch)
             loss = self.model.loss(logits, label_batch)
             #accuracy = self.model.Accuracy(logits, label_batch)
-            train_op = self.model.Train(loss, global_step)
+            train_op = self.model.Train(loss, global_step, init_lr, optimizer)
             top_k_op = tf.nn.in_top_k(logits, label_batch, 1)
             summary_op = tf.summary.merge_all()
             init = tf.global_variables_initializer()
@@ -180,7 +188,7 @@ class Train():
                         num_examples_per_step = FLAGS.batch_size
                         examples_per_sec = num_examples_per_step / duration
                         sec_per_batch = duration / FLAGS.num_gpus
-                        format_str = ('%s: step %d, loss = %.2f (%.1f examples/sec; %.3f '
+                        format_str = ('%s: step %d, loss = %.5f (%.1f examples/sec; %.3f '
                           'sec/batch)')
                         print (format_str % (datetime.now(), v_step, loss_value,
                                  examples_per_sec, sec_per_batch))

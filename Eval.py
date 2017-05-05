@@ -24,7 +24,7 @@ available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 
 FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_string('DataFile', './Training.windows.txt.gz',
+tf.app.flags.DEFINE_string('DataFile', './Testing.windows.txt.gz',
                            """Data File to Predict.""")
 tf.app.flags.DEFINE_string('eval_dir', './test',
                            """Directory where to write event logs.""")
@@ -228,10 +228,10 @@ class Evaluate():
                 precision = float(true_count) / total_sample_count
                 print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
 
-                summary = tf.Summary()
-                summary.ParseFromString(sess.run(summary_op))
-                summary.value.add(tag='Precision @ 1', simple_value=precision)
-                summary_writer.add_summary(summary, step)
+                #summary = tf.Summary()
+                #summary.ParseFromString(sess.run(summary_op))
+                #summary.value.add(tag='Precision @ 1', simple_value=precision)
+                #summary_writer.add_summary(summary, step)
             except Exception, e:
                 coord.request_stop(e)
             finally:
