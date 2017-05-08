@@ -28,9 +28,7 @@ tf.app.flags.DEFINE_string('DataFile', './Testing.windows.txt.gz',
                            """Data File to Predict.""")
 tf.app.flags.DEFINE_string('eval_dir', './test',
                            """Directory where to write event logs.""")
-tf.app.flags.DEFINE_string('eval_data', 'test',
-                           """Either 'test' or 'train_eval'.""")
-tf.app.flags.DEFINE_string('checkpoint_dir', './train_2',
+tf.app.flags.DEFINE_string('checkpoint_dir', './train_6',
                            """Directory where to read model checkpoints.""")
 tf.app.flags.DEFINE_integer('eval_interval_secs', 60,
                             """How often to run the eval.""")

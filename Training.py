@@ -31,13 +31,13 @@ tf.app.flags.DEFINE_integer('num_gpus', 1,
                             """How many GPUs to use.""")
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
-GPUs = [5]
+GPUs = [6]
 available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
 init_lr = 1e-4
-optimizer = 'RMSProp'
-#optimizer = 'Adam'
+#optimizer = 'RMSProp'
+optimizer = 'Adam'
 print "Optimizer is {}, init learning rate is {}.".format(optimizer, init_lr)
 
 class DataReaderThread(Thread):
