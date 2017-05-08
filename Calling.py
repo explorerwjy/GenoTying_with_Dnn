@@ -25,36 +25,194 @@ print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('train_dir', './train_2',
+tf.app.flags.DEFINE_string('train_dir', './train_6',
                            """Directory where to checkpoint.""")
+tf.app.flags.DEFINE_integer('num_examples', 6400,
+                            """Number of examples to run.""")
+tf.app.flags.DEFINE_string('checkpoint_dir', './train_6',
+                           """Directory where to read model checkpoints.""")
 
-def GetCheckPoint():
-    ckptfile = FLAGS.train_dir + '/checkpoint'
-    if not os.path.isfile(ckptfile):
-        print "Model checkpoint not exists."
-        exit()
-    f = open(ckptfile, 'rb')
-    ckpt = f.readline().split(':')[1].strip().strip('"')
-    f.close()
-    prefix = os.path.abspath(FLAGS.train_dir)
-    ckpt = prefix + '/' + ckpt
-    return ckpt
+class TensorCaller:
+    def __init__(self, batch_size, model, DataFile, OutName):
+        self.batch_size = batch_size
+        print "=" * 50
+        print "InputData is:", DataFile
+        print "=" * 50
+        self.DataFile = DataFile
+        self.model = model
+        self.OutName = OutName
+
+    def run(self):
+        s_time = time.time()
+        dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
+        Hand = gzip.open(self.DataFile, 'rb')
+        Reader = RecordReader(Hand)
+        fout = open(self.OutName, 'wb')
+        with tf.Graph().as_default():
+            global_step = tf.Variable(0, trainable=False, name='global_step')
+
+            TensorPL = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, DEPTH * (HEIGHT + 1) * WIDTH]))
+            LabelPL = tf.placeholder(tf.int32, shape=(FLAGS.batch_size, []))
+
+            logits = self.model.Inference(TensorPL)
+            normed_logits = tf.nn.softmax(logits, dim=-1, name=None)
+            prediction = tf.argmax(normed_logits, 1)
+            loss = self.model.loss(logits, LabelPL)
+            #accuracy = self.model.Accuracy(logits, label_batch)
+            #train_op = self.model.Train(loss, global_step)
+            top_k_op = tf.nn.in_top_k(logits, LabelPL, 1)
+
+            #summary_op = tf.summary.merge_all()
+            init = tf.global_variables_initializer()
+            saver = tf.train.Saver()
+            sess = tf.Session()
+            #summary_writer = tf.summary.FileWriter(FLAGS.eval_dir, sess.graph)
+            sess.run(init)
+
+            try:    
+                num_iter = int(math.ceil(FLAGS.num_examples / FLAGS.batch_size))
+                true_count = 0  # Counts the number of correct predictions.
+                total_sample_count = num_iter * FLAGS.batch_size
+                step = 0
+                print self.getCheckPoint()
+                saver.restore(sess, self.getCheckPoint())
+                print "CKPT starts with step",(sess.run(global_step))
+                fout.write('\t'.join(["#CHROM","POS","ID","REF","ALT","QUAL","FILTER","INFO","FORMAT","SAMPLE"]) + '\n')
+                while step < num_iter :
+                    tensors, chroms, starts, refs, alts, labels = DataReader.read3()
+                    GL, _loss, _correct, GT = sess.run([normed_logits, loss, top_k_op, prediction],feed_dict={tensor_pl: tensors, label_pl: labels})
+                    print "loss:",_loss
+                    true_count += np.sum(_correct)
+                    step += 1
+                    for chrom, start, ref, alt, label, gt, gl in zip(chroms, starts, refs, alts, labels, GT, GL):
+                        self.Form_record(chrom, start, ref, alt, label, gt, gl, fout)
 
 
-def Form_record(chrom, start, ref, alt, label, gt, gl, fout):
-    string_gl = map(str, gl)
-    GL = ','.join(string_gl)
-    if gt == 0:
-        GT = '0/0'
-    elif gt == 1:
-        GT = '0/1'
-    elif gt == 2:
-        GT = '1/1'
-    fout.write('\t'.join([chrom, start, ".", ref, alt, str(
-        max(gl)), ".", "Label={}".format(str(label)), "GT:GL", GT + ':' + GL]) + '\n')
+                    if len(chroms) < FLAGS.batch_size:
+                        return
 
-# dataset: Window2Tensor.Data_Reader object, read BATCH_SIZE samples a time.
+                    #_labels, _logits, _loss, predictions = sess.run([label_batch, logits, loss, top_k_op])
+                    #print "labels:",_labels
+                    #print "logits:",_logits
+                    #print "predict", predictions
 
+                    
+                # Compute precision @ 1.
+                fout.close()
+                print "Predicted Right:{}\t\tTotal:{}".format(true_count, total_sample_count)
+                precision = float(true_count) / total_sample_count
+                print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
+                #summary = tf.Summary()
+                #summary.ParseFromString(sess.run(summary_op))
+                #summary.value.add(tag='Precision @ 1', simple_value=precision)
+                #summary_writer.add_summary(summary, step)
+            except Exception, e:
+                print e
+                traceback.print_exc()
+            finally:
+                pass
+
+
+    def Form_record(self, chrom, start, ref, alt, label, gt, gl, fout):
+        string_gl = map(str, gl)
+        GL = ','.join(string_gl)
+        if gt == 0:
+            GT = '0/0'
+        elif gt == 1:
+            GT = '0/1'
+        elif gt == 2:
+            GT = '1/1'
+        fout.write('\t'.join([chrom, start, ".", ref, alt, str(
+            max(gl)), ".", "Label={}".format(str(label)), "GT:GL", GT + ':' + GL]) + '\n')     
+
+    def getCheckPoint(self):
+        ckptfile = FLAGS.checkpoint_dir + '/checkpoint'
+        f = open(ckptfile, 'rb')
+        ckpt = f.readline().split(':')[1].strip().strip('"')
+        f.close()
+        prefix = os.path.abspath(FLAGS.checkpoint_dir)
+        ckpt = prefix + '/' + ckpt
+        return ckpt
+
+    def run_2(self):
+        s_time = time.time()
+
+        dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
+        Hand = gzip.open(self.DataFile, 'rb')
+        Reader = RecordReader(Hand)
+        fout = open(self.OutName, 'wb')
+        with tf.Graph().as_default():
+            global_step = tf.Variable(0, trainable=False, name='global_step')
+            queue_input_data = tf.placeholder(dtype, shape=[DEPTH * (HEIGHT + 1) * WIDTH])
+            queue_input_label = tf.placeholder(tf.int32, shape=[])
+            queue = tf.FIFOQueue(capacity=FLAGS.batch_size * 10,
+                                      dtypes=[dtype, tf.int32],
+                                      shapes=[[DEPTH * (HEIGHT + 1) * WIDTH], []],
+                                      name='FIFOQueue')
+            enqueue_op = queue.enqueue([queue_input_data, queue_input_label])
+            dequeue_op = queue.dequeue()
+            # Get Tensors and labels for Training data.
+            data_batch, label_batch = tf.train.batch(dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size * 8)
+            logits = self.model.Inference(data_batch)
+            normed_logits = tf.nn.softmax(logits, dim=-1, name=None)
+            prediction = tf.argmax(normed_logits, 1)
+            loss = self.model.loss(logits, label_batch)
+            #accuracy = self.model.Accuracy(logits, label_batch)
+            #train_op = self.model.Train(loss, global_step)
+            top_k_op = tf.nn.in_top_k(logits, label_batch, 1)
+
+            #summary_op = tf.summary.merge_all()
+            init = tf.global_variables_initializer()
+            saver = tf.train.Saver()
+            sess = tf.Session()
+            #summary_writer = tf.summary.FileWriter(FLAGS.eval_dir, sess.graph)
+            sess.run(init)
+            coord = tf.train.Coordinator()
+            enqueue_thread = Thread(
+                target=enqueueInputData,
+                args=[
+                    sess,
+                    coord,
+                    Reader,
+                    enqueue_op,
+                    queue_input_data,
+                    queue_input_label])
+            enqueue_thread.isDaemon()
+            enqueue_thread.start()
+            print "Before Threads"
+            threads = tf.train.start_queue_runners(coord=coord, sess=sess)
+            try:    
+                num_iter = int(math.ceil(FLAGS.num_examples / FLAGS.batch_size))
+                true_count = 0  # Counts the number of correct predictions.
+                total_sample_count = num_iter * FLAGS.batch_size
+                step = 0
+                print self.getCheckPoint()
+                saver.restore(sess, self.getCheckPoint())
+                print "CKPT starts with step",(sess.run(global_step))
+                while step < num_iter and not coord.should_stop():
+                    _labels, _logits, _loss, predictions = sess.run([label_batch, logits, loss, top_k_op])
+
+                    #print "labels:",_labels
+                    #print "logits:",_logits
+                    #print "predict", predictions
+                    print "loss:",_loss
+                    true_count += np.sum(predictions)
+                    step += 1
+
+                # Compute precision @ 1.
+                print "Predicted Right:{}\t\tTotal:{}".format(true_count, total_sample_count)
+                precision = float(true_count) / total_sample_count
+                print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
+
+                #summary = tf.Summary()
+                #summary.ParseFromString(sess.run(summary_op))
+                #summary.value.add(tag='Precision @ 1', simple_value=precision)
+                #summary_writer.add_summary(summary, step)
+            except Exception, e:
+                coord.request_stop(e)
+            finally:
+                coord.request_stop()
+                coord.join()
 
 def do_eval(sess, global_step, normed_logits, prediction, DataReader, tensor_pl, fout):
     counter = 0
@@ -222,29 +380,19 @@ def Calling_2(Dataset, ModelCKPT):
 
 
 def main(argv=None):  # pylint: disable=unused-argument
-    #if tf.gfile.Exists(FLAGS.eval_dir):
-    #    tf.gfile.DeleteRecursively(FLAGS.eval_dir)
-    #tf.gfile.MakeDirs(FLAGS.eval_dir)
+    if tf.gfile.Exists(FLAGS.eval_dir):
+        tf.gfile.DeleteRecursively(FLAGS.eval_dir)
+    tf.gfile.MakeDirs(FLAGS.eval_dir)
 
-    # Get File Name of TraingData, ValidationData and Testdata
-    TrainingData = FLAGS.TrainingData
-    TestingData = FLAGS.TestingData
-    # Get The Saved Model
-    # ModelCKPT = FLAGS.checkpoint_dir+'/model.ckpt-4599.meta'
-
-    ModelCKPT = GetCheckPoint()
+    DataFile = FLAGS.TrainingData
+    DataFile = FLAGS.TestingData
     try:
-        print "Calling on", TestingData
-        #Calling(TestingData, "Testing.vcf", ModelCKPT)
+        model = Models.ConvNets()
+        caller = TensorCaller(FLAGS.batch_size, model, DataFile)
+        caller.run()
     except Exception as e:
         print e
         traceback.print_exc()
-    try:
-        print "Calling on", TrainingData
-        Calling(TrainingData,"Training.vcf", ModelCKPT)
-    except Exception as e:
-        print e
-
 
 if __name__ == '__main__':
     tf.app.run()

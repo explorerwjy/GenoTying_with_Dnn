@@ -16,12 +16,12 @@ import tensorflow as tf
 import Window2Tensor
 from Input import *
 from threading import Thread
-from Training import DataReaderThread
 import Models
 
-GPUs = [0]
+GPUs = [6]
 available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
+print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
 
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('DataFile', './Testing.windows.txt.gz',
@@ -35,20 +35,6 @@ tf.app.flags.DEFINE_integer('eval_interval_secs', 60,
 tf.app.flags.DEFINE_integer('num_examples', 6400,
                             """Number of examples to run.""")
 dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
-
-def GetCheckPoint():
-    # Get CheckPoint File
-    ckptfile = FLAGS.log_dir + '/checkpoint'
-    if not os.path.isfile(ckptfile):
-        print "Model checkpoint not exists."
-        exit()
-    # Get the Model File
-    f = open(ckptfile, 'rb')
-    ckpt = f.readline().split(':')[1].strip().strip('"')
-    f.close()
-    prefix = os.path.abspath(FLAGS.log_dir)
-    ckpt = prefix + '/' + ckpt
-    return ckpt
 
 def enqueueInputData(
         sess,
@@ -85,8 +71,7 @@ def do_eval(sess, eval_correct, data_batch, label_batch):
     precision = float(true_count) / num_examples
     print '\tNum examples: %d\tNum correct: %d\tPrecision @ 1: %.04f' % (num_examples, true_count, precision)
 
-def runTesting(Data, ModelCKPT):
-     
+def runTesting(Data, ModelCKPT):  
     DataHand = gzip.open(Data, 'rb')
     DataReader = RecordReader(DataHand)
     # with tf.Graph().as_default() as g:
@@ -169,11 +154,10 @@ class Evaluate():
             global_step = tf.Variable(0, trainable=False, name='global_step')
             queue_input_data = tf.placeholder(dtype, shape=[DEPTH * (HEIGHT + 1) * WIDTH])
             queue_input_label = tf.placeholder(tf.int32, shape=[])
-            queue = tf.RandomShuffleQueue(capacity=FLAGS.batch_size * 10,
+            queue = tf.FIFOQueue(capacity=FLAGS.batch_size * 10,
                                       dtypes=[dtype, tf.int32],
                                       shapes=[[DEPTH * (HEIGHT + 1) * WIDTH], []],
-                                      min_after_dequeue=FLAGS.batch_size,
-                                      name='RandomShuffleQueue')
+                                      name='FIFOQueue')
             enqueue_op = queue.enqueue([queue_input_data, queue_input_label])
             dequeue_op = queue.dequeue()
             # Get Tensors and labels for Training data.
@@ -181,14 +165,14 @@ class Evaluate():
             logits = self.model.Inference(data_batch)
             loss = self.model.loss(logits, label_batch)
             #accuracy = self.model.Accuracy(logits, label_batch)
-            train_op = self.model.Train(loss, global_step)
+            #train_op = self.model.Train(loss, global_step)
             top_k_op = tf.nn.in_top_k(logits, label_batch, 1)
 
             summary_op = tf.summary.merge_all()
             init = tf.global_variables_initializer()
             saver = tf.train.Saver()
             sess = tf.Session()
-            summary_writer = tf.summary.FileWriter(FLAGS.train_dir, sess.graph)
+            summary_writer = tf.summary.FileWriter(FLAGS.eval_dir, sess.graph)
             sess.run(init)
             coord = tf.train.Coordinator()
             enqueue_thread = Thread(
@@ -249,9 +233,11 @@ def main(argv=None):  # pylint: disable=unused-argument
     if tf.gfile.Exists(FLAGS.eval_dir):
         tf.gfile.DeleteRecursively(FLAGS.eval_dir)
     tf.gfile.MakeDirs(FLAGS.eval_dir)
+    DataFile = FLAGS.TrainingData
+    DataFile = FLAGS.TestingData
     model = Models.ConvNets()
     #evaluate = Evaluate(FLAGS.batch_size, EPOCHS, model, TrainingDataFile)
-    evaluate = Evaluate(FLAGS.batch_size, model, FLAGS.DataFile)
+    evaluate = Evaluate(FLAGS.batch_size, model, DataFile)
     evaluate.run()
 
 
