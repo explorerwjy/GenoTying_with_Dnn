@@ -16,6 +16,7 @@ import numpy as np
 import tensorflow as tf
 from Input import *
 import Models
+from threading import Thread
 sys.stdout = sys.stderr
 
 GPUs = [6]
@@ -36,7 +37,7 @@ def enqueueInputData(sess, coord, Reader, enqueue_op, queue_input_data, queue_in
     try:
         while True:
             one_tensor, chrom, pos, ref, alt, label = Reader.OnceReadWithInfo()
-            if curr_data == None:
+            if one_tensor == None:
                 raise Exception('Finish Reading the file')
             sess.run(
                 enqueue_op,
@@ -173,7 +174,7 @@ class TensorCaller:
 
             queue = tf.FIFOQueue(capacity=FLAGS.batch_size * 10,
                                       dtypes=[dtype, tf.int32, tf.string, tf.string, tf.string, tf.string],
-                                      shapes=[[DEPTH * (HEIGHT + 1) * WIDTH], [], [], [], [] ,[] ]
+                                      shapes=[[DEPTH * (HEIGHT + 1) * WIDTH], [], [], [], [] ,[] ],
                                       name='FIFOQueue')
             enqueue_op = queue.enqueue([queue_input_data, queue_input_label, queue_input_chrom, queue_input_pos, queue_input_ref, queue_input_alt ])
             dequeue_op = queue.dequeue()
@@ -238,7 +239,7 @@ class TensorCaller:
                 coord.join(threads)
 
     def WriteBatch(self, _labels, _chrom, _pos, _ref, _alt, _PL, _GT, fout):
-        for label, chrom, start, ref, alt, gt, gl in zip(_labels, _chrom, _pos, _ref, _alt, _PL, _GT):
+        for label, chrom, start, ref, alt, gl, gt in zip(_labels, _chrom, _pos, _ref, _alt, _PL, _GT):
             string_gl = map(str, gl)
             GL = ','.join(string_gl)
             if gt == 0:
