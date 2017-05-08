@@ -96,6 +96,12 @@ class RecordReader():
             return None, None 
         return decodeline.DecodeRecord(line, WIDTH, HEIGHT)
 
+    def OnceReadWithInfo(self):
+        line = self.hand.readline()
+        if line == '':
+            return None, None, None, None, None, None # one_tensor, chrom, pos, ref, alt, label
+        return decodeline.DecodeRecord3(line, WIDTH, HEIGHT)
+
     def read2(self):
         tensor, chroms, starts, refs, alts = [], [], [], [], []
         for i in xrange(FLAGS.batch_size):

@@ -32,6 +32,27 @@ tf.app.flags.DEFINE_integer('num_examples', 640,
 tf.app.flags.DEFINE_string('checkpoint_dir', './train_6',
                            """Directory where to read model checkpoints.""")
 
+def enqueueInputData(sess, coord, Reader, enqueue_op, queue_input_data, queue_input_label, queue_input_chrom, queue_input_pos, queue_input_ref, queue_input_alt):
+    try:
+        while True:
+            one_tensor, chrom, pos, ref, alt, label = Reader.OnceReadWithInfo()
+            if curr_data == None:
+                raise Exception('Finish Reading the file')
+            sess.run(
+                enqueue_op,
+                feed_dict={
+                    queue_input_data: one_tensor,
+                    queue_input_label: label,
+                    queue_input_chrom: chrom,
+                    queue_input_pos: pos,
+                    queue_input_ref: ref,
+                    queue_input_alt: alt
+                    })
+    except Exception as e:
+        print e
+        print("finished enqueueing")
+        coord.request_stop(e)
+
 class TensorCaller:
     def __init__(self, batch_size, model, DataFile, OutName):
         self.batch_size = batch_size
@@ -42,7 +63,7 @@ class TensorCaller:
         self.model = model
         self.OutName = OutName
 
-    def run(self):
+    def run_2(self):
         s_time = time.time()
         dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
         Hand = gzip.open(self.DataFile, 'rb')
@@ -134,32 +155,36 @@ class TensorCaller:
         ckpt = prefix + '/' + ckpt
         return ckpt
 
-    def run_2(self):
+    def run(self):
         s_time = time.time()
-
         dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
         Hand = gzip.open(self.DataFile, 'rb')
         Reader = RecordReader(Hand)
         fout = open(self.OutName, 'wb')
         with tf.Graph().as_default():
             global_step = tf.Variable(0, trainable=False, name='global_step')
+            # Input Data
             queue_input_data = tf.placeholder(dtype, shape=[DEPTH * (HEIGHT + 1) * WIDTH])
             queue_input_label = tf.placeholder(tf.int32, shape=[])
+            queue_input_chrom = tf.placeholder(tf.string, shape=[])
+            queue_input_pos = tf.placeholder(tf.string, shape=[])
+            queue_input_ref = tf.placeholder(tf.string, shape=[])
+            queue_input_alt = tf.placeholder(tf.string, shape=[])
+
             queue = tf.FIFOQueue(capacity=FLAGS.batch_size * 10,
-                                      dtypes=[dtype, tf.int32],
-                                      shapes=[[DEPTH * (HEIGHT + 1) * WIDTH], []],
+                                      dtypes=[dtype, tf.int32, tf.string, tf.string, tf.string, tf.string],
+                                      shapes=[[DEPTH * (HEIGHT + 1) * WIDTH], [], [], [], [] ,[] ]
                                       name='FIFOQueue')
-            enqueue_op = queue.enqueue([queue_input_data, queue_input_label])
+            enqueue_op = queue.enqueue([queue_input_data, queue_input_label, queue_input_chrom, queue_input_pos, queue_input_ref, queue_input_alt ])
             dequeue_op = queue.dequeue()
             # Get Tensors and labels for Training data.
-            data_batch, label_batch = tf.train.batch(dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size * 8)
+            data_batch, label_batch, chrom_batch, pos_batch, ref_batch, alt_batch = tf.train.batch(dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size * 8)
             logits = self.model.Inference(data_batch)
+            loss = self.model.loss(logits, label_batch)
+            top_k_op = tf.nn.in_top_k(logits, label_batch, 1)
+
             normed_logits = tf.nn.softmax(logits, dim=-1, name=None)
             prediction = tf.argmax(normed_logits, 1)
-            loss = self.model.loss(logits, label_batch)
-            #accuracy = self.model.Accuracy(logits, label_batch)
-            #train_op = self.model.Train(loss, global_step)
-            top_k_op = tf.nn.in_top_k(logits, label_batch, 1)
 
             #summary_op = tf.summary.merge_all()
             init = tf.global_variables_initializer()
@@ -170,17 +195,12 @@ class TensorCaller:
             coord = tf.train.Coordinator()
             enqueue_thread = Thread(
                 target=enqueueInputData,
-                args=[
-                    sess,
-                    coord,
-                    Reader,
-                    enqueue_op,
-                    queue_input_data,
-                    queue_input_label])
+                args=[sess, coord, Reader, enqueue_op, queue_input_data, queue_input_label, queue_input_chrom, queue_input_pos, queue_input_ref, queue_input_alt ])
             enqueue_thread.isDaemon()
             enqueue_thread.start()
             print "Before Threads"
             threads = tf.train.start_queue_runners(coord=coord, sess=sess)
+            fout.write('\t'.join(["#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT", "SAMPLE"]) + '\n')
             try:    
                 num_iter = int(math.ceil(FLAGS.num_examples / FLAGS.batch_size))
                 true_count = 0  # Counts the number of correct predictions.
@@ -190,20 +210,22 @@ class TensorCaller:
                 saver.restore(sess, self.getCheckPoint())
                 print "CKPT starts with step",(sess.run(global_step))
                 while step < num_iter and not coord.should_stop():
-                    _labels, _logits, _loss, predictions = sess.run([label_batch, logits, loss, top_k_op])
-
+                    _chrom, _pos, _ref, _alt = sess.run([chrom_batch, pos_batch, ref_batch, alt_batch])
+                    _labels, _logits, _loss, _correct, PL, GT = sess.run([label_batch, logits, loss, top_k_op, normed_logits, prediction])
+                    self.WriteBatch(_labels, _chrom, _pos, _ref, _alt, PL, GT, fout)
                     #print "labels:",_labels
                     #print "logits:",_logits
                     #print "predict", predictions
                     print "loss:",_loss
-                    true_count += np.sum(predictions)
+                    print "Correct One Batch", np.sum(_correct)
+                    true_count += np.sum(_correct)
                     step += 1
 
                 # Compute precision @ 1.
                 print "Predicted Right:{}\t\tTotal:{}".format(true_count, total_sample_count)
                 precision = float(true_count) / total_sample_count
                 print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
-
+                fout.close()
                 #summary = tf.Summary()
                 #summary.ParseFromString(sess.run(summary_op))
                 #summary.value.add(tag='Precision @ 1', simple_value=precision)
@@ -211,8 +233,22 @@ class TensorCaller:
             except Exception, e:
                 coord.request_stop(e)
             finally:
+                sess.run(queue.close(cancel_pending_enqueues=True))
                 coord.request_stop()
-                coord.join()
+                coord.join(threads)
+
+    def WriteBatch(self, _labels, _chrom, _pos, _ref, _alt, _PL, _GT, fout):
+        for label, chrom, start, ref, alt, gt, gl in zip(_labels, _chrom, _pos, _ref, _alt, _PL, _GT):
+            string_gl = map(str, gl)
+            GL = ','.join(string_gl)
+            if gt == 0:
+                GT = '0/0'
+            elif gt == 1:
+                GT = '0/1'
+            elif gt == 2:
+                GT = '1/1'
+            fout.write('\t'.join([chrom, start, ".", ref, alt, str(
+                max(gl)), ".", "Label={}".format(str(label)), "GT:GL", GT + ':' + GL]) + '\n')  
 
 def do_eval(sess, global_step, normed_logits, prediction, DataReader, tensor_pl, fout):
     counter = 0

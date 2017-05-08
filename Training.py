@@ -40,6 +40,7 @@ init_lr = 1e-4
 optimizer = 'Adam'
 print "Optimizer is {}, init learning rate is {}.".format(optimizer, init_lr)
 
+# Not In Use
 class DataReaderThread(Thread):
     def __init__(
             self,
@@ -90,6 +91,7 @@ class DataReaderThread(Thread):
             record = window_tensor(line)
             record.encode()
             yield record.res, record.label
+# Not In Use
 
 def enqueueInputData(
         sess,

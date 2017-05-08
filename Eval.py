@@ -207,20 +207,16 @@ class Evaluate():
                 print "Predicted Right:{}\t\tTotal:{}".format(true_count, total_sample_count)
                 precision = float(true_count) / total_sample_count
                 print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
-                exit()
-                return
                 #summary = tf.Summary()
                 #summary.ParseFromString(sess.run(summary_op))
                 #summary.value.add(tag='Precision @ 1', simple_value=precision)
                 #summary_writer.add_summary(summary, step)
             except Exception, e:
-                return
                 coord.request_stop(e)
-                return
             finally:
-                return
+                sess.run(queue.close(cancel_pending_enqueues=True))
                 coord.request_stop()
-                coord.join()
+                coord.join(threads)
 
     def getCheckPoint(self):
         ckptfile = FLAGS.checkpoint_dir + '/checkpoint'
