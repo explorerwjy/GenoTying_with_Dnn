@@ -27,7 +27,7 @@ FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_string('train_dir', './train_6',
                            """Directory where to checkpoint.""")
-tf.app.flags.DEFINE_integer('num_examples', 6400,
+tf.app.flags.DEFINE_integer('num_examples', 640,
                             """Number of examples to run.""")
 tf.app.flags.DEFINE_string('checkpoint_dir', './train_6',
                            """Directory where to read model checkpoints.""")
@@ -50,9 +50,8 @@ class TensorCaller:
         fout = open(self.OutName, 'wb')
         with tf.Graph().as_default():
             global_step = tf.Variable(0, trainable=False, name='global_step')
-
-            TensorPL = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, DEPTH * (HEIGHT + 1) * WIDTH]))
-            LabelPL = tf.placeholder(tf.int32, shape=(FLAGS.batch_size, []))
+            TensorPL = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, DEPTH * (HEIGHT + 1) * WIDTH))
+            LabelPL = tf.placeholder(tf.int32, shape=(FLAGS.batch_size, ))
 
             logits = self.model.Inference(TensorPL)
             normed_logits = tf.nn.softmax(logits, dim=-1, name=None)
@@ -79,9 +78,10 @@ class TensorCaller:
                 print "CKPT starts with step",(sess.run(global_step))
                 fout.write('\t'.join(["#CHROM","POS","ID","REF","ALT","QUAL","FILTER","INFO","FORMAT","SAMPLE"]) + '\n')
                 while step < num_iter :
-                    tensors, chroms, starts, refs, alts, labels = DataReader.read3()
-                    GL, _loss, _correct, GT = sess.run([normed_logits, loss, top_k_op, prediction],feed_dict={tensor_pl: tensors, label_pl: labels})
+                    tensors, chroms, starts, refs, alts, labels = Reader.read3()
+                    GL, _loss, _correct, GT = sess.run([normed_logits, loss, top_k_op, prediction], feed_dict={TensorPL: tensors, LabelPL: labels})
                     print "loss:",_loss
+                    print "batch correct",np.sum(_correct)
                     true_count += np.sum(_correct)
                     step += 1
                     for chrom, start, ref, alt, label, gt, gl in zip(chroms, starts, refs, alts, labels, GT, GL):
@@ -380,15 +380,12 @@ def Calling_2(Dataset, ModelCKPT):
 
 
 def main(argv=None):  # pylint: disable=unused-argument
-    if tf.gfile.Exists(FLAGS.eval_dir):
-        tf.gfile.DeleteRecursively(FLAGS.eval_dir)
-    tf.gfile.MakeDirs(FLAGS.eval_dir)
-
     DataFile = FLAGS.TrainingData
-    DataFile = FLAGS.TestingData
+    #DataFile = FLAGS.TestingData
     try:
+        OutName = 'Calling.' + DataFile.strip().split('/')[-1].split('.')[0] + '.vcf'
         model = Models.ConvNets()
-        caller = TensorCaller(FLAGS.batch_size, model, DataFile)
+        caller = TensorCaller(FLAGS.batch_size, model, DataFile, OutName)
         caller.run()
     except Exception as e:
         print e

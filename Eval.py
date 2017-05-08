@@ -24,15 +24,13 @@ os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GP
 print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
 
 FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_string('DataFile', './Testing.windows.txt.gz',
-                           """Data File to Predict.""")
 tf.app.flags.DEFINE_string('eval_dir', './test',
                            """Directory where to write event logs.""")
 tf.app.flags.DEFINE_string('checkpoint_dir', './train_6',
                            """Directory where to read model checkpoints.""")
 tf.app.flags.DEFINE_integer('eval_interval_secs', 60,
                             """How often to run the eval.""")
-tf.app.flags.DEFINE_integer('num_examples', 6400,
+tf.app.flags.DEFINE_integer('num_examples', 640,
                             """Number of examples to run.""")
 dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
 
@@ -204,19 +202,23 @@ class Evaluate():
                     print "loss:",_loss
                     true_count += np.sum(predictions)
                     step += 1
-
+                
                 # Compute precision @ 1.
                 print "Predicted Right:{}\t\tTotal:{}".format(true_count, total_sample_count)
                 precision = float(true_count) / total_sample_count
                 print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
-
+                exit()
+                return
                 #summary = tf.Summary()
                 #summary.ParseFromString(sess.run(summary_op))
                 #summary.value.add(tag='Precision @ 1', simple_value=precision)
                 #summary_writer.add_summary(summary, step)
             except Exception, e:
+                return
                 coord.request_stop(e)
+                return
             finally:
+                return
                 coord.request_stop()
                 coord.join()
 
@@ -233,10 +235,9 @@ def main(argv=None):  # pylint: disable=unused-argument
     if tf.gfile.Exists(FLAGS.eval_dir):
         tf.gfile.DeleteRecursively(FLAGS.eval_dir)
     tf.gfile.MakeDirs(FLAGS.eval_dir)
-    DataFile = FLAGS.TrainingData
+    #DataFile = FLAGS.TrainingData
     DataFile = FLAGS.TestingData
     model = Models.ConvNets()
-    #evaluate = Evaluate(FLAGS.batch_size, EPOCHS, model, TrainingDataFile)
     evaluate = Evaluate(FLAGS.batch_size, model, DataFile)
     evaluate.run()
 
