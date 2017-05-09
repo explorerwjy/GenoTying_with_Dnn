@@ -58,9 +58,7 @@ class window_tensor():
         # print len(self.Qual), len(self.Qual[0])
         # print len(self.Strand), len(self.Strand[0])
         # exit()
-        res = [(float(base) / 6 - 0.5) for base in list(self.Alignment)] +
-            [qual2code(x) for x in list(self.Qual)] +
-            [float(x) / 2 - 0.5 for x in list(self.Strand)]
+        res = [(float(base) / 6 - 0.5) for base in list(self.Alignment)] + [qual2code(x) for x in list(self.Qual)] + [float(x) / 2 - 0.5 for x in list(self.Strand)]
         # print len([float(x)/2-0.5 for x in list(self.Strand)]),
         # len(list(self.Strand))
         return res

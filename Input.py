@@ -36,38 +36,13 @@ INITIAL_LEARNING_RATE = 0.1       # Initial learning rate.
 FLAGS = tf.app.flags.FLAGS
 
 
-tf.app.flags.DEFINE_string('eval_dir', './tmp/TensorCaller_eval',
-                           """Directory where to write event logs.""")
-
-tf.app.flags.DEFINE_string(
-    'train_dir',
-    './tmp/TensorCaller_train',
-    """Directory where to write event logs and checkpoint""")
-
-tf.app.flags.DEFINE_string('checkpoint_dir', './tmp/TensorCaller_train',
-                           """Directory where to read model checkpoints.""")
-
-tf.app.flags.DEFINE_string('log_dir', './tmp/TensorCaller_train/log',
-                           """Directory where to write event logs.""")
-
-tf.app.flags.DEFINE_integer('eval_interval_secs', 60 * 5,
-                            """How often to run the eval.""")
-
-tf.app.flags.DEFINE_boolean('run_once', False,
-                            """Whether to run eval only once.""")
-
-tf.app.flags.DEFINE_integer(
-    'batch_size',
-    64,
+tf.app.flags.DEFINE_integer('batch_size', 64,
     """Number of WindowTensor to process in a batch.""")
 
-# tf.app.flags.DEFINE_integer('test_batch_size', 64,
-#                            """Number of WindowTensor to process in a batch.""")
-
-tf.app.flags.DEFINE_string('TrainingData', 'Training.windows.txt.gz',
+tf.app.flags.DEFINE_string('TrainingData', './Training.windows.txt.gz',
                            """Path to the Training Data.""")
 
-tf.app.flags.DEFINE_string('ValidationData', './windows_validation.txt.gz',
+tf.app.flags.DEFINE_string('ValidationData', './Validation.windows.txt.gz',
                            """Path to the Validation Data.""")
 
 tf.app.flags.DEFINE_string('TestingData', 'Testing.windows.txt.gz',
@@ -76,19 +51,10 @@ tf.app.flags.DEFINE_string('TestingData', 'Testing.windows.txt.gz',
 tf.app.flags.DEFINE_boolean('use_fl16', False,
                             """Train the model using fp16.""")
 
-
-tf.app.flags.DEFINE_integer('max_steps', 1000000,
-                            """Number of batches to run.""")
-
-tf.app.flags.DEFINE_boolean('log_device_placement', True,
-                            """Whether to log device placement.""")
-
 tf.app.flags.DEFINE_boolean('numOfDecodingThreads', 4,
                             """Whether to log device placement.""")
 
 npdtype = np.float16 if FLAGS.use_fl16 else np.float32
-# ARG: batch_size: The batch size will be baked into both placeholders.
-# Return: Tensors placeholder, Labels placeholder.
 
 
 class window_tensor():
@@ -130,6 +96,12 @@ class RecordReader():
             return None, None 
         return decodeline.DecodeRecord(line, WIDTH, HEIGHT)
 
+    def OnceReadWithInfo(self):
+        line = self.hand.readline()
+        if line == '':
+            return None, None, None, None, None, None # one_tensor, chrom, pos, ref, alt, label
+        return decodeline.DecodeRecord3(line, WIDTH, HEIGHT)
+
     def read2(self):
         tensor, chroms, starts, refs, alts = [], [], [], [], []
         for i in xrange(FLAGS.batch_size):
@@ -147,19 +119,19 @@ class RecordReader():
         return tensor, chroms, starts, refs, alts
 
     def read3(self):
-        tensor, chroms, starts, refs, alts = [], [], [], [], []
+        tensor, chroms, starts, refs, alts, labels = [], [], [], [], [], []
         for i in xrange(FLAGS.batch_size):
             line = self.hand.readline()
             if line == '':
                 break
-            one_tensor, chrom, pos, ref, alt = decodeline.DecodeRecord3(
-                line, WIDTH, HEIGHT)
+            one_tensor, chrom, pos, ref, alt, label = decodeline.DecodeRecord3(line, WIDTH, HEIGHT)
             tensor.append(one_tensor)
             chroms.append(chrom)
             starts.append(pos)
             refs.append(ref)
             alts.append(alt)
-        return tensor, chroms, starts, refs, alts
+            labels.append(label)
+        return tensor, chroms, starts, refs, alts, labels
 
     def read_without_processing(self):
         line = self.hand.readline()
