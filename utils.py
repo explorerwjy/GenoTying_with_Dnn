@@ -24,7 +24,8 @@ def var2kv2(l):
     chrom, pos = llist[0:2]
     p = chrom + ':' + pos
     k = get_xpos(chrom, pos)
-    return k, p, l
+    gt = get_Genotype(llist)
+    return k, p, gt
 
 
 def var2kv(llist):
@@ -40,11 +41,11 @@ def get_Genotype(llist):
     #data = llist[10]
     GT = re.findall('[\d.]', llist[9].split(':')[0])
     if GT[0] == '0' and GT[1] == '0':
-        return 0  # Homozygous Ref
+        return '0'  # Homozygous Ref
     elif GT[0] != GT[1]:
-        return 1  # Hetrozygous
+        return '1'  # Hetrozygous
     else:
-        return 2  # Homozygous Alt
+        return '2'  # Homozygous Alt
 
 
 def Chrom2Byte(chrom):
