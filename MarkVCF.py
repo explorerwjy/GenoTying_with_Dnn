@@ -84,9 +84,6 @@ class Variant:
         record = record.strip().split('\t')
         self.Chrom, self.Pos, self.Id, self.Ref, self.Alt, self.Qual, self.Filter, self.Info_str, self.Format = record[0:9]
         self.Genotypes = record[9:]
-        #self.Alts = self.Alt.split(',')
-        #self.Alleles = [self.Ref] + self.Alts
-        #self.GetInfo()
 
     def GetInfo(self):
         self.Info = {}

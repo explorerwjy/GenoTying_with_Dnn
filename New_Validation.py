@@ -68,15 +68,15 @@ class Counts():
         print '1/1 <- 1/1:', self.two_two
         print
         print 'confusion matrix'
-        print '%12d\t%12s\t%12s\t%12s' % (self.All,         'Predicted NO',   'Predicted YES', '')
-        print '%12s\t%12d\t%12d\t%12d' % ('Actual NO', (self.zero_zero), (self.zero_one + self.zero_two), (self.zero_zero + self.zero_one + self.zero_two))
-        print '%12s\t%12d\t%12d\t%12d' % ('Actual YES', (self.one_zero + self.two_zero), (self.one_one + self.two_two + self.one_two + self.two_one), (self.one_zero + self.two_zero + self.one_one + self.two_two + self.one_two + self.two_one))
+        print '%12d\t%12s\t%12s\t%12s' % (self.All,         'Actual NO',   'Actual YES', '')
+        print '%12s\t%12d\t%12d\t%12d' % ('Predicted NO', (self.zero_zero), (self.zero_one + self.zero_two), (self.zero_zero + self.zero_one + self.zero_two))
+        print '%12s\t%12d\t%12d\t%12d' % ('Predicted YES', (self.one_zero + self.two_zero), (self.one_one + self.two_two + self.one_two + self.two_one), (self.one_zero + self.two_zero + self.one_one + self.two_two + self.one_two + self.two_one))
         print '%12s\t%12d\t%12d\t%12s' % ('', (self.zero_zero + self.one_zero + self.two_zero), (self.zero_one + self.zero_two + self.one_one + self.two_two + self.one_two + self.two_one), '')
         print
-        print '%12d\t%12s\t%12s\t%12s\t%12s' % (self.All, 'Predicted 0', 'Predicted 1', 'predicted 2', '')
-        print '%12s\t%12d\t%12d\t%12d\t%12d' % ('Actual 0', self.zero_zero, self.one_zero, self.two_zero, (self.zero_zero + self.one_zero + self.two_zero))
-        print '%12s\t%12d\t%12d\t%12d\t%12d' % ('Actual 1', self.zero_one, self.one_one, self.two_one, (self.zero_one + self.one_one + self.two_one))
-        print '%12s\t%12d\t%12d\t%12d\t%12d' % ('Actual 2', self.zero_two, self.one_two, self.two_two, (self.zero_two + self.one_two + self.two_two))
+        print '%12d\t%12s\t%12s\t%12s\t%12s' % (self.All, 'Actual 0', 'Actual 1', 'Actual 2', '')
+        print '%12s\t%12d\t%12d\t%12d\t%12d' % ('Predicted 0', self.zero_zero, self.one_zero, self.two_zero, (self.zero_zero + self.one_zero + self.two_zero))
+        print '%12s\t%12d\t%12d\t%12d\t%12d' % ('Predicted 1', self.zero_one, self.one_one, self.two_one, (self.zero_one + self.one_one + self.two_one))
+        print '%12s\t%12d\t%12d\t%12d\t%12d' % ('Predicted 2', self.zero_two, self.one_two, self.two_two, (self.zero_two + self.one_two + self.two_two))
         print '%12s\t%12d\t%12d\t%12s\t%12s' % ('', (self.zero_zero + self.zero_one + self.zero_two), (self.one_zero + self.one_one + self.one_two), (self.two_zero + self.two_one + self.two_two), '')
         print ''
         print '-' * 50

@@ -55,15 +55,15 @@ class Counts():
 
     def show(self):
         print 'Eval Results on TestSet -> GroundTruth'
-        print '0/0 -> 0/0:', self.zero_zero
-        print '0/0 -> 0/1:', self.zero_one
-        print '0/0 -> 1/1:', self.zero_two
-        print '0/1 -> 0/0:', self.one_zero
-        print '0/1 -> 0/1:', self.one_one
-        print '0/1 -> 1/1:', self.one_two
-        print '1/1 -> 0/0:', self.two_zero
-        print '1/1 -> 0/1:', self.two_one
-        print '1/1 -> 1/1:', self.two_two
+        print '0/0 <- 0/0:', self.zero_zero
+        print '0/0 <- 0/1:', self.zero_one
+        print '0/0 <- 1/1:', self.zero_two
+        print '0/1 <- 0/0:', self.one_zero
+        print '0/1 <- 0/1:', self.one_one
+        print '0/1 <- 1/1:', self.one_two
+        print '1/1 <- 0/0:', self.two_zero
+        print '1/1 <- 0/1:', self.two_one
+        print '1/1 <- 1/1:', self.two_two
         print
         print 'confusion matrix'
         print '%12d\t%12s\t%12s\t%12s' % (self.All,         'Predicted NO',   'Predicted YES', '')
@@ -117,7 +117,12 @@ class EvalCalling:
             else:
                 var = Variant(l)
                 label = var.Info['Label'][0]
-                GT = var.GetGT()
+                try:
+                    GT = str(var.GetGT())
+                except:
+                    continue
+                if GT == '0':
+                    continue
                 var.eval = self.MarkError(str(label), str(GT), counts)
                 if var.Markerror() and self.outDetail:
                     self.fout2.write(var.out())
@@ -130,25 +135,25 @@ class EvalCalling:
             counts.zero_zero += 1
             return "0-0"
         elif label == '0' and GT == '1':
-            counts.zero_one += 1
+            counts.one_zero += 1
             return "0-1"
         elif label == '0' and GT == '2':
-            counts.zero_two += 1
+            counts.two_zero += 1
             return "0-2"
         elif label == '1' and GT == '0':
-            counts.one_zero += 1
+            counts.zero_one += 1
             return "1-0"
         elif label == '1' and GT == '1':
             counts.one_one += 1
             return "1-1"
         elif label == '1' and GT == '2':
-            counts.one_two += 1
+            counts.two_one += 1
             return "1-2"
         elif label == '2' and GT == '0':
-            counts.two_zero += 1
+            counts.zero_two += 1
             return "2-0"
         elif label == '2' and GT == '1':
-            counts.two_one += 1
+            counts.one_two += 1
             return "2-1"
         elif label == '2' and GT == '2':
             counts.two_two += 1
