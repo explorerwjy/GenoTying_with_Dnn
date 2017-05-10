@@ -15,7 +15,7 @@ def GetOptions():
     parser.add_argument("-d", "--outDetail", action='store_true', default=False,
                         help="continue training from a checkpoint")
     args = parser.parse_args()
-    return args.vcf, args.outDetail
+    return args.vcf, args.truth, args.outDetail
 
 
 class Counts():
@@ -31,7 +31,7 @@ class Counts():
         self.two_two = 0
 
     def Get_POS_Eval(self):
-        print self.zero_zero, self.zero_one, self.zero_two, self.one_zero,  self.one_one, self.one_two, self.two_zero, self.two_one, self.two_two
+        #print self.zero_zero, self.zero_one, self.zero_two, self.one_zero,  self.one_one, self.one_two, self.two_zero, self.two_one, self.two_two
         self.All = self.zero_zero + self.one_zero + self.two_zero + self.zero_one + \
             self.zero_two + self.one_one + self.two_two + self.one_two + self.two_one
         self.Positive = self.zero_one + self.zero_two + \
@@ -56,16 +56,16 @@ class Counts():
             (2 * self.GT_TP + self.GT_FN + self.GT_FP)
 
     def show(self):
-        print 'Eval Results on TestSet -> GroundTruth'
-        print '0/0 -> 0/0:', self.zero_zero
-        print '0/0 -> 0/1:', self.zero_one
-        print '0/0 -> 1/1:', self.zero_two
-        print '0/1 -> 0/0:', self.one_zero
-        print '0/1 -> 0/1:', self.one_one
-        print '0/1 -> 1/1:', self.one_two
-        print '1/1 -> 0/0:', self.two_zero
-        print '1/1 -> 0/1:', self.two_one
-        print '1/1 -> 1/1:', self.two_two
+        print 'Eval Results on TestSet <- GroundTruth'
+        print '0/0 <- 0/0:', self.zero_zero
+        print '0/0 <- 0/1:', self.zero_one
+        print '0/0 <- 1/1:', self.zero_two
+        print '0/1 <- 0/0:', self.one_zero
+        print '0/1 <- 0/1:', self.one_one
+        print '0/1 <- 1/1:', self.one_two
+        print '1/1 <- 0/0:', self.two_zero
+        print '1/1 <- 0/1:', self.two_one
+        print '1/1 <- 1/1:', self.two_two
         print
         print 'confusion matrix'
         print '%12d\t%12s\t%12s\t%12s' % (self.All,         'Predicted NO',   'Predicted YES', '')
@@ -117,14 +117,13 @@ class EvalCalling:
                 continue
             else:
                 k, p, v = var2kv2(l) #k:x-pos, p:chr:pos, v:line
-                if k not in res:
+                if k not in self.Positives:
                     num += 1
                     self.Positives[k] = v
                 else:
                     print "Multiple record in %s has same position: %s" % (TVCF, p)
         duration = time.time()-s_time
         print "%d variants loaded, used %.3f s"%(num, duration)
-        return res
 
     def GetVCF(self, VCF):
         if VCF.endswith('.vcf.gz'):
@@ -142,22 +141,31 @@ class EvalCalling:
             if l.startswith('#'):
                 continue
             else:
-                num += 1
                 var = Variant(l)
                 Key = get_xpos(var.Chrom, var.Pos)
-                GT = var.GetGT()
+                try:
+                    GT = var.GetGT()
+                    if str(GT) == '0':
+                        continue
+                except:
+                    continue
+                num += 1
                 var.eval = self.MarkError(Key, str(GT), counts)
                 if var.Markerror() and self.outDetail:
                     self.fout2.write(var.out())
         duration = time.time()-s_time
         print "%d variants loaded, used %.3f s"%(num, duration)
         # Get FN
-        for k, v in True_dict.items():
-        FN_hand.write(str(k) + '\t' + '\t'.join(map(str,v)) + '\n')
+        for k, v in self.Positives.items():
+            if self.outDetail:
+                FN_hand = open('FN.EvalCalling.vcf', 'wb')
+                FN_hand.write(str(k) + '\t' + '\t'.join(map(str,v)) + '\n')
             if v[0] == v[1]:
                 counts.zero_two += 1
             elif v[0] != v[1]:
                 counts.zero_one += 1
+            else:
+                print v
 
         counts.Get_POS_Eval()
         counts.Get_Genotype_Eval()
@@ -174,25 +182,25 @@ class EvalCalling:
             counts.zero_zero += 1
             return "0-0"
         elif label == '0' and GT == '1':
-            counts.zero_one += 1
+            counts.one_zero += 1
             return "0-1"
         elif label == '0' and GT == '2':
-            counts.zero_two += 1
+            counts.two_zero += 1
             return "0-2"
         elif label == '1' and GT == '0':
-            counts.one_zero += 1
+            counts.zero_one += 1
             return "1-0"
         elif label == '1' and GT == '1':
             counts.one_one += 1
             return "1-1"
         elif label == '1' and GT == '2':
-            counts.one_two += 1
+            counts.two_one += 1
             return "1-2"
         elif label == '2' and GT == '0':
-            counts.two_zero += 1
+            counts.zero_two += 1
             return "2-0"
         elif label == '2' and GT == '1':
-            counts.two_one += 1
+            counts.one_two += 1
             return "2-1"
         elif label == '2' and GT == '2':
             counts.two_two += 1
@@ -253,8 +261,8 @@ class Variant:
 
 
 def main():
-    vcf, detail = GetOptions()
-    evalcall = EvalCalling(vcf, detail)
+    vcf, tvcf, detail = GetOptions()
+    evalcall = EvalCalling(vcf, tvcf, detail)
     evalcall.run()
 
 if __name__=='__main__':

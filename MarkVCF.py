@@ -63,17 +63,21 @@ def VCFopen(vcf):
 def VarScan(vcf, Positives, outName):
     hand = VCFopen(vcf)
     fout = open(outName, 'wb')
-    for l in self.VCFhand:
+    for l in hand:
         if l.startswith('#'):
+            fout.write(l)
             continue
         else:
             var = Variant(l)
             k = get_xpos(var.Chrom, var.Pos)
-            if k in Positives:
-                var.label = str(var.GetGT())
+            l = Positives.get(k, None)
+            if l == None: # this position don't has var
+                var.label = '0'
             else:
-                var.label = str(0)
+                var.label = get_Genotype(l.strip().split('\t'))
             fout.write(var.out())
+    hand.close()
+    fout.close()
 
 class Variant:
     def __init__(self, record):
@@ -99,7 +103,7 @@ class Variant:
 
     def out(self):
         INFO = '{};Label={}'.format(self.Info_str, self.label)
-        return '\t'.join(self.Chrom, self.Pos, self.Id, self.Ref, self.Alt, self.Qual, self.Filter, INFO, self.Format, '\t'.join(self.Genotypes)) + '\n'
+        return '\t'.join([self.Chrom, self.Pos, self.Id, self.Ref, self.Alt, self.Qual, self.Filter, INFO, self.Format, '\t'.join(self.Genotypes)]) + '\n'
 
     def GetGT(self):
         GT = re.findall('[\d.]', self.Genotypes[0].split(':')[0])
@@ -113,7 +117,7 @@ class Variant:
 def main():
     vcf, T_vcf = GetOptions()
     Positives = Get_Positives(T_vcf)
-    outName = 'Labeled.' + vcf.strip().split('/')[0].rstrip('.gz')
+    outName = 'Labeled.' + vcf.strip().split('/')[-1].rstrip('.gz')
     VarScan(vcf, Positives, outName)
 
 
