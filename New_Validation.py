@@ -8,8 +8,10 @@ from utils import *
 
 def GetOptions():
     parser = argparse.ArgumentParser()
-    parser.add_argument('-v', '--vcf',
-                        help='VCF file to be eval. This VCF should have INFO:Label=(0|1|2)')
+    parser.add_argument('-v', '--vcf', required=True,
+                        help='VCF file to be eval.')
+    parser.add_argument('-t', '--truth', required=True,
+                        help='Ground Truth VCF')
     parser.add_argument("-d", "--outDetail", action='store_true', default=False,
                         help="continue training from a checkpoint")
     args = parser.parse_args()
@@ -96,36 +98,78 @@ class Counts():
 
 
 class EvalCalling:
-    def __init__(self, VCF, outDetail=False):
+    def __init__(self, VCF, TVCF, outDetail=False):
         self.VCF = VCF
-        self.VCFhand = self.GetVCF()
+        self.VCFhand = self.GetVCF(VCF)
         self.outDetail = outDetail
         if outDetail:
             self.fout2 = open('EvalCalling.vcf', 'wb')
+        self.GetTruth(TVCF)
 
-    def GetVCF(self):
-        if self.VCF.endswith('.vcf.gz'):
-            return gzip.open(self.VCF)
+    def GetTruth(self, TVCF):
+        fin = self.GetVCF(TVCF)
+        self.Positives = {}
+        s_time = time.time()
+        print "Start Loading True Variants"
+        num = 0
+        for l in fin:
+            if l.startswith('#'):
+                continue
+            else:
+                k, p, v = var2kv2(l) #k:x-pos, p:chr:pos, v:line
+                if k not in res:
+                    num += 1
+                    self.Positives[k] = v
+                else:
+                    print "Multiple record in %s has same position: %s" % (TVCF, p)
+        duration = time.time()-s_time
+        print "%d variants loaded, used %.3f s"%(num, duration)
+        return res
+
+    def GetVCF(self, VCF):
+        if VCF.endswith('.vcf.gz'):
+            return gzip.open(VCF)
         else:
-            return open(self.VCF)
+            return open(VCF)
 
     def run(self):
         counts = Counts()
+        # Get TP, FP
+        s_time = time.time()
+        num = 0
+        print "Start Loading Variants to be eval"
         for l in self.VCFhand:
             if l.startswith('#'):
                 continue
             else:
+                num += 1
                 var = Variant(l)
-                label = var.Info['Label'][0]
+                Key = get_xpos(var.Chrom, var.Pos)
                 GT = var.GetGT()
-                var.eval = self.MarkError(str(label), str(GT), counts)
+                var.eval = self.MarkError(Key, str(GT), counts)
                 if var.Markerror() and self.outDetail:
                     self.fout2.write(var.out())
+        duration = time.time()-s_time
+        print "%d variants loaded, used %.3f s"%(num, duration)
+        # Get FN
+        for k, v in True_dict.items():
+        FN_hand.write(str(k) + '\t' + '\t'.join(map(str,v)) + '\n')
+            if v[0] == v[1]:
+                counts.zero_two += 1
+            elif v[0] != v[1]:
+                counts.zero_one += 1
+
         counts.Get_POS_Eval()
         counts.Get_Genotype_Eval()
         counts.show()
 
-    def MarkError(self, label, GT, counts):
+    def MarkError(self, key, GT, counts):
+        l = self.Positives.get(key, '0')
+        if l != '0':
+            self.Positives.pop(key)
+            label = get_Genotype(l.strip().split('\t'))
+        else:
+            label = l
         if label == '0' and GT == '0':
             counts.zero_zero += 1
             return "0-0"
