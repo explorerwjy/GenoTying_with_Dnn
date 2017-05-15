@@ -74,10 +74,10 @@ class Counts():
         print '%12s\t%12d\t%12d\t%12s' % ('', (self.zero_zero + self.one_zero + self.two_zero), (self.zero_one + self.zero_two + self.one_one + self.two_two + self.one_two + self.two_one), '')
         print
         print '%12d\t%12s\t%12s\t%12s\t%12s' % (self.All, 'Actual 0', 'Actual 1', 'Actual 2', '')
-        print '%12s\t%12d\t%12d\t%12d\t%12d' % ('Predicted 0', self.zero_zero, self.one_zero, self.two_zero, (self.zero_zero + self.one_zero + self.two_zero))
-        print '%12s\t%12d\t%12d\t%12d\t%12d' % ('Predicted 1', self.zero_one, self.one_one, self.two_one, (self.zero_one + self.one_one + self.two_one))
-        print '%12s\t%12d\t%12d\t%12d\t%12d' % ('Predicted 2', self.zero_two, self.one_two, self.two_two, (self.zero_two + self.one_two + self.two_two))
-        print '%12s\t%12d\t%12d\t%12s\t%12s' % ('', (self.zero_zero + self.zero_one + self.zero_two), (self.one_zero + self.one_one + self.one_two), (self.two_zero + self.two_one + self.two_two), '')
+        print '%12s\t%12d\t%12d\t%12d\t%12d' % ('Predicted 0', self.zero_zero, self.zero_one, self.zero_two, (self.zero_zero + self.zero_one + self.zero_two))
+        print '%12s\t%12d\t%12d\t%12d\t%12d' % ('Predicted 1', self.one_zero, self.one_one, self.one_two, (self.one_zero + self.one_one + self.one_two))
+        print '%12s\t%12d\t%12d\t%12d\t%12d' % ('Predicted 2', self.two_zero, self.two_one, self.two_two, (self.two_zero + self.two_one + self.two_two))
+        print '%12s\t%12d\t%12d\t%12s\t%12s' % ('', (self.zero_zero + self.one_zero + self.two_zero), (self.zero_one + self.one_one + self.two_one), (self.zero_two + self.one_two + self.two_two), '')
         print ''
         print '-' * 50
         print 'Position Eval:'
@@ -156,17 +156,21 @@ class EvalCalling:
         duration = time.time()-s_time
         print "%d variants loaded, used %.3f s"%(num, duration)
         # Get FN
-        for k, v in self.Positives.items():
+        if self.outDetail:
+            FN_hand = open('FN.EvalCalling.vcf', 'wb')
+        for k, v in sorted(self.Positives.items(),key=lambda x: x[0]):
             if self.outDetail:
-                FN_hand = open('FN.EvalCalling.vcf', 'wb')
-                FN_hand.write(str(k) + '\t' + '\t'.join(map(str,v)) + '\n')
-            if v[0] == v[1]:
+                FN_hand.write(v)
+            GT = get_Genotype(v.strip().split('\t'))
+            if str(GT) == '2':
                 counts.zero_two += 1
-            elif v[0] != v[1]:
+            elif str(GT) == '1':
                 counts.zero_one += 1
             else:
-                print v
-
+                print GT
+        if self.outDetail:
+            FN_hand.close() 
+        
         counts.Get_POS_Eval()
         counts.Get_Genotype_Eval()
         counts.show()

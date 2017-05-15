@@ -194,6 +194,11 @@ class Evaluate():
                 print self.getCheckPoint()
                 saver.restore(sess, self.getCheckPoint())
                 print "CKPT starts with step",(sess.run(global_step))
+                for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES):
+                    print(v)
+                    print sess.run("conv1/weights/read:0")
+                exit()
+
                 while step < num_iter and not coord.should_stop():
                     _labels, _logits, _loss, predictions = sess.run([label_batch, logits, loss, top_k_op])
                     #print "labels:",_labels
@@ -214,6 +219,9 @@ class Evaluate():
             except Exception, e:
                 coord.request_stop(e)
             finally:
+                print "Predicted Right:{}\t\tTotal:{}".format(true_count, total_sample_count)
+                precision = float(true_count) / total_sample_count
+                print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
                 sess.run(queue.close(cancel_pending_enqueues=True))
                 coord.request_stop()
                 coord.join(threads)

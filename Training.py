@@ -17,6 +17,8 @@ from Input import *
 import sys
 import pysam
 import argparse
+from collections import deque
+
 sys.stdout = sys.stderr
 
 
@@ -31,7 +33,7 @@ tf.app.flags.DEFINE_integer('num_gpus', 1,
                             """How many GPUs to use.""")
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
-GPUs = [6]
+GPUs = [0]
 available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
@@ -113,6 +115,17 @@ def enqueueInputData(
         print("finished enqueueing")
         coord.request_stop(e)
 
+class LossQueue:
+    def __init__(self):
+        self.queue = deque([500] * 100, 100)
+    def enqueue(self, value):
+        self.queue.appendleft(value)
+        self.queue.pop()
+    def avgloss(self):
+        res = list(self.queue)
+        return float(sum(res))/len(res)
+        
+
 class Train():
     def __init__(self, batch_size, model, TrainingDataFile, TestingDataFile):
         self.TrainingDataFile = TrainingDataFile
@@ -169,13 +182,13 @@ class Train():
             enqueue_thread.start()
             print "Before Threads"
             threads = tf.train.start_queue_runners(coord=coord, sess=sess)
-            min_loss = 500
+            loss_queue = LossQueue() 
+            min_loss = loss_queue.avgloss()
             try:    
                 print "Start"
                 if continueModel != None:
                     saver.restore(sess, continueModel)
-                    print sess.run(global_step)
-                    print "Continue Train Mode. Start with step", v_step
+                    print "Continue Train Mode. Start with step",sess.run(global_step) 
                 for step in xrange(FLAGS.max_steps):
                     if coord.should_stop():
                         break
@@ -187,6 +200,8 @@ class Train():
                     assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
 
                     if v_step % 10 == 0:
+                        loss_queue.enqueue(loss_value)
+                        #avgloss = loss_queue.avgloss()
                         num_examples_per_step = FLAGS.batch_size
                         examples_per_sec = num_examples_per_step / duration
                         sec_per_batch = duration / FLAGS.num_gpus
@@ -205,14 +220,18 @@ class Train():
                     # Save the model checkpoint periodically.
                     if v_step % 1000 == 0 or (v_step + 1) == FLAGS.max_steps:
                         #self.EvalWhileTraining()
-                        if loss_value < min_loss:
+                        avgloss = loss_queue.avgloss()
+                        if avgloss < min_loss:
                             checkpoint_path = os.path.join(FLAGS.train_dir, 'model.ckpt')
                             saver.save(sess, checkpoint_path, global_step=v_step)
-                            min_loss = loss_value
-                            print "Write A CheckPoint at %d" % (v_step)
+                            min_loss = avgloss 
+                            print "Write A CheckPoint at %d with avgloss %.5f" % (v_step, avgloss)
+                        else:
+                            print "Current Min avgloss is %.5f" % min_loss
             except Exception, e:
                 coord.request_stop(e)
             finally:
+                sess.run(queue.close(cancel_pending_enqueues=True))
                 coord.request_stop()
                 coord.join()
 
@@ -380,6 +399,7 @@ class Train():
                 assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
 
                 if v_step % 10 == 0:
+                    avgloss = lossqueue.avgloss()
                     num_examples_per_step = FLAGS.batch_size * FLAGS.num_gpus
                     examples_per_sec = num_examples_per_step / duration
                     sec_per_batch = duration / FLAGS.num_gpus

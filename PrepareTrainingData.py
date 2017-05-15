@@ -200,7 +200,10 @@ def get_variants_from_sites_vcf(sites_file, Positive_vars, RefFile, SamFile, Bam
         llist = l.strip().split('\t')
         k, chrom, pos, ref, alt = var2kv(llist)
         if k in Positive_vars:
-            GT = get_Genotype(llist)
+            try:
+                GT = get_Genotype(llist)
+            except:
+                continue
             region = Region.CreateRegion(
                 RefFile,
                 SamFile,

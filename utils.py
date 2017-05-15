@@ -24,8 +24,8 @@ def var2kv2(l):
     chrom, pos = llist[0:2]
     p = chrom + ':' + pos
     k = get_xpos(chrom, pos)
-    gt = get_Genotype(llist)
-    return k, p, gt
+    #gt = get_Genotype(llist)
+    return k, p, l
 
 
 def var2kv(llist):

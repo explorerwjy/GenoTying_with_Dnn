@@ -19,7 +19,7 @@ import Models
 from threading import Thread
 sys.stdout = sys.stderr
 
-GPUs = [6]
+GPUs = [4]
 available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
@@ -28,8 +28,9 @@ FLAGS = tf.app.flags.FLAGS
 
 tf.app.flags.DEFINE_string('train_dir', './train_6',
                            """Directory where to checkpoint.""")
-tf.app.flags.DEFINE_integer('num_examples', 640,
-                            """Number of examples to run.""")
+#tf.app.flags.DEFINE_integer('num_examples', 640, """Number of examples to run.""")
+#tf.app.flags.DEFINE_integer('num_examples', 217917,"""Number of examples to run.""")
+tf.app.flags.DEFINE_integer('num_examples', 5405136,"""Number of examples to run.""")
 tf.app.flags.DEFINE_string('checkpoint_dir', './train_6',
                            """Directory where to read model checkpoints.""")
 
@@ -38,7 +39,8 @@ def enqueueInputData(sess, coord, Reader, enqueue_op, queue_input_data, queue_in
         while True:
             one_tensor, chrom, pos, ref, alt, label = Reader.OnceReadWithInfo()
             if one_tensor == None:
-                raise Exception('Finish Reading the file')
+                #raise Exception('Finish Reading the file')
+                return
             sess.run(
                 enqueue_op,
                 feed_dict={
@@ -64,7 +66,7 @@ class TensorCaller:
         self.model = model
         self.OutName = OutName
 
-    def run_2(self):
+    def run(self):
         s_time = time.time()
         dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
         Hand = gzip.open(self.DataFile, 'rb')
@@ -102,13 +104,12 @@ class TensorCaller:
                 while step < num_iter :
                     tensors, chroms, starts, refs, alts, labels = Reader.read3()
                     GL, _loss, _correct, GT = sess.run([normed_logits, loss, top_k_op, prediction], feed_dict={TensorPL: tensors, LabelPL: labels})
-                    print "loss:",_loss
-                    print "batch correct",np.sum(_correct)
+                    #print "loss:",_loss
+                    #print "batch correct",np.sum(_correct)
                     true_count += np.sum(_correct)
                     step += 1
                     for chrom, start, ref, alt, label, gt, gl in zip(chroms, starts, refs, alts, labels, GT, GL):
                         self.Form_record(chrom, start, ref, alt, label, gt, gl, fout)
-
 
                     if len(chroms) < FLAGS.batch_size:
                         return
@@ -136,6 +137,7 @@ class TensorCaller:
 
 
     def Form_record(self, chrom, start, ref, alt, label, gt, gl, fout):
+        gl = map(lambda x: int(round(-10 * math.log10(x))), gl)
         string_gl = map(str, gl)
         GL = ','.join(string_gl)
         if gt == 0:
@@ -145,7 +147,7 @@ class TensorCaller:
         elif gt == 2:
             GT = '1/1'
         fout.write('\t'.join([chrom, start, ".", ref, alt, str(
-            max(gl)), ".", "Label={}".format(str(label)), "GT:GL", GT + ':' + GL]) + '\n')     
+            sorted(gl)[1]), ".", "Label={}".format(str(label)), "GT:GL", GT + ':' + GL]) + '\n')     
 
     def getCheckPoint(self):
         ckptfile = FLAGS.checkpoint_dir + '/checkpoint'
@@ -156,7 +158,7 @@ class TensorCaller:
         ckpt = prefix + '/' + ckpt
         return ckpt
 
-    def run(self):
+    def run_2(self):
         s_time = time.time()
         dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
         Hand = gzip.open(self.DataFile, 'rb')
@@ -217,8 +219,8 @@ class TensorCaller:
                     #print "labels:",_labels
                     #print "logits:",_logits
                     #print "predict", predictions
-                    print "loss:",_loss
-                    print "Correct One Batch", np.sum(_correct)
+                    #print "loss:",_loss
+                    #print "Correct One Batch", np.sum(_correct)
                     true_count += np.sum(_correct)
                     step += 1
 
@@ -240,6 +242,7 @@ class TensorCaller:
 
     def WriteBatch(self, _labels, _chrom, _pos, _ref, _alt, _PL, _GT, fout):
         for label, chrom, start, ref, alt, gl, gt in zip(_labels, _chrom, _pos, _ref, _alt, _PL, _GT):
+            gl = map(lambda x: (-10 * math.log10(x), gl))
             string_gl = map(str, gl)
             GL = ','.join(string_gl)
             if gt == 0:
@@ -249,7 +252,7 @@ class TensorCaller:
             elif gt == 2:
                 GT = '1/1'
             fout.write('\t'.join([chrom, start, ".", ref, alt, str(
-                max(gl)), ".", "Label={}".format(str(label)), "GT:GL", GT + ':' + GL]) + '\n')  
+                min(gl)), ".", "Label={}".format(str(label)), "GT:GL", GT + ':' + GL]) + '\n')  
 
 def do_eval(sess, global_step, normed_logits, prediction, DataReader, tensor_pl, fout):
     counter = 0
@@ -417,16 +420,17 @@ def Calling_2(Dataset, ModelCKPT):
 
 
 def main(argv=None):  # pylint: disable=unused-argument
+    s_time = time.time()
     DataFile = FLAGS.TrainingData
     #DataFile = FLAGS.TestingData
     try:
-        OutName = 'Calling.' + DataFile.strip().split('/')[-1].split('.')[0] + '.vcf'
+        OutName = 'Calling.' + FLAGS.train_dir.split('/')[-1]+ '.' +DataFile.strip().split('/')[-1].split('.')[0] + '.vcf'
         model = Models.ConvNets()
         caller = TensorCaller(FLAGS.batch_size, model, DataFile, OutName)
         caller.run()
     except Exception as e:
         print e
         traceback.print_exc()
-
+    print "Total Runing Time is %.3f"%(time.time() - s_time)
 if __name__ == '__main__':
     tf.app.run()
