@@ -250,6 +250,7 @@ def Pulse(region):
 
 
 def main():
+    s_time = time.time()
     referenceGenome, bam, bamout, vcf, T_vcf, mode, Nprocess = GetOptions()
     if mode == '2':
         OneVar(bam)
@@ -258,7 +259,7 @@ def main():
             print "Please provide Positive Data"
         Positives = Get_Positives(T_vcf)
         VarScan(referenceGenome, bam, bamout, vcf, Positives, Nprocess)
-
+    print "Total Running Time is %.3f"%(time.time()-s_time)
 
 if __name__ == '__main__':
     main()
