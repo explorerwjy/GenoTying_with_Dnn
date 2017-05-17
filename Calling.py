@@ -80,7 +80,7 @@ class TensorCaller:
             loss = self.model.loss(logits, LabelPL)
             #accuracy = self.model.Accuracy(logits, label_batch)
             #train_op = self.model.Train(loss, global_step)
-            #top_k_op = tf.nn.in_top_k(logits, LabelPL, 1)
+            top_k_op = tf.nn.in_top_k(logits, LabelPL, 1)
 
             #summary_op = tf.summary.merge_all()
             init = tf.global_variables_initializer()
@@ -91,10 +91,11 @@ class TensorCaller:
 
             try:    
                 true_count = 0  # Counts the number of correct predictions.
-
+                total_count = 0
                 print self.getCheckPoint()
                 saver.restore(sess, self.getCheckPoint())
                 print "CKPT starts with step",(sess.run(global_step))
+                self.WriteHeadLines(fout)
                 fout.write('\t'.join(["#CHROM","POS","ID","REF","ALT","QUAL","FILTER","INFO","FORMAT","SAMPLE"]) + '\n')
                 while 1:
                     tensors, chroms, starts, refs, alts, labels = Reader.read3()
@@ -102,7 +103,7 @@ class TensorCaller:
                     #print "loss:",_loss
                     #print "batch correct",np.sum(_correct)
                     true_count += np.sum(_correct)
-                    step += 1
+                    total_count += FLAGS.batch_size
                     for chrom, start, ref, alt, label, gt, gl in zip(chroms, starts, refs, alts, labels, GT, GL):
                         self.Form_record(chrom, start, ref, alt, label, gt, gl, fout)
 
@@ -111,11 +112,43 @@ class TensorCaller:
                 traceback.print_exc()
                 fout.close()
                 # Compute precision @ 1.
-                print "Predicted Right:{}\t\tTotal:{}".format(true_count, total_sample_count)
-                precision = float(true_count) / total_sample_count
+                print "Predicted Right:{}\t\tTotal:{}".format(true_count, total_count)
+                precision = float(true_count) / total_count
                 print('%s: precision @ 1 = %.3f' % (datetime.now(), precision))
             finally:
                 pass
+
+    def WriteHeadLines(self, fout):
+        fout.write('##fileformat=VCFv4.2\n')
+        fout.write('##ALT=<ID=NON_REF,Description="Represents any possible alternative allele at this location">\n')
+        fout.write('##FORMAT=<ID=GL,Number=1,Type=Integer,Description="Genotype Likelihood">\n')
+        fout.write('##FORMAT=<ID=GT,Number=1,Type=String,Description="Genotype">\n')
+        fout.write('##GenoTypingWithDeepLearning\n')
+        fout.write('##INFO=<ID=Label,Number=1,Type=Integer,Description="Label of the Variant to be True or False. Used while developing and testing">\n')
+        fout.write('##contig=<ID=1,assembly=hg19,length=249250621>\n') 
+        fout.write('##contig=<ID=2,assembly=hg19,length=243199373>\n')
+        fout.write('##contig=<ID=3,assembly=hg19,length=198022430>\n')
+        fout.write('##contig=<ID=4,assembly=hg19,length=191154276>\n')
+        fout.write('##contig=<ID=5,assembly=hg19,length=180915260>\n')
+        fout.write('##contig=<ID=6,assembly=hg19,length=171115067>\n')
+        fout.write('##contig=<ID=7,assembly=hg19,length=159138663>\n')
+        fout.write('##contig=<ID=8,assembly=hg19,length=146364022>\n')
+        fout.write('##contig=<ID=9,assembly=hg19,length=141213431>\n')
+        fout.write('##contig=<ID=10,assembly=hg19,length=135534747>\n')
+        fout.write('##contig=<ID=11,assembly=hg19,length=135006516>\n')
+        fout.write('##contig=<ID=12,assembly=hg19,length=133851895>\n')
+        fout.write('##contig=<ID=13,assembly=hg19,length=115169878>\n')
+        fout.write('##contig=<ID=14,assembly=hg19,length=107349540>\n')
+        fout.write('##contig=<ID=15,assembly=hg19,length=102531392>\n')
+        fout.write('##contig=<ID=16,assembly=hg19,length=90354753>\n')
+        fout.write('##contig=<ID=17,assembly=hg19,length=81195210>\n')
+        fout.write('##contig=<ID=18,assembly=hg19,length=78077248>\n')
+        fout.write('##contig=<ID=19,assembly=hg19,length=59128983>\n')
+        fout.write('##contig=<ID=20,assembly=hg19,length=63025520>\n')
+        fout.write('##contig=<ID=21,assembly=hg19,length=48129895>\n')
+        fout.write('##contig=<ID=22,assembly=hg19,length=51304566>\n')
+        fout.write('##contig=<ID=X,assembly=hg19,length=155270560>\n')
+        fout.write('##contig=<ID=Y,assembly=hg19,length=59373566>\n')
 
 
     def Form_record(self, chrom, start, ref, alt, label, gt, gl, fout):
@@ -218,18 +251,18 @@ class TensorCaller:
                 coord.join(threads)
 
     def WriteBatch(self, _labels, _chrom, _pos, _ref, _alt, _PL, _GT, fout):
-        for label, chrom, start, ref, alt, gl, gt in zip(_labels, _chrom, _pos, _ref, _alt, _PL, _GT):
-            gl = map(lambda x: (-10 * math.log10(x), gl))
-            string_gl = map(str, gl)
-            GL = ','.join(string_gl)
-            if gt == 0:
-                GT = '0/0'
-            elif gt == 1:
-                GT = '0/1'
-            elif gt == 2:
-                GT = '1/1'
-            fout.write('\t'.join([chrom, start, ".", ref, alt, str(
-                min(gl)), ".", "Label={}".format(str(label)), "GT:GL", GT + ':' + GL]) + '\n')  
+            for label, chrom, start, ref, alt, gl, gt in zip(_labels, _chrom, _pos, _ref, _alt, _PL, _GT):
+                gl = map(lambda x: (-10 * math.log10(x), gl))
+                string_gl = map(str, gl)
+                GL = ','.join(string_gl)
+                if gt == 0:
+                    GT = '0/0'
+                elif gt == 1:
+                    GT = '0/1'
+                elif gt == 2:
+                    GT = '1/1'
+                fout.write('\t'.join([chrom, start, ".", ref, alt, str(
+                    min(gl)), ".", "Label={}".format(str(label)), "GT:GL", GT + ':' + GL]) + '\n')  
 
 def main(argv=None):  # pylint: disable=unused-argument
     s_time = time.time()
@@ -244,5 +277,6 @@ def main(argv=None):  # pylint: disable=unused-argument
         print e
         traceback.print_exc()
     print "Total Runing Time is %.3f"%(time.time() - s_time)
+
 if __name__ == '__main__':
     tf.app.run()
