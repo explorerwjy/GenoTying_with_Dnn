@@ -225,9 +225,9 @@ class Train():
                             checkpoint_path = os.path.join(FLAGS.train_dir, 'model.ckpt')
                             saver.save(sess, checkpoint_path, global_step=v_step)
                             min_loss = avgloss 
-                            print "Write A CheckPoint at %d with avgloss %.5f" % (v_step, avgloss)
+                            print "Write A CheckPoint at %d with avgloss %.5f" % (v_step, min_loss)
                         else:
-                            print "Current Min avgloss is %.5f" % min_loss
+                            print "Current Min avgloss is %.5f. Last avgloss is %.5f" % ( min_loss, avgloss)
             except Exception, e:
                 coord.request_stop(e)
             finally:
