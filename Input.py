@@ -122,9 +122,11 @@ class RecordReader():
         tensor, chroms, starts, refs, alts, labels = [], [], [], [], [], []
         for i in xrange(FLAGS.batch_size):
             line = self.hand.readline()
-            if line == '':
-                break
-            one_tensor, chrom, pos, ref, alt, label = decodeline.DecodeRecord3(line, WIDTH, HEIGHT)
+            if line == '': # Read up All Records. Compensate the rest to make complete record.
+                #fake_tensor, fake_chrom, fake_pos, fake_ref, fake_alt, fake_label = tensor[-1], chroms[-1], starts[-1], refs[-1], alts[-1], labels[-1]
+                one_tensor, chrom, pos, ref, alt, label = tensor[-1], ".", ".", ".", ".", "0"
+            else:
+                one_tensor, chrom, pos, ref, alt, label = decodeline.DecodeRecord3(line, WIDTH, HEIGHT)
             tensor.append(one_tensor)
             chroms.append(chrom)
             starts.append(pos)
