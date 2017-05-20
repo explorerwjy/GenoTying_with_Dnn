@@ -18,7 +18,7 @@ from Input import *
 from threading import Thread
 import Models
 
-GPUs = [6]
+GPUs = [7]
 available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
@@ -30,7 +30,7 @@ tf.app.flags.DEFINE_string('checkpoint_dir', './train_6',
                            """Directory where to read model checkpoints.""")
 tf.app.flags.DEFINE_integer('eval_interval_secs', 60,
                             """How often to run the eval.""")
-tf.app.flags.DEFINE_integer('num_examples', 640,
+tf.app.flags.DEFINE_integer('num_examples', 64000,
                             """Number of examples to run.""")
 dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
 
@@ -194,10 +194,10 @@ class Evaluate():
                 print self.getCheckPoint()
                 saver.restore(sess, self.getCheckPoint())
                 print "CKPT starts with step",(sess.run(global_step))
-                for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES):
-                    print(v)
-                    print sess.run("conv1/weights/read:0")
-                exit()
+                #for v in tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES):
+                #    print(v)
+                #    print sess.run("conv1/weights/read:0")
+                #exit()
 
                 while step < num_iter and not coord.should_stop():
                     _labels, _logits, _loss, predictions = sess.run([label_batch, logits, loss, top_k_op])

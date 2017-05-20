@@ -19,7 +19,7 @@ import Models
 from threading import Thread
 sys.stdout = sys.stderr
 
-GPUs = [4]
+GPUs = [3]
 available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
@@ -266,8 +266,8 @@ class TensorCaller:
 
 def main(argv=None):  # pylint: disable=unused-argument
     s_time = time.time()
-    DataFile = FLAGS.TrainingData
-    #DataFile = FLAGS.TestingData
+    #DataFile = FLAGS.TrainingData
+    DataFile = FLAGS.TestingData
     try:
         OutName = 'Calling.' + FLAGS.train_dir.split('/')[-1]+ '.' +DataFile.strip().split('/')[-1].split('.')[0] + '.vcf'
         model = Models.ConvNets()
