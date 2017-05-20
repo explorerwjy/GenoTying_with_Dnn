@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 GATKJAR=$HOME/bin/GenomeAnalysisTK.jar
 RefGenome=/home/yufengshen/resources/reference_genomes/hg19/hg19.fasta
+=======
+GATKJAR=/home/local/users/jw/bin/GenomeAnalysisTK.jar
+RefGenome=/home/local/users/jw/resources/reference_genomes/hg19/hg19.fasta
+>>>>>>> origin/master
 while getopts g:s:p:f:m:o opt; do
 	case "$opt" in
 		g) GATK="$OPTARG";;
