@@ -13,13 +13,30 @@ import random
 from utils import *
 import gzip
 
-WIDTH = 101
-HEIGHT = 100  # +1 Reference Seq
+WIDTH = 221
+REF_LEN = 5
+HEIGHT = 100  # +REF_LEN Reference Seq
 DEPTH = 3
-INDEL_ANCHORING_BASE = 'X'
-BASE = {'A': '1', 'T': '2', 'G': '3', 'C': '4', 'X': '5', 'N': '6'}
-BASE2 = {'0': '0', '1': 'A', '2': 'T', '3': 'G', '4': 'C', '5': 'X', '6': 'N'}
+INSERT='I'
+DELET='D'
+INDEL_ANCHORING_BASE = 'X' # Not Used this version
+#BASE = {'A': '1', 'T': '2', 'G': '3', 'C': '4', 'X': '5', 'N': '6'}
+#BASE2 = {'0': '0', '1': 'A', '2': 'T', '3': 'G', '4': 'C', '5': 'X', '6': 'N'}
+# -3 -2 -1  0  1  2  3
+#  I  G  A  N  T  C  D
+#  0  1  2  3  4  5  6
+# For store conventient, plus 3
+BASE = {'I': '0', 'G': '1', 'A': '2', 'N': '3', 'T': '4', 'C': '5', 'D': '6'}
+BASE2 = {'0': 'T', '1': 'G', '2': 'A', '3': 'N', '4': 'T', '5': 'C', '6': 'D'}
 
+#  Qual [ 0, 60]
+# ASCII [33, 93] --> [!, ]]
+
+# Strand
+# -1  0  1
+#  R  N  F
+#  0  1  2
+STRAND = {'F':'2', 'N':'1', 'R':'0'}
 
 def get_full_cigar(cigartuples):
     res = []
@@ -81,9 +98,9 @@ class Region():
         self.qual = []
         self.strand = []
         for raw in xrange(HEIGHT + 1):
-            self.base.append(['0'] * (WIDTH))
+            self.base.append(['3'] * (WIDTH))
             self.qual.append(['!'] * (WIDTH))
-            self.strand.append(['0'] * (WIDTH))
+            self.strand.append(['1'] * (WIDTH))
 
     def show(self, all=False):
         print self.chrom + ':' + str(self.pos) + self.ref + self.alt + '\n'
@@ -118,15 +135,14 @@ class Region():
             self.pos), self.ref, self.alt, self.label, FlatTensor]) + '\n'
 
     def fill_ref(self, ref):
-        for row in xrange(1):
+        for row in xrange(REF_LEN):
             for col in xrange(WIDTH):
                 # print row,col
                 # print ref[col],len(ref)
                 # print self.base[row],len(self.base[row])
                 self.base[row][col] = BASE[ref[col]]  # Ref base
                 self.qual[row][col] = get_qual(60)  # Ref are high qual
-                self.strand[row][col] = get_strand(
-                    True)  # Ref are forword strand
+                self.strand[row][col] = get_strand(True)  # Ref are forword strand
         return row + 1
 
     def fill_read(self, ref, read, row_i):
@@ -146,10 +162,8 @@ class Region():
             if read_base:
                 # print self.base[row_i][col]
                 self.base[row_i][col] = BASE[read_base]
-                self.qual[row_i][col] = min(
-                    get_qual(
-                        read.query_qualities[read_pos]), get_qual(
-                        read.mapping_quality))
+                self.qual[row_i][col] = min(get_qual(read.query_qualities[read_pos]), 
+                                            get_qual(read.mapping_quality))
                 self.strand[row_i][col] = get_strand(not read.is_reverse)
             # print col, ref_pos, read_pos, cigar_elt
 
@@ -160,9 +174,9 @@ def get_qual(qual):
 
 def get_strand(flag_forward):
     if flag_forward:
-        return '1'
+        return STRAND['F']
     else:
-        return '2'
+        return STRAND['R']
 
 
 def CreateRegion(RefFile, SamFile, BamoutFile, chrom, pos, ref, alt, Y, verbose=False):
@@ -177,7 +191,7 @@ def CreateRegion(RefFile, SamFile, BamoutFile, chrom, pos, ref, alt, Y, verbose=
     good_reads, bad_reads, extra_reads = 0, 0, 0
     for read in reads:
         # print read
-        if row_i < HEIGHT + 1:
+        if row_i < HEIGHT:
             region.fill_read(ref, read, row_i)
             row_i += 1
             good_reads += 1
@@ -259,7 +273,6 @@ def Line2Window_1(l):
             print l[start:start + WIDTH]
         start += WIDTH
         height += 1
-
 
 def Line2Window(l):
     Chr, Start, End, Ref, Alt, Label, Data = l.strip().split('\t')

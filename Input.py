@@ -18,18 +18,19 @@ import tensorflow as tf
 WIDTH = Region.WIDTH
 HEIGHT = Region.HEIGHT
 DEPTH = 3
-Window_Size = (WIDTH * (HEIGHT + 1) * 3)
+#Window_Size = (WIDTH * (HEIGHT) * 3)
 
 NUM_CLASSES = 3
-NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 10000
-NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 6400
-LEARNING_RATE_DECAY_STEP = 1000
+#NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 10000
+#NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 6400
+#LEARNING_RATE_DECAY_STEP = 1000
 
 # Constants describing the training process.
 MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
-NUM_EPOCHS_PER_DECAY = 350.0      # Epochs after which learning rate decays.
-LEARNING_RATE_DECAY_FACTOR = 0.9  # Learning rate decay factor.
-INITIAL_LEARNING_RATE = 0.1       # Initial learning rate.
+#NUM_EPOCHS_PER_DECAY = 350.0      # Epochs after which learning rate decays.
+#LEARNING_RATE_DECAY_FACTOR = 0.9  # Learning rate decay factor.
+INITIAL_LEARNING_RATE = 1e-3       # Initial learning rate.
+WEIGHT_DECAY = 4e-5
 
 
 # Global constants describing the data set & Model.
@@ -57,28 +58,11 @@ tf.app.flags.DEFINE_boolean('numOfDecodingThreads', 4,
 npdtype = np.float16 if FLAGS.use_fl16 else np.float32
 
 
-class window_tensor():
-    def __init__(self, line):
-        self.chrom, self.start, self.end, self.ref, self.alt, self.label, self.window = line.strip().split('\t')
-        #self.Alignment = self.window[ 0 : WIDTH * (HEIGHT+1) ]
-        #self.Qual = self.window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
-        #self.Strand = self.window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
-
-    def encode(self):
-        # This func encode elements in window tensor into tf.float32
-        #p1 = np.fromiter(self.Alignment, dtype = npdtype)
-        #p2 = np.array(map(lambda x: qual2code(x), self.Qual), dtype = npdtype)
-        #p3 = np.fromiter(self.Strand, dtype = npdtype)
-        #self.res = np.concatenate([p1, p2, p3])
-        self.res = self.chrom, self.start, self.ref, self.alt, decodeline.DecodeLine(
-            self.window, WIDTH, HEIGHT)
-        # return np.array(res)
-
-
 class RecordReader():
     def __init__(self, handle):
         self.hand = handle
 
+    # Used for training, keep reading the data.
     def LoopRead(self):
         line = self.hand.readline()
         if line == '':
@@ -90,17 +74,19 @@ class RecordReader():
         # return record.res, record.label
         return decodeline.DecodeRecord(line, WIDTH, HEIGHT)
     
+    #Used When Evaluating
     def OnceRead(self):
         line = self.hand.readline()
         if line == '':
             return None, None 
         return decodeline.DecodeRecord(line, WIDTH, HEIGHT)
 
+    #Used When Calling.
     def OnceReadWithInfo(self):
         line = self.hand.readline()
         if line == '':
             return None, None, None, None, None, None # one_tensor, chrom, pos, ref, alt, label
-        return decodeline.DecodeRecord3(line, WIDTH, HEIGHT)
+        return decodeline.DecodeRecord_WithInfo(line, WIDTH, HEIGHT)
 
     def read2(self):
         tensor, chroms, starts, refs, alts = [], [], [], [], []
@@ -118,6 +104,7 @@ class RecordReader():
 
         return tensor, chroms, starts, refs, alts
 
+    # Batch Version of OnceReadWithInfo(). Currently Not Working because unsolved Queue issue.
     def read3(self):
         tensor, chroms, starts, refs, alts, labels = [], [], [], [], [], []
         for i in xrange(FLAGS.batch_size):
@@ -135,15 +122,7 @@ class RecordReader():
             labels.append(label)
         return tensor, chroms, starts, refs, alts, labels
 
-    def read_without_processing(self):
-        line = self.hand.readline()
-        if line == '':
-            self.hand.seek(0)
-            line = self.hand.readline()
-        record = window_tensor(self.hand.readline())
 # ==========================================================================
-#@vectorize(["float32(chr)"], target='gpu')
-
 
 def base2code(base):
     try:

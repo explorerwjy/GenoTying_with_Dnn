@@ -71,7 +71,7 @@ class TensorCaller:
         fout = open(self.OutName, 'wb')
         with tf.Graph().as_default():
             global_step = tf.Variable(0, trainable=False, name='global_step')
-            TensorPL = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, DEPTH * (HEIGHT + 1) * WIDTH))
+            TensorPL = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, DEPTH * (HEIGHT) * WIDTH))
             LabelPL = tf.placeholder(tf.int32, shape=(FLAGS.batch_size, ))
 
             logits = self.model.Inference(TensorPL)
@@ -184,7 +184,7 @@ class TensorCaller:
         with tf.Graph().as_default():
             global_step = tf.Variable(0, trainable=False, name='global_step')
             # Input Data
-            queue_input_data = tf.placeholder(dtype, shape=[DEPTH * (HEIGHT + 1) * WIDTH])
+            queue_input_data = tf.placeholder(dtype, shape=[DEPTH * (HEIGHT) * WIDTH])
             queue_input_label = tf.placeholder(tf.int32, shape=[])
             queue_input_chrom = tf.placeholder(tf.string, shape=[])
             queue_input_pos = tf.placeholder(tf.string, shape=[])
@@ -193,7 +193,7 @@ class TensorCaller:
 
             queue = tf.FIFOQueue(capacity=FLAGS.batch_size * 10,
                                       dtypes=[dtype, tf.int32, tf.string, tf.string, tf.string, tf.string],
-                                      shapes=[[DEPTH * (HEIGHT + 1) * WIDTH], [], [], [], [] ,[] ],
+                                      shapes=[[DEPTH * (HEIGHT) * WIDTH], [], [], [], [] ,[] ],
                                       name='FIFOQueue')
             enqueue_op = queue.enqueue([queue_input_data, queue_input_label, queue_input_chrom, queue_input_pos, queue_input_ref, queue_input_alt ])
             dequeue_op = queue.dequeue()

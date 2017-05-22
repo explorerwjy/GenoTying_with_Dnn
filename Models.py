@@ -20,7 +20,7 @@ class ConvNets():
 
     def Inference_1(self, RawTensor):
         print RawTensor
-        InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT + 1, 3])
+        InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT, 3])
         print InputTensor
         # conv1
         with tf.variable_scope('conv1') as scope:
@@ -147,7 +147,7 @@ class ConvNets():
     
     def Inference_2(self, RawTensor):
         print RawTensor
-        InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT + 1, 3])
+        InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT, 3])
         print InputTensor
         # conv1
         with tf.variable_scope('conv1') as scope:
@@ -274,7 +274,7 @@ class ConvNets():
 
     def VGGv1(self, RawTensor):
         print RawTensor
-        InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT+1, 3])
+        InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT, 3])
         print InputTensor
         # ==========================================================================================
         # conv1 3-64
@@ -488,7 +488,7 @@ class ConvNets():
 
     def VGGv3(self, RawTensor):
         print RawTensor
-        InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT + 1, 3])
+        InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT, 3])
         print InputTensor
         # ==========================================================================================
         # conv1
@@ -842,7 +842,7 @@ class ConvNets():
             tf.summary.scalar(l.op.name, loss_averages.average(l))
         return loss_averages_op
 
-    def Train(self, total_loss, global_step, init_lr=1e-4, optimizer='RMSProp'):
+    def Train(self, total_loss, global_step, init_lr=INITIAL_LEARNING_RATE, optimizer='RMSProp'):
         #num_batches_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
         #decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
         decay_steps = LEARNING_RATE_DECAY_STEP
