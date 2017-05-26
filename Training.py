@@ -24,8 +24,8 @@ sys.stdout = sys.stderr
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_integer('GPU', 1 ,"""Which GPU to lunch""")
-tf.app.flags.DEFINE_string('train_dir', './train_6',
+tf.app.flags.DEFINE_integer('GPU', 0 ,"""Which GPU to lunch""")
+tf.app.flags.DEFINE_string('train_dir', './train_1',
                            """Directory where to write event logs and checkpoint.""")
 tf.app.flags.DEFINE_integer('max_steps', 1000000,
                             """Number of batches to run.""")
@@ -33,7 +33,7 @@ tf.app.flags.DEFINE_integer('num_gpus', 1,
                             """How many GPUs to use.""")
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             """Whether to log device placement.""")
-GPUs = [0]
+GPUs = [1]
 available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']

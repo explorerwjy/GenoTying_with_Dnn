@@ -3,8 +3,14 @@
 def DecodeRecord(line, WIDTH, HEIGHT):
     chrom, start, end, ref, alt, label, window = line.strip().split('\t')
     Alignment = window[ 0 : WIDTH * (HEIGHT) ]
+    #print len(Alignment)
+    #print Alignment
     Qual = window[ WIDTH * (HEIGHT) : WIDTH * (HEIGHT)*2]
+    #print len(Qual)
+    #print Qual
     Strand = window[ WIDTH * (HEIGHT)*2 : WIDTH * (HEIGHT)*3]
+    #print len(Strand)
+    #print Strand
     p1 = [((float(x)-3) / 3)  for x in Alignment]
     p2 = [((float(ord(x) - 33) -30) / 30) for x in Qual]
     p3 = [float(x)-1 for x in Strand]
