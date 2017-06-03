@@ -11,9 +11,9 @@ def DecodeRecord(line, WIDTH, HEIGHT):
     Strand = window[ WIDTH * (HEIGHT)*2 : WIDTH * (HEIGHT)*3]
     #print len(Strand)
     #print Strand
-    p1 = [((float(x)-3) / 3)  for x in Alignment]
+    p1 = [((float(x)-3) / 3) * 10  for x in Alignment]
     p2 = [((float(ord(x) - 33) -30) / 30) for x in Qual]
-    p3 = [float(x)-1 for x in Strand]
+    p3 = [(float(x)-1) for x in Strand]
     return p1 + p2 + p3, label
 
 # Used For Calling, also read other info beside tensor and label
@@ -22,7 +22,7 @@ def DecodeRecord_WithInfo(line, WIDTH, HEIGHT):
     Alignment = window[ 0 : WIDTH * (HEIGHT) ]
     Qual = window[ WIDTH * (HEIGHT) : WIDTH * (HEIGHT)*2]
     Strand = window[ WIDTH * (HEIGHT)*2 : WIDTH * (HEIGHT)*3]
-    p1 = [((float(x)-3) / 3)  for x in Alignment]
+    p1 = [((float(x)-3) / 3) * 10  for x in Alignment]
     p2 = [((float(ord(x) - 33) -30) / 30) for x in Qual]
-    p3 = [float(x)-1 for x in Strand]
+    p3 = [ (float(x)-1) for x in Strand]
     return p1 + p2 + p3, chrom, start, ref, alt, label

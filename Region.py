@@ -13,11 +13,11 @@ import random
 from utils import *
 import gzip
 
-#WIDTH = 31
-WIDTH = 101
+WIDTH = 31
+#WIDTH = 101
 REF_LEN = 5
-#HEIGHT = 50  # +REF_LEN Reference Seq
-HEIGHT = 104  # +REF_LEN Reference Seq
+HEIGHT = 50  # +REF_LEN Reference Seq
+#HEIGHT = 104  # +REF_LEN Reference Seq
 DEPTH = 3
 INSERT='I'
 DELET='D'
