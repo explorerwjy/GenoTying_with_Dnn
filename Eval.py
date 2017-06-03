@@ -18,7 +18,7 @@ from Input import *
 from threading import Thread
 import Models
 
-GPUs = [7]
+GPUs = [1]
 available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
@@ -26,7 +26,7 @@ print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
 FLAGS = tf.app.flags.FLAGS
 tf.app.flags.DEFINE_string('eval_dir', './test',
                            """Directory where to write event logs.""")
-tf.app.flags.DEFINE_string('checkpoint_dir', './train_6',
+tf.app.flags.DEFINE_string('checkpoint_dir', './train_0',
                            """Directory where to read model checkpoints.""")
 tf.app.flags.DEFINE_integer('eval_interval_secs', 60,
                             """How often to run the eval.""")
@@ -75,12 +75,12 @@ def runTesting(Data, ModelCKPT):
     # with tf.Graph().as_default() as g:
     with tf.device('/gpu:7'):
         queue_input_data = tf.placeholder(
-            dtype, shape=[DEPTH * (HEIGHT + 1) * WIDTH])
+            dtype, shape=[DEPTH * (HEIGHT) * WIDTH])
         queue_input_label = tf.placeholder(tf.int32, shape=[])
         queue = tf.FIFOQueue(capacity=FLAGS.batch_size * 10,
                                       dtypes=[dtype,
                                               tf.int32],
-                                      shapes=[[DEPTH * (HEIGHT + 1) * WIDTH],
+                                      shapes=[[DEPTH * (HEIGHT) * WIDTH],
                                               []],
                                       name='fifo_queue')
         enqueue_op = queue.enqueue([queue_input_data, queue_input_label])
@@ -150,11 +150,11 @@ class Evaluate():
         Reader = RecordReader(Hand)
         with tf.Graph().as_default():
             global_step = tf.Variable(0, trainable=False, name='global_step')
-            queue_input_data = tf.placeholder(dtype, shape=[DEPTH * (HEIGHT + 1) * WIDTH])
+            queue_input_data = tf.placeholder(dtype, shape=[DEPTH * (HEIGHT) * WIDTH])
             queue_input_label = tf.placeholder(tf.int32, shape=[])
             queue = tf.FIFOQueue(capacity=FLAGS.batch_size * 10,
                                       dtypes=[dtype, tf.int32],
-                                      shapes=[[DEPTH * (HEIGHT + 1) * WIDTH], []],
+                                      shapes=[[DEPTH * (HEIGHT) * WIDTH], []],
                                       name='FIFOQueue')
             enqueue_op = queue.enqueue([queue_input_data, queue_input_label])
             dequeue_op = queue.dequeue()
@@ -239,8 +239,8 @@ def main(argv=None):  # pylint: disable=unused-argument
     if tf.gfile.Exists(FLAGS.eval_dir):
         tf.gfile.DeleteRecursively(FLAGS.eval_dir)
     tf.gfile.MakeDirs(FLAGS.eval_dir)
-    #DataFile = FLAGS.TrainingData
-    DataFile = FLAGS.TestingData
+    DataFile = FLAGS.TrainingData
+    #DataFile = FLAGS.TestingData
     model = Models.ConvNets()
     evaluate = Evaluate(FLAGS.batch_size, model, DataFile)
     evaluate.run()

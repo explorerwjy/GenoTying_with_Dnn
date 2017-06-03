@@ -29,16 +29,14 @@ LEARNING_RATE_DECAY_STEP = 1000
 MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
 #NUM_EPOCHS_PER_DECAY = 350.0      # Epochs after which learning rate decays.
 #LEARNING_RATE_DECAY_FACTOR = 0.9  # Learning rate decay factor.
-INITIAL_LEARNING_RATE = 1e-3       # Initial learning rate.
-WEIGHT_DECAY = 0
-WEIGHT_DECAY_2 = 4e-5
+INITIAL_LEARNING_RATE = 1e-4       # Initial learning rate.
 
 
 # Global constants describing the data set & Model.
 FLAGS = tf.app.flags.FLAGS
 
 
-tf.app.flags.DEFINE_integer('batch_size', 256,
+tf.app.flags.DEFINE_integer('batch_size', 64,
     """Number of WindowTensor to process in a batch.""")
 
 tf.app.flags.DEFINE_string('TrainingData', './Training.windows.txt.gz',

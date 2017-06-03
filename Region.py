@@ -13,9 +13,11 @@ import random
 from utils import *
 import gzip
 
-WIDTH = 221
+#WIDTH = 31
+WIDTH = 101
 REF_LEN = 5
-HEIGHT = 100  # +REF_LEN Reference Seq
+#HEIGHT = 50  # +REF_LEN Reference Seq
+HEIGHT = 104  # +REF_LEN Reference Seq
 DEPTH = 3
 INSERT='I'
 DELET='D'
@@ -27,7 +29,7 @@ INDEL_ANCHORING_BASE = 'X' # Not Used this version
 #  0  1  2  3  4  5  6
 # For store conventient, plus 3
 BASE = {'I': '0', 'G': '1', 'A': '2', 'N': '3', 'T': '4', 'C': '5', 'D': '6'}
-BASE2 = {'0': 'T', '1': 'G', '2': 'A', '3': 'N', '4': 'T', '5': 'C', '6': 'D'}
+BASE2 = {'0': 'I', '1': 'G', '2': 'A', '3': 'N', '4': 'T', '5': 'C', '6': 'D'}
 
 #  Qual [ 0, 60]
 # ASCII [33, 93] --> [!, ]]
@@ -149,12 +151,12 @@ class Region():
         for ref_pos, read_pos, cigar_elt in per_base_alignment(
                 self.start, self.end, self.pos, ref, read):
             read_base = None
-            if cigar_elt == 1:
+            if cigar_elt == 1: #Insertion
                 col = ref_pos - 1
-                read_base = INDEL_ANCHORING_BASE
-            elif cigar_elt == 2:
+                read_base = INSERT 
+            elif cigar_elt == 2: #Deletion
                 col = ref_pos
-                read_base = INDEL_ANCHORING_BASE
+                read_base = DELET 
             elif cigar_elt == 0:
                 col = ref_pos
                 read_base = read.query_sequence[read_pos]
@@ -207,8 +209,8 @@ def CreateRegion(RefFile, SamFile, BamoutFile, chrom, pos, ref, alt, Y, verbose=
 
 
 def get_overlapping(SamFile, BamoutFile, chrom, pos, start, end):
-    narrow_start = pos - 5
-    narrow_end = pos + 5
+    narrow_start = pos - 1
+    narrow_end = pos + 1
     if BamoutFile == None:
         raw_reads = SamFile.fetch(chrom, narrow_start, narrow_end)
     else:
@@ -219,9 +221,9 @@ def get_overlapping(SamFile, BamoutFile, chrom, pos, start, end):
     for read in raw_reads:
         if is_usable_read(read):
             res.append(read)
-    if len(res) > HEIGHT - 1:
+    if len(res) > HEIGHT - REF_LEN:
         random.shuffle(res)
-        res = res[:50]
+        res = res[:HEIGHT]
         res.sort(key=lambda x: x.reference_start, reverse=False)
     return res
 

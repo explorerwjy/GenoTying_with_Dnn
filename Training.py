@@ -40,7 +40,7 @@ print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
 init_lr = INITIAL_LEARNING_RATE
 #optimizer = 'RMSProp'
 optimizer = 'Adam'
-print "Optimizer is {}, init learning rate is {}.".format(optimizer, init_lr)
+print "Optimizer is {}, init learning rate is {}. ConV weight loss is {}. FC weight loss is {}. DropoutKeepProp is {}.".format(optimizer, init_lr, Models.WEIGHT_DECAY, Models.WEIGHT_DECAY_2, Models.Keep_Prop)
 
 # Not In Use
 class DataReaderThread(Thread):
@@ -152,6 +152,7 @@ class Train():
             dequeue_op = queue.dequeue()
             # Get Tensors and labels for Training data.
             data_batch, label_batch = tf.train.batch(dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size * 8)
+            
             #data_batch_reshape = tf.transpose(data_batch, [0,2,3,1])
 
             global_step = tf.Variable(0, trainable=False, name='global_step')
@@ -193,6 +194,19 @@ class Train():
                     if coord.should_stop():
                         break
                     start_time = time.time()
+                    #data, label = sess.run([data_batch, label_batch])
+                    #InputTensor = tf.reshape(data, [-1, WIDTH, HEIGHT, 3])
+                    #InputTensor = tf.reshape(data, [-1, 3, HEIGHT, WIDTH])
+                    #print InputTensor[0].shape
+                    #data = sess.run(InputTensor[0])
+                    #print data[0][6]
+                    #print data[0][7]
+                    #print data[1][6]
+                    #print data[1][7]
+                    #print data[2][6]
+                    #print data[2][7]
+                    #print label[0]
+                    #exit()
                     #_, loss_value, _acc, v_step = sess.run([train_op, loss, accuracy ,global_step])
                     _, loss_value, v_step = sess.run([train_op, loss, global_step])
                     duration = time.time() - start_time
