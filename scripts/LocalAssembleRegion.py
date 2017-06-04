@@ -12,7 +12,7 @@ import sys
 import gzip
 import time
 
-PADDING_SIZE = 500
+PADDING_SIZE = 100
 
 CHROMOSOMES = ['chr%s' % x for x in range(1, 23)]
 CHROMOSOMES.extend(['chrX', 'chrY', 'chrM'])
@@ -26,7 +26,7 @@ def get_xpos(chrom, pos):
 
 
 class Region():
-    def __init__(self, chrom, pos, padding=500):
+    def __init__(self, chrom, pos, padding=50):
         self.chrom = chrom
         self.start = max(0, int(pos) - int(padding))
         self.end = (int(pos) + int(padding))
@@ -116,8 +116,8 @@ def OutPutRegion(gatk):
             if len(Ref) != len(Alt):
                 RegionList.append(Region(Chrom, Pos, PADDING_SIZE))
                 break
-        if counter % 1e11:
-            print 'Read 100G records'
+        #if counter % 1e11:
+            #print 'Read 100G records'
     print "Reading Region Completed, Used %.3f s" % (time.time() - stime)
     return RegionList
 
