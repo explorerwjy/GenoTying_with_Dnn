@@ -19,7 +19,7 @@ import Models
 from threading import Thread
 sys.stdout = sys.stderr
 
-GPUs = [6]
+GPUs = [4]
 available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
@@ -27,7 +27,7 @@ print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
 FLAGS = tf.app.flags.FLAGS
 
 #tf.app.flags.DEFINE_string('train_dir', './train_logs/train_0',
-#                           """Directory where to checkpoint.""")
+#                          """Directory where to checkpoint.""")
 tf.app.flags.DEFINE_string('checkpoint_dir', './train_logs/train_0',
                            """Directory where to read model checkpoints.""")
 

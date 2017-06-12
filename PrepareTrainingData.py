@@ -122,6 +122,7 @@ def VarScan(referenceGenome, bam, bamout, Candidate_vcf, Positive_vars, Nprocess
     #process3 = subprocess.Popen('rm tmp.*.windows.txt', shell=True, stdout=subprocess.PIPE)
     # process3.wait()
     # print process3.returncode
+    print "Done!"
 
 
 def load_variants(VCF, Positive_vars, referenceGenome, bam, bamout, i, n):

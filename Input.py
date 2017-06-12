@@ -23,12 +23,12 @@ DEPTH = 3
 NUM_CLASSES = 3
 #NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN = 10000
 #NUM_EXAMPLES_PER_EPOCH_FOR_EVAL = 6400
-LEARNING_RATE_DECAY_STEP = 1000
+LEARNING_RATE_DECAY_STEP = 50000
 
 # Constants describing the training process.
 MOVING_AVERAGE_DECAY = 0.9999     # The decay to use for the moving average.
 #NUM_EPOCHS_PER_DECAY = 350.0      # Epochs after which learning rate decays.
-#LEARNING_RATE_DECAY_FACTOR = 0.9  # Learning rate decay factor.
+LEARNING_RATE_DECAY_FACTOR = 0.1  # Learning rate decay factor.
 INITIAL_LEARNING_RATE = 1e-4       # Initial learning rate.
 
 
@@ -112,7 +112,7 @@ class RecordReader():
                 #fake_tensor, fake_chrom, fake_pos, fake_ref, fake_alt, fake_label = tensor[-1], chroms[-1], starts[-1], refs[-1], alts[-1], labels[-1]
                 one_tensor, chrom, pos, ref, alt, label = tensor[-1], ".", ".", ".", ".", "0"
             else:
-                one_tensor, chrom, pos, ref, alt, label = decodeline.DecodeRecord3(line, WIDTH, HEIGHT)
+                one_tensor, chrom, pos, ref, alt, label = decodeline.DecodeRecord_WithInfo(line, WIDTH, HEIGHT)
             tensor.append(one_tensor)
             chroms.append(chrom)
             starts.append(pos)

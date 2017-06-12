@@ -734,7 +734,7 @@ static const char __pyx_k_Alignment[] = "Alignment";
 static const char __pyx_k_decodeline[] = "decodeline";
 static const char __pyx_k_DecodeRecord[] = "DecodeRecord";
 static const char __pyx_k_DecodeRecord_WithInfo[] = "DecodeRecord_WithInfo";
-static const char __pyx_k_home_yufengshen_TensorFlowCalle[] = "/home/yufengshen/TensorFlowCaller/dev/decodeline.pyx";
+static const char __pyx_k_home_yufengshen_TensorCaller_de[] = "/home/yufengshen/TensorCaller/dev/decodeline.pyx";
 static PyObject *__pyx_kp_s_;
 static PyObject *__pyx_n_s_Alignment;
 static PyObject *__pyx_n_s_DecodeRecord;
@@ -747,7 +747,7 @@ static PyObject *__pyx_n_s_alt;
 static PyObject *__pyx_n_s_chrom;
 static PyObject *__pyx_n_s_decodeline;
 static PyObject *__pyx_n_s_end;
-static PyObject *__pyx_kp_s_home_yufengshen_TensorFlowCalle;
+static PyObject *__pyx_kp_s_home_yufengshen_TensorCaller_de;
 static PyObject *__pyx_n_s_label;
 static PyObject *__pyx_n_s_line;
 static PyObject *__pyx_n_s_main;
@@ -1064,9 +1064,9 @@ static PyObject *__pyx_pf_10decodeline_DecodeRecord(CYTHON_UNUSED PyObject *__py
   /* "decodeline.pyx":14
  *     #print len(Strand)
  *     #print Strand
- *     p1 = [((float(x)-3) / 3)  for x in Alignment]             # <<<<<<<<<<<<<<
+ *     p1 = [((float(x)-3) / 3) * 10  for x in Alignment]             # <<<<<<<<<<<<<<
  *     p2 = [((float(ord(x) - 33) -30) / 30) for x in Qual]
- *     p3 = [float(x)-1 for x in Strand]
+ *     p3 = [(float(x)-1) for x in Strand]
  */
   __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 14, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
@@ -1112,7 +1112,7 @@ static PyObject *__pyx_pf_10decodeline_DecodeRecord(CYTHON_UNUSED PyObject *__py
     __Pyx_XDECREF_SET(__pyx_v_x, __pyx_t_7);
     __pyx_t_7 = 0;
     __pyx_t_13 = __Pyx_PyObject_AsDouble(__pyx_v_x); if (unlikely(__pyx_t_13 == ((double)-1) && PyErr_Occurred())) __PYX_ERR(0, 14, __pyx_L1_error)
-    __pyx_t_7 = PyFloat_FromDouble(((__pyx_t_13 - 3.0) / 3.0)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 14, __pyx_L1_error)
+    __pyx_t_7 = PyFloat_FromDouble((((__pyx_t_13 - 3.0) / 3.0) * 10.0)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 14, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
     if (unlikely(__Pyx_ListComp_Append(__pyx_t_1, (PyObject*)__pyx_t_7))) __PYX_ERR(0, 14, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
@@ -1123,9 +1123,9 @@ static PyObject *__pyx_pf_10decodeline_DecodeRecord(CYTHON_UNUSED PyObject *__py
 
   /* "decodeline.pyx":15
  *     #print Strand
- *     p1 = [((float(x)-3) / 3)  for x in Alignment]
+ *     p1 = [((float(x)-3) / 3) * 10  for x in Alignment]
  *     p2 = [((float(ord(x) - 33) -30) / 30) for x in Qual]             # <<<<<<<<<<<<<<
- *     p3 = [float(x)-1 for x in Strand]
+ *     p3 = [(float(x)-1) for x in Strand]
  *     return p1 + p2 + p3, label
  */
   __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 15, __pyx_L1_error)
@@ -1182,9 +1182,9 @@ static PyObject *__pyx_pf_10decodeline_DecodeRecord(CYTHON_UNUSED PyObject *__py
   __pyx_t_1 = 0;
 
   /* "decodeline.pyx":16
- *     p1 = [((float(x)-3) / 3)  for x in Alignment]
+ *     p1 = [((float(x)-3) / 3) * 10  for x in Alignment]
  *     p2 = [((float(ord(x) - 33) -30) / 30) for x in Qual]
- *     p3 = [float(x)-1 for x in Strand]             # <<<<<<<<<<<<<<
+ *     p3 = [(float(x)-1) for x in Strand]             # <<<<<<<<<<<<<<
  *     return p1 + p2 + p3, label
  * 
  */
@@ -1243,7 +1243,7 @@ static PyObject *__pyx_pf_10decodeline_DecodeRecord(CYTHON_UNUSED PyObject *__py
 
   /* "decodeline.pyx":17
  *     p2 = [((float(ord(x) - 33) -30) / 30) for x in Qual]
- *     p3 = [float(x)-1 for x in Strand]
+ *     p3 = [(float(x)-1) for x in Strand]
  *     return p1 + p2 + p3, label             # <<<<<<<<<<<<<<
  * 
  * # Used For Calling, also read other info beside tensor and label
@@ -1556,7 +1556,7 @@ static PyObject *__pyx_pf_10decodeline_2DecodeRecord_WithInfo(CYTHON_UNUSED PyOb
  *     Alignment = window[ 0 : WIDTH * (HEIGHT) ]
  *     Qual = window[ WIDTH * (HEIGHT) : WIDTH * (HEIGHT)*2]             # <<<<<<<<<<<<<<
  *     Strand = window[ WIDTH * (HEIGHT)*2 : WIDTH * (HEIGHT)*3]
- *     p1 = [((float(x)-3) / 3)  for x in Alignment]
+ *     p1 = [((float(x)-3) / 3) * 10  for x in Alignment]
  */
   __pyx_t_8 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_v_HEIGHT); if (unlikely(!__pyx_t_8)) __PYX_ERR(0, 23, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_8);
@@ -1576,7 +1576,7 @@ static PyObject *__pyx_pf_10decodeline_2DecodeRecord_WithInfo(CYTHON_UNUSED PyOb
  *     Alignment = window[ 0 : WIDTH * (HEIGHT) ]
  *     Qual = window[ WIDTH * (HEIGHT) : WIDTH * (HEIGHT)*2]
  *     Strand = window[ WIDTH * (HEIGHT)*2 : WIDTH * (HEIGHT)*3]             # <<<<<<<<<<<<<<
- *     p1 = [((float(x)-3) / 3)  for x in Alignment]
+ *     p1 = [((float(x)-3) / 3) * 10  for x in Alignment]
  *     p2 = [((float(ord(x) - 33) -30) / 30) for x in Qual]
  */
   __pyx_t_1 = PyNumber_Multiply(__pyx_v_WIDTH, __pyx_v_HEIGHT); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 24, __pyx_L1_error)
@@ -1599,9 +1599,9 @@ static PyObject *__pyx_pf_10decodeline_2DecodeRecord_WithInfo(CYTHON_UNUSED PyOb
   /* "decodeline.pyx":25
  *     Qual = window[ WIDTH * (HEIGHT) : WIDTH * (HEIGHT)*2]
  *     Strand = window[ WIDTH * (HEIGHT)*2 : WIDTH * (HEIGHT)*3]
- *     p1 = [((float(x)-3) / 3)  for x in Alignment]             # <<<<<<<<<<<<<<
+ *     p1 = [((float(x)-3) / 3) * 10  for x in Alignment]             # <<<<<<<<<<<<<<
  *     p2 = [((float(ord(x) - 33) -30) / 30) for x in Qual]
- *     p3 = [float(x)-1 for x in Strand]
+ *     p3 = [ (float(x)-1) for x in Strand]
  */
   __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 25, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_t_1);
@@ -1647,7 +1647,7 @@ static PyObject *__pyx_pf_10decodeline_2DecodeRecord_WithInfo(CYTHON_UNUSED PyOb
     __Pyx_XDECREF_SET(__pyx_v_x, __pyx_t_7);
     __pyx_t_7 = 0;
     __pyx_t_13 = __Pyx_PyObject_AsDouble(__pyx_v_x); if (unlikely(__pyx_t_13 == ((double)-1) && PyErr_Occurred())) __PYX_ERR(0, 25, __pyx_L1_error)
-    __pyx_t_7 = PyFloat_FromDouble(((__pyx_t_13 - 3.0) / 3.0)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 25, __pyx_L1_error)
+    __pyx_t_7 = PyFloat_FromDouble((((__pyx_t_13 - 3.0) / 3.0) * 10.0)); if (unlikely(!__pyx_t_7)) __PYX_ERR(0, 25, __pyx_L1_error)
     __Pyx_GOTREF(__pyx_t_7);
     if (unlikely(__Pyx_ListComp_Append(__pyx_t_1, (PyObject*)__pyx_t_7))) __PYX_ERR(0, 25, __pyx_L1_error)
     __Pyx_DECREF(__pyx_t_7); __pyx_t_7 = 0;
@@ -1658,9 +1658,9 @@ static PyObject *__pyx_pf_10decodeline_2DecodeRecord_WithInfo(CYTHON_UNUSED PyOb
 
   /* "decodeline.pyx":26
  *     Strand = window[ WIDTH * (HEIGHT)*2 : WIDTH * (HEIGHT)*3]
- *     p1 = [((float(x)-3) / 3)  for x in Alignment]
+ *     p1 = [((float(x)-3) / 3) * 10  for x in Alignment]
  *     p2 = [((float(ord(x) - 33) -30) / 30) for x in Qual]             # <<<<<<<<<<<<<<
- *     p3 = [float(x)-1 for x in Strand]
+ *     p3 = [ (float(x)-1) for x in Strand]
  *     return p1 + p2 + p3, chrom, start, ref, alt, label
  */
   __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 26, __pyx_L1_error)
@@ -1717,9 +1717,9 @@ static PyObject *__pyx_pf_10decodeline_2DecodeRecord_WithInfo(CYTHON_UNUSED PyOb
   __pyx_t_1 = 0;
 
   /* "decodeline.pyx":27
- *     p1 = [((float(x)-3) / 3)  for x in Alignment]
+ *     p1 = [((float(x)-3) / 3) * 10  for x in Alignment]
  *     p2 = [((float(ord(x) - 33) -30) / 30) for x in Qual]
- *     p3 = [float(x)-1 for x in Strand]             # <<<<<<<<<<<<<<
+ *     p3 = [ (float(x)-1) for x in Strand]             # <<<<<<<<<<<<<<
  *     return p1 + p2 + p3, chrom, start, ref, alt, label
  */
   __pyx_t_1 = PyList_New(0); if (unlikely(!__pyx_t_1)) __PYX_ERR(0, 27, __pyx_L1_error)
@@ -1777,7 +1777,7 @@ static PyObject *__pyx_pf_10decodeline_2DecodeRecord_WithInfo(CYTHON_UNUSED PyOb
 
   /* "decodeline.pyx":28
  *     p2 = [((float(ord(x) - 33) -30) / 30) for x in Qual]
- *     p3 = [float(x)-1 for x in Strand]
+ *     p3 = [ (float(x)-1) for x in Strand]
  *     return p1 + p2 + p3, chrom, start, ref, alt, label             # <<<<<<<<<<<<<<
  */
   __Pyx_XDECREF(__pyx_r);
@@ -1886,7 +1886,7 @@ static __Pyx_StringTabEntry __pyx_string_tab[] = {
   {&__pyx_n_s_chrom, __pyx_k_chrom, sizeof(__pyx_k_chrom), 0, 0, 1, 1},
   {&__pyx_n_s_decodeline, __pyx_k_decodeline, sizeof(__pyx_k_decodeline), 0, 0, 1, 1},
   {&__pyx_n_s_end, __pyx_k_end, sizeof(__pyx_k_end), 0, 0, 1, 1},
-  {&__pyx_kp_s_home_yufengshen_TensorFlowCalle, __pyx_k_home_yufengshen_TensorFlowCalle, sizeof(__pyx_k_home_yufengshen_TensorFlowCalle), 0, 0, 1, 0},
+  {&__pyx_kp_s_home_yufengshen_TensorCaller_de, __pyx_k_home_yufengshen_TensorCaller_de, sizeof(__pyx_k_home_yufengshen_TensorCaller_de), 0, 0, 1, 0},
   {&__pyx_n_s_label, __pyx_k_label, sizeof(__pyx_k_label), 0, 0, 1, 1},
   {&__pyx_n_s_line, __pyx_k_line, sizeof(__pyx_k_line), 0, 0, 1, 1},
   {&__pyx_n_s_main, __pyx_k_main, sizeof(__pyx_k_main), 0, 0, 1, 1},
@@ -1942,7 +1942,7 @@ static int __Pyx_InitCachedConstants(void) {
   __pyx_tuple__4 = PyTuple_Pack(17, __pyx_n_s_line, __pyx_n_s_WIDTH, __pyx_n_s_HEIGHT, __pyx_n_s_chrom, __pyx_n_s_start, __pyx_n_s_end, __pyx_n_s_ref, __pyx_n_s_alt, __pyx_n_s_label, __pyx_n_s_window, __pyx_n_s_Alignment, __pyx_n_s_Qual, __pyx_n_s_Strand, __pyx_n_s_p1, __pyx_n_s_p2, __pyx_n_s_p3, __pyx_n_s_x); if (unlikely(!__pyx_tuple__4)) __PYX_ERR(0, 3, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__4);
   __Pyx_GIVEREF(__pyx_tuple__4);
-  __pyx_codeobj__5 = (PyObject*)__Pyx_PyCode_New(3, 0, 17, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__4, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_yufengshen_TensorFlowCalle, __pyx_n_s_DecodeRecord, 3, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__5)) __PYX_ERR(0, 3, __pyx_L1_error)
+  __pyx_codeobj__5 = (PyObject*)__Pyx_PyCode_New(3, 0, 17, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__4, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_yufengshen_TensorCaller_de, __pyx_n_s_DecodeRecord, 3, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__5)) __PYX_ERR(0, 3, __pyx_L1_error)
 
   /* "decodeline.pyx":20
  * 
@@ -1954,7 +1954,7 @@ static int __Pyx_InitCachedConstants(void) {
   __pyx_tuple__6 = PyTuple_Pack(17, __pyx_n_s_line, __pyx_n_s_WIDTH, __pyx_n_s_HEIGHT, __pyx_n_s_chrom, __pyx_n_s_start, __pyx_n_s_end, __pyx_n_s_ref, __pyx_n_s_alt, __pyx_n_s_label, __pyx_n_s_window, __pyx_n_s_Alignment, __pyx_n_s_Qual, __pyx_n_s_Strand, __pyx_n_s_p1, __pyx_n_s_p2, __pyx_n_s_p3, __pyx_n_s_x); if (unlikely(!__pyx_tuple__6)) __PYX_ERR(0, 20, __pyx_L1_error)
   __Pyx_GOTREF(__pyx_tuple__6);
   __Pyx_GIVEREF(__pyx_tuple__6);
-  __pyx_codeobj__7 = (PyObject*)__Pyx_PyCode_New(3, 0, 17, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__6, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_yufengshen_TensorFlowCalle, __pyx_n_s_DecodeRecord_WithInfo, 20, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__7)) __PYX_ERR(0, 20, __pyx_L1_error)
+  __pyx_codeobj__7 = (PyObject*)__Pyx_PyCode_New(3, 0, 17, 0, 0, __pyx_empty_bytes, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_tuple__6, __pyx_empty_tuple, __pyx_empty_tuple, __pyx_kp_s_home_yufengshen_TensorCaller_de, __pyx_n_s_DecodeRecord_WithInfo, 20, __pyx_empty_bytes); if (unlikely(!__pyx_codeobj__7)) __PYX_ERR(0, 20, __pyx_L1_error)
   __Pyx_RefNannyFinishContext();
   return 0;
   __pyx_L1_error:;
