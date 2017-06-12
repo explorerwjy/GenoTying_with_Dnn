@@ -1,59 +1,28 @@
+# Used For Training, only read tensor and label
+# Only Norm Qual, not bases and strand
 def DecodeRecord(line, WIDTH, HEIGHT):
     chrom, start, end, ref, alt, label, window = line.strip().split('\t')
-    Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
-    Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
-    Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
-    p1 = [float(x) for x in Alignment]
-    p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
-    p3 = [float(x) for x in Strand]
+    Alignment = window[ 0 : WIDTH * (HEIGHT) ]
+    #print len(Alignment)
+    #print Alignment
+    Qual = window[ WIDTH * (HEIGHT) : WIDTH * (HEIGHT)*2]
+    #print len(Qual)
+    #print Qual
+    Strand = window[ WIDTH * (HEIGHT)*2 : WIDTH * (HEIGHT)*3]
+    #print len(Strand)
+    #print Strand
+    p1 = [((float(x)-3) / 3) * 10  for x in Alignment]
+    p2 = [((float(ord(x) - 33) -30) / 30) for x in Qual]
+    p3 = [(float(x)-1) for x in Strand]
     return p1 + p2 + p3, label
 
-def DecodeRecord2(line, WIDTH, HEIGHT):
+# Used For Calling, also read other info beside tensor and label
+def DecodeRecord_WithInfo(line, WIDTH, HEIGHT):
     chrom, start, end, ref, alt, label, window = line.strip().split('\t')
-    Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
-    Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
-    Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
-    p1 = [float(x) for x in Alignment]
-    p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
-    p3 = [float(x) for x in Strand]
-    return p1 + p2 + p3, chrom, start, ref, alt
-
-def DecodeRecord3(line, WIDTH, HEIGHT):
-    chrom, start, end, ref, alt, label, window = line.strip().split('\t')
-    Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
-    Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
-    Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
-    p1 = [float(x) for x in Alignment]
-    p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
-    p3 = [float(x) for x in Strand]
-    return p1 + p2 + p3, chrom, start, ref, alt, label
-
-def DecodeLine(window, WIDTH, HEIGHT):
-    #chrom, start, end, ref, alt, label, window = line.strip().split('\t')
-    Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
-    Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
-    Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
-    p1 = [float(x) for x in Alignment]
-    p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
-    p3 = [float(x) for x in Strand]
-    return p1 + p2 + p3
-
-def DecodeLine2(window, WIDTH, HEIGHT):
-    #chrom, start, end, ref, alt, label, window = line.strip().split('\t')
-    Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
-    Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
-    Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
-    p1 = [float(x)/6 - 0.5 for x in Alignment]
-    p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
-    p3 = [float(x)/2 - 0.5 for x in Strand]
-    return p1 + p2 + p3
-
-def _DecodeRecord3(line, WIDTH, HEIGHT):
-    chrom, start, end, ref, alt, label, window = line.strip().split('\t')
-    Alignment = window[ 0 : WIDTH * (HEIGHT+1) ]
-    Qual = window[ WIDTH * (HEIGHT+1) : WIDTH * (HEIGHT+1)*2]
-    Strand = window[ WIDTH * (HEIGHT+1)*2 : WIDTH * (HEIGHT+1)*3]
-    p1 = [float(x)/6-0.5 for x in Alignment]
-    p2 = [((float(ord(x) - 33) / 60) - 0.5) for x in Qual]
-    p3 = [float(x)/2-0.5 for x in Strand]
+    Alignment = window[ 0 : WIDTH * (HEIGHT) ]
+    Qual = window[ WIDTH * (HEIGHT) : WIDTH * (HEIGHT)*2]
+    Strand = window[ WIDTH * (HEIGHT)*2 : WIDTH * (HEIGHT)*3]
+    p1 = [((float(x)-3) / 3) * 10  for x in Alignment]
+    p2 = [((float(ord(x) - 33) -30) / 30) for x in Qual]
+    p3 = [ (float(x)-1) for x in Strand]
     return p1 + p2 + p3, chrom, start, ref, alt, label

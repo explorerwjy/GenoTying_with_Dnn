@@ -24,8 +24,8 @@ sys.stdout = sys.stderr
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_integer('GPU', 1 ,"""Which GPU to lunch""")
-tf.app.flags.DEFINE_string('train_dir', './train_6',
+tf.app.flags.DEFINE_integer('GPU', 0 ,"""Which GPU to lunch""")
+tf.app.flags.DEFINE_string('train_dir', 'train_logs/train_0',
                            """Directory where to write event logs and checkpoint.""")
 tf.app.flags.DEFINE_integer('max_steps', 1000000,
                             """Number of batches to run.""")
@@ -37,10 +37,10 @@ GPUs = [0]
 available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
-init_lr = 1e-4
+init_lr = INITIAL_LEARNING_RATE
 #optimizer = 'RMSProp'
 optimizer = 'Adam'
-print "Optimizer is {}, init learning rate is {}.".format(optimizer, init_lr)
+print "Optimizer is {}, init learning rate is {}. ConV weight loss is {}. FC weight loss is {}. DropoutKeepProp is {}.".format(optimizer, init_lr, Models.WEIGHT_DECAY, Models.WEIGHT_DECAY_2, Models.Keep_Prop)
 
 # Not In Use
 class DataReaderThread(Thread):
@@ -141,17 +141,18 @@ class Train():
         TrainingHand = gzip.open(self.TrainingDataFile, 'rb')
         TrainingReader = RecordReader(TrainingHand)
         with tf.Graph().as_default():
-            queue_input_data = tf.placeholder(dtype, shape=[DEPTH * (HEIGHT + 1) * WIDTH])
+            queue_input_data = tf.placeholder(dtype, shape=[DEPTH * (HEIGHT) * WIDTH])
             queue_input_label = tf.placeholder(tf.int32, shape=[])
             queue = tf.RandomShuffleQueue(capacity=FLAGS.batch_size * 10,
                                       dtypes=[dtype, tf.int32],
-                                      shapes=[[DEPTH * (HEIGHT + 1) * WIDTH], []],
+                                      shapes=[[DEPTH * (HEIGHT) * WIDTH], []],
                                       min_after_dequeue=FLAGS.batch_size,
                                       name='RandomShuffleQueue')
             enqueue_op = queue.enqueue([queue_input_data, queue_input_label])
             dequeue_op = queue.dequeue()
             # Get Tensors and labels for Training data.
             data_batch, label_batch = tf.train.batch(dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size * 8)
+            
             #data_batch_reshape = tf.transpose(data_batch, [0,2,3,1])
 
             global_step = tf.Variable(0, trainable=False, name='global_step')
@@ -189,10 +190,24 @@ class Train():
                 if continueModel != None:
                     saver.restore(sess, continueModel)
                     print "Continue Train Mode. Start with step",sess.run(global_step) 
+                    
                 for step in xrange(FLAGS.max_steps):
                     if coord.should_stop():
                         break
                     start_time = time.time()
+                    #data, label = sess.run([data_batch, label_batch])
+                    #InputTensor = tf.reshape(data, [-1, WIDTH, HEIGHT, 3])
+                    #InputTensor = tf.reshape(data, [-1, 3, HEIGHT, WIDTH])
+                    #print InputTensor[0].shape
+                    #data = sess.run(InputTensor[0])
+                    #print data[0][6]
+                    #print data[0][7]
+                    #print data[1][6]
+                    #print data[1][7]
+                    #print data[2][6]
+                    #print data[2][7]
+                    #print label[0]
+                    #exit()
                     #_, loss_value, _acc, v_step = sess.run([train_op, loss, accuracy ,global_step])
                     _, loss_value, v_step = sess.run([train_op, loss, global_step])
                     duration = time.time() - start_time
@@ -421,86 +436,6 @@ class Train():
                         min_loss = loss_value
                         print "Write A CheckPoint at %d" % (v_step)
 
-def TestInput():
-    dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
-    BATCH_SIZE = FLAGS.batch_size
-    TrainingHand = gzip.open(FLAGS.TrainingData, 'rb')
-    TrainingReader = RecordReader(TrainingHand)
-
-    with tf.Graph().as_default():
-        queue_input_data = tf.placeholder(
-            dtype, shape=[DEPTH * (HEIGHT + 1) * WIDTH])
-        queue_input_label = tf.placeholder(tf.int32, shape=[])
-        queue = tf.FIFOQueue(capacity=FLAGS.batch_size * 10,
-                             dtypes=[dtype,
-                                     tf.int32],
-                             shapes=[[DEPTH * (HEIGHT + 1) * WIDTH],
-                                     []])
-        enqueue_op = queue.enqueue([queue_input_data, queue_input_label])
-        dequeue_op = queue.dequeue()
-        # Get Tensors and labels for Training data.
-        data_batch, label_batch = tf.train.batch(
-            dequeue_op, batch_size=FLAGS.batch_size, capacity=FLAGS.batch_size * 4)
-        #data_batch_reshape = tf.transpose(data_batch, [0,2,3,1])
-
-        global_step = tf.Variable(0, trainable=False, name='global_step')
-
-        # Build a Graph that computes the logits predictions from the
-        # inference model.
-        convnets = Models.ConvNets()
-        logits = convnets.Inference(data_batch)
-
-        # Calculate loss.
-        loss = convnets.loss(logits, label_batch)
-
-        # Build a Graph that trains the model with one batch of examples and
-        # updates the model parameters.
-        train_op = convnets.Train(loss, global_step)
-        summary = tf.summary.merge_all()
-
-        init = tf.global_variables_initializer()
-        saver = tf.train.Saver()
-        sess = tf.Session()
-        summary_writer = tf.summary.FileWriter(log_dir, sess.graph)
-        sess.run(init)
-
-        coord = tf.train.Coordinator()
-
-        enqueue_thread = Thread(
-            target=enqueueInputData,
-            args=[
-                sess,
-                coord,
-                TrainingReader,
-                enqueue_op,
-                queue_input_data,
-                queue_input_label])
-        enqueue_thread.isDaemon()
-        enqueue_thread.start()
-
-        #N = 1
-        # for i in range(N):
-        #	p = DataReaderThread(FileName, sess, coord, queue_input_data, queue_input_label, enqueue_op, i, N)
-        #	p.start()
-
-        threads = tf.train.start_queue_runners(coord=coord, sess=sess)
-
-        min_loss = 100
-        try:
-            for step in xrange(max_steps):
-                start_time = time.time()
-                curr_batch, curr_label, v_step = sess.run(
-                    [data_batch, label_batch, global_step])
-                duration = time.time() - start_time
-                if v_step % 1 == 0:
-                    print 'Step %d (%.3f sec)' % (v_step, duration)
-                    # print "One Batch Reading Costs:",duration
-        except Exception as e:
-            coord.request_stop(e)
-        finally:
-            sess.run(queue.close(cancel_pending_enqueues=True))
-            coord.request_stop()
-            coord.join(threads)
 
 def GetOptions():
     parser = argparse.ArgumentParser()

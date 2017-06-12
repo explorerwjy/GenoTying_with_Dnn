@@ -19,16 +19,16 @@ import Models
 from threading import Thread
 sys.stdout = sys.stderr
 
-GPUs = [3]
+GPUs = [4]
 available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_string('train_dir', './train_6',
-                           """Directory where to checkpoint.""")
-tf.app.flags.DEFINE_string('checkpoint_dir', './train_6',
+#tf.app.flags.DEFINE_string('train_dir', './train_logs/train_0',
+#                          """Directory where to checkpoint.""")
+tf.app.flags.DEFINE_string('checkpoint_dir', './train_logs/train_0',
                            """Directory where to read model checkpoints.""")
 
 def enqueueInputData(sess, coord, Reader, enqueue_op, queue_input_data, queue_input_label, queue_input_chrom, queue_input_pos, queue_input_ref, queue_input_alt):
@@ -71,7 +71,7 @@ class TensorCaller:
         fout = open(self.OutName, 'wb')
         with tf.Graph().as_default():
             global_step = tf.Variable(0, trainable=False, name='global_step')
-            TensorPL = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, DEPTH * (HEIGHT + 1) * WIDTH))
+            TensorPL = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, DEPTH * (HEIGHT) * WIDTH))
             LabelPL = tf.placeholder(tf.int32, shape=(FLAGS.batch_size, ))
 
             logits = self.model.Inference(TensorPL)
@@ -150,21 +150,36 @@ class TensorCaller:
         fout.write('##contig=<ID=X,assembly=hg19,length=155270560>\n')
         fout.write('##contig=<ID=Y,assembly=hg19,length=59373566>\n')
 
+    def Form_PhredPL(self, PL):
+        if PL == 0:
+            return 100
+        else:
+            return int(round(-10 * math.log10(PL)))
+
+    def normPL(self, PL):
+        minPL = min(PL)
+        PL = map(lambda x: x-minPL, PL)
+        return PL
 
     def Form_record(self, chrom, start, ref, alt, label, gt, gl, fout):
         if chrom == '.':
             raise Exception('Read Up All variants. Stop process')
-        gl = map(lambda x: int(round(-10 * math.log10(x))), gl)
-        string_gl = map(str, gl)
-        GL = ','.join(string_gl)
-        if gt == 0:
-            GT = '0/0'
-        elif gt == 1:
-            GT = '0/1'
-        elif gt == 2:
-            GT = '1/1'
-        fout.write('\t'.join([chrom, start, ".", ref, alt, str(
-            sorted(gl)[1]), ".", "Label={}".format(str(label)), "GT:GL", GT + ':' + GL]) + '\n')     
+        try:
+            gl = map(lambda x: self.Form_PhredPL(x), gl)
+            gl = self.normPL(gl)
+            string_gl = map(str, gl)
+            GL = ','.join(string_gl)
+            GQ = str(sorted(gl)[1])
+            if gt == 0:
+                GT = '0/0'
+            elif gt == 1:
+                GT = '0/1'
+            elif gt == 2:
+                GT = '1/1'
+            fout.write('\t'.join([chrom, start, ".", ref, alt, str(
+                sorted(gl)[1]), ".", "Label={}".format(str(label)), "GT:GQ:PL", GT + ':' + GQ + ":" + GL]) + '\n')     
+        except ValueError:
+            print "Math Domain Error:", chrom, start, ref, alt, label, gt, gl
 
     def getCheckPoint(self):
         ckptfile = FLAGS.checkpoint_dir + '/checkpoint'
@@ -184,7 +199,7 @@ class TensorCaller:
         with tf.Graph().as_default():
             global_step = tf.Variable(0, trainable=False, name='global_step')
             # Input Data
-            queue_input_data = tf.placeholder(dtype, shape=[DEPTH * (HEIGHT + 1) * WIDTH])
+            queue_input_data = tf.placeholder(dtype, shape=[DEPTH * (HEIGHT) * WIDTH])
             queue_input_label = tf.placeholder(tf.int32, shape=[])
             queue_input_chrom = tf.placeholder(tf.string, shape=[])
             queue_input_pos = tf.placeholder(tf.string, shape=[])
@@ -193,7 +208,7 @@ class TensorCaller:
 
             queue = tf.FIFOQueue(capacity=FLAGS.batch_size * 10,
                                       dtypes=[dtype, tf.int32, tf.string, tf.string, tf.string, tf.string],
-                                      shapes=[[DEPTH * (HEIGHT + 1) * WIDTH], [], [], [], [] ,[] ],
+                                      shapes=[[DEPTH * (HEIGHT) * WIDTH], [], [], [], [] ,[] ],
                                       name='FIFOQueue')
             enqueue_op = queue.enqueue([queue_input_data, queue_input_label, queue_input_chrom, queue_input_pos, queue_input_ref, queue_input_alt ])
             dequeue_op = queue.dequeue()
@@ -266,16 +281,18 @@ class TensorCaller:
 
 def main(argv=None):  # pylint: disable=unused-argument
     s_time = time.time()
-    #DataFile = FLAGS.TrainingData
-    DataFile = FLAGS.TestingData
-    try:
-        OutName = 'Calling.' + FLAGS.train_dir.split('/')[-1]+ '.' +DataFile.strip().split('/')[-1].split('.')[0] + '.vcf'
-        model = Models.ConvNets()
-        caller = TensorCaller(FLAGS.batch_size, model, DataFile, OutName)
-        caller.run()
-    except Exception as e:
-        print e
-        traceback.print_exc()
+    #DataFile = FLAGS.TestingData
+    #DataFiles = [FLAGS.TrainingData, FLAGS.TestingData]
+    DataFiles = [FLAGS.TestingData, FLAGS.TrainingData]
+    for DataFile in DataFiles:
+        try:
+            OutName = 'Calling.' + FLAGS.checkpoint_dir.split('/')[-1]+ '.' +DataFile.strip().split('/')[-1].split('.')[0] + '.vcf'
+            model = Models.ConvNets()
+            caller = TensorCaller(FLAGS.batch_size, model, DataFile, OutName)
+            caller.run()
+        except Exception as e:
+            print e
+            traceback.print_exc()
     print "Total Runing Time is %.3f"%(time.time() - s_time)
 
 if __name__ == '__main__':

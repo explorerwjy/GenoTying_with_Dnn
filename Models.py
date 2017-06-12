@@ -10,6 +10,10 @@ import tensorflow as tf
 import re
 from Input import *
 
+Keep_Prop = 0.5
+WEIGHT_DECAY = 0
+WEIGHT_DECAY_2 = 4e-5
+
 class ConvNets():
     def __init__(self):
         pass
@@ -20,7 +24,7 @@ class ConvNets():
 
     def Inference_1(self, RawTensor):
         print RawTensor
-        InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT + 1, 3])
+        InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT, 3])
         print InputTensor
         # conv1
         with tf.variable_scope('conv1') as scope:
@@ -147,7 +151,7 @@ class ConvNets():
     
     def Inference_2(self, RawTensor):
         print RawTensor
-        InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT + 1, 3])
+        InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT, 3])
         print InputTensor
         # conv1
         with tf.variable_scope('conv1') as scope:
@@ -274,13 +278,16 @@ class ConvNets():
 
     def VGGv1(self, RawTensor):
         print RawTensor
-        InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT+1, 3])
+        #InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT, 3])
+        Depth_major = tf.reshape(RawTensor, [-1, DEPTH, HEIGHT, WIDTH])
+        print Depth_major
+        InputTensor = tf.transpose(Depth_major, [0, 2, 3, 1])
         print InputTensor
         # ==========================================================================================
         # conv1 3-64
         with tf.variable_scope('conv1') as scope:
             kernel = _variable_with_weight_decay(
-                'weights', shape=[3, 3, 3, 64], stddev=5e-2, wd=0.0)
+                'weights', shape=[3, 3, 3, 64], stddev=5e-2, wd=WEIGHT_DECAY)
             conv = tf.nn.conv2d(
                 InputTensor, kernel, [
                     1, 1, 1, 1], padding='SAME')
@@ -299,7 +306,7 @@ class ConvNets():
         # conv3 3-128
         with tf.variable_scope('conv3') as scope:
             kernel = _variable_with_weight_decay(
-                'weights', shape=[3, 3, 64, 64], stddev=5e-2, wd=0.0)
+                'weights', shape=[3, 3, 64, 64], stddev=5e-2, wd=WEIGHT_DECAY)
             conv = tf.nn.conv2d(
                 pool1, kernel, [
                     1, 1, 1, 1], padding='SAME')
@@ -318,7 +325,7 @@ class ConvNets():
         # conv5 3-256
         with tf.variable_scope('conv5') as scope:
             kernel = _variable_with_weight_decay(
-                'weights', shape=[3, 3, 64, 128], stddev=5e-2, wd=0.0)
+                'weights', shape=[3, 3, 64, 128], stddev=5e-2, wd=WEIGHT_DECAY)
             conv = tf.nn.conv2d(
                 pool2, kernel, [
                     1, 1, 1, 1], padding='SAME')
@@ -333,7 +340,7 @@ class ConvNets():
         # conv6 3-256
         with tf.variable_scope('conv6') as scope:
             kernel = _variable_with_weight_decay(
-                'weights', shape=[3, 3, 128, 128], stddev=5e-2, wd=0.0)
+                'weights', shape=[3, 3, 128, 128], stddev=5e-2, wd=WEIGHT_DECAY)
             conv = tf.nn.conv2d(
                 conv5, kernel, [
                     1, 1, 1, 1], padding='SAME')
@@ -352,7 +359,7 @@ class ConvNets():
         # conv9 3-512
         with tf.variable_scope('conv9') as scope:
             kernel = _variable_with_weight_decay(
-                'weights', shape=[3, 3, 128, 256], stddev=5e-2, wd=0.0)
+                'weights', shape=[3, 3, 128, 256], stddev=5e-2, wd=WEIGHT_DECAY)
             conv = tf.nn.conv2d(
                 pool3, kernel, [
                     1, 1, 1, 1], padding='SAME')
@@ -367,7 +374,7 @@ class ConvNets():
         # conv10 3-512
         with tf.variable_scope('conv10') as scope:
             kernel = _variable_with_weight_decay(
-                'weights', shape=[3, 3, 256, 256], stddev=5e-2, wd=0.0)
+                'weights', shape=[3, 3, 256, 256], stddev=5e-2, wd=WEIGHT_DECAY)
             conv = tf.nn.conv2d(
                 conv9, kernel, [
                     1, 1, 1, 1], padding='SAME')
@@ -386,7 +393,7 @@ class ConvNets():
         # conv13 3-512
         with tf.variable_scope('conv13') as scope:
             kernel = _variable_with_weight_decay(
-                'weights', shape=[3, 3, 256, 512], stddev=5e-2, wd=0.0)
+                'weights', shape=[3, 3, 256, 512], stddev=5e-2, wd=WEIGHT_DECAY)
             conv = tf.nn.conv2d(
                 pool4, kernel, [
                     1, 1, 1, 1], padding='SAME')
@@ -401,7 +408,7 @@ class ConvNets():
         # conv14 3-512
         with tf.variable_scope('conv14') as scope:
             kernel = _variable_with_weight_decay(
-                'weights', shape=[3, 3, 512, 512], stddev=5e-2, wd=0.0)
+                'weights', shape=[3, 3, 512, 512], stddev=5e-2, wd=WEIGHT_DECAY)
             conv = tf.nn.conv2d(
                 conv13, kernel, [
                     1, 1, 1, 1], padding='SAME')
@@ -422,7 +429,7 @@ class ConvNets():
             reshape = tf.reshape(pool5, [FLAGS.batch_size, -1])
             dim = reshape.get_shape()[1].value
             weights = _variable_with_weight_decay(
-                'weights', shape=[dim, 4096], stddev=0.04, wd=0.004)
+                'weights', shape=[dim, 4096], stddev=0.04, wd=WEIGHT_DECAY_2)
             biases = _variable_on_cpu(
                 'biases', [4096], tf.constant_initializer(0.1))
             local1 = tf.nn.relu(
@@ -431,23 +438,23 @@ class ConvNets():
                     weights) + biases,
                 name=scope.name)
             _activation_summary(local1)
-            #local1_drop = tf.nn.dropout(local1, 0.9)
-            #_activation_summary(local6_drop)
-        print local1
+            local1_drop = tf.nn.dropout(local1, Keep_Prop)
+            _activation_summary(local1_drop)
+        print local1_drop
         # ==========================================================================================
         # ==========================================================================================
         # local2
         with tf.variable_scope('local2') as scope:
             weights = _variable_with_weight_decay(
-                'weights', shape=[4096, 4096], stddev=0.04, wd=0.004)
+                'weights', shape=[4096, 4096], stddev=0.04, wd=WEIGHT_DECAY_2)
             biases = _variable_on_cpu(
                 'biases', [4096], tf.constant_initializer(0.1))
             local2 = tf.nn.relu(
                 tf.matmul(
-                    local1,
+                    local1_drop,
                     weights) + biases,
                 name=scope.name)
-            #local7_drop = tf.nn.dropout(local2, 0.9)
+            local2_drop = tf.nn.dropout(local2, Keep_Prop)
             _activation_summary(local2)
         print local2
         # ==========================================================================================
@@ -455,15 +462,15 @@ class ConvNets():
         # local3
         with tf.variable_scope('local3') as scope:
             weights = _variable_with_weight_decay(
-                'weights', shape=[4096, 1000], stddev=0.04, wd=0.004)
+                'weights', shape=[4096, 1000], stddev=0.04, wd=0)
             biases = _variable_on_cpu(
                 'biases', [1000], tf.constant_initializer(0.1))
             local3 = tf.nn.relu(
                 tf.matmul(
-                    local2,
+                    local2_drop,
                     weights) + biases,
                 name=scope.name)
-            #local7_drop = tf.nn.dropout(local3, 0.9)
+            #local7_drop = tf.nn.dropout(local3, 0.5)
             _activation_summary(local3)
         print local3
         # ==========================================================================================
@@ -488,7 +495,7 @@ class ConvNets():
 
     def VGGv3(self, RawTensor):
         print RawTensor
-        InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT + 1, 3])
+        InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT, 3])
         print InputTensor
         # ==========================================================================================
         # conv1
@@ -842,12 +849,12 @@ class ConvNets():
             tf.summary.scalar(l.op.name, loss_averages.average(l))
         return loss_averages_op
 
-    def Train(self, total_loss, global_step, init_lr=1e-4, optimizer='RMSProp'):
+    def Train(self, total_loss, global_step, init_lr=INITIAL_LEARNING_RATE, optimizer='Adam'):
         #num_batches_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
         #decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
         decay_steps = LEARNING_RATE_DECAY_STEP
-        #lr = tf.train.exponential_decay(INITIAL_LEARNING_RATE , global_step, decay_steps, LEARNING_RATE_DECAY_FACTOR, staircase=True)
-        lr = tf.constant(init_lr)
+        lr = tf.train.exponential_decay(INITIAL_LEARNING_RATE , global_step, decay_steps, LEARNING_RATE_DECAY_FACTOR, staircase=True)
+        #lr = tf.constant(init_lr)
         tf.summary.scalar('learning_rate', lr)
         loss_averages_op = self.add_loss_summaries(total_loss)
 
