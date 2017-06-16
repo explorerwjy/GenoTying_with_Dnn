@@ -46,7 +46,7 @@ def GetOptions():
         type=int,
         default=1,
         help='Num of process used to produce result')
-    parser.add_argument('-o', '--outname', type=str, help="Output Name of the Output Tensor File."
+    parser.add_argument('-o', '--outname', type=str, help="Output Name of the Output Tensor File.")
     args = parser.parse_args()
     if args.outname == None:
         args.outname = args.vcf.rstrip('.gz').rstrip('.vcf') + '.CandidateRegions.txt'
