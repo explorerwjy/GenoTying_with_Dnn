@@ -14,14 +14,8 @@ Keep_Prop = 0.5
 WEIGHT_DECAY = 0
 WEIGHT_DECAY_2 = 4e-5
 
-class ConvNets():
-    def __init__(self):
-        pass
-    
-    # Choose which model to use
-    def Inference(self, RawTensor):
-        return self.VGGv1(RawTensor)
 
+class Models():
     def Inference_1(self, RawTensor):
         print RawTensor
         InputTensor = tf.reshape(RawTensor, [-1, WIDTH, HEIGHT, 3])
@@ -826,6 +820,187 @@ class ConvNets():
         print softmax_linear
         # ==========================================================================================
         return softmax_linear
+
+class ResNet():
+    def __init__(self):
+        self.activation = tf.nn.relu
+    def inference(x, is_training, num_class=3, num_blocks=[3, 4, 6, 3], use_bias=False, bottleneck=True):
+        c = Config()
+        c["bottleneck"] = bottleneck
+        c["is_training"] = tf.convert_to_tensor(is_training, dtype="bool", name="is_training")
+        c["ksize"] = 3
+        c["stride"] = 1
+        c["use_bias"] = use_bias
+        c["fc_units_out"] = num_class
+        c["num_blocks"] = num_blocks
+        c["stack_stride"] = 2
+
+        with tf.variable_scope("scale1"):
+            c["conv_filters_out"] = 64
+            c["ksize"] = 7
+            c["stride"] = 2
+            x = conv(x, c)
+            x = bn(x, c)
+            x = activation(x)
+
+        with tf.variable_scope("scale2"):
+            x = _max_pool(x, ksize=3, stride=2)
+            c["num_blocks"] = num_blocks[0]
+            c["stack_stride"] = 1
+            c["block_filters_internal"] = 64
+            x = stack(x, c)
+
+        with tf.variable_scope("scale3"):
+            #x = _max_pool(x, ksize=3, stride=2)
+            c["num_blocks"] = num_blocks[1]
+            #c["stack_stride"] = 1
+            c["block_filters_internal"] = 128
+            assert c["stack_stride"] == 2
+            x = stack(x, c)
+
+        with tf.variable_scope("scale4"):
+            #x = _max_pool(x, ksize=3, stride=2)
+            c["num_blocks"] = num_blocks[2]
+            #c["stack_stride"] = 1
+            c["block_filters_internal"] = 256
+            x = stack(x, c)
+
+        with tf.variable_scope("scale5"):
+            #x = _max_pool(x, ksize=3, stride=2)
+            c["num_blocks"] = num_blocks[3]
+            #c["stack_stride"] = 1
+            c["block_filters_internal"] = 512
+            x = stack(x, c)
+
+        x = tf.reduce_mean(x, reduction_indices=[1,2], name="avg_pool")
+
+        if num_class != None:
+            with tf.variable_scope("fc"):
+                x = fc(x, c)
+
+        return x
+
+    def stack(x, c):
+        for n in range(c["num_blocks"]):
+            s = c["stack_stride"] if n == 0 else 1
+            c["block_stride"] = s
+            with tf.variable_scope("block%d"%(n+1)):
+                x = block(x, c)
+            return x
+
+    def block(x, c):
+        filters_in = x.get_shape()[-1]
+        m = 4 if c["bottleneck"] else 1
+        filters_out = m * c["block_filters_internal"]
+        shortcut = x # branch 1
+        c["conv_filters_out"] = c["block_filters_internal"]
+        if c["bottleneck"]:
+            with tf.variable_scope("a"):
+                c["ksize"] = 1
+                c["stride"] = c["block_stride"]
+                x = conv(x, c)
+                x = bn(x, c)
+                x = activation(x)
+            with tf.variable_scope("b"):
+                x = conv(x, c)
+                x = bn(x, c)
+                x = activation(x)
+            with tf.variable_scope("c"):
+                c["conv_filters_out"] = filters_out
+                c["ksize"] = 1
+                assert c["stride"] == 1
+                x = conv(x, c)
+                x = bn(x, c)
+
+        else:
+            with tf.variable_scope("A"):
+                c["stride"] = c["block_stride"]
+                assert c["ksize"] == 3
+                x = conv(x, c)
+                x = bn(x, c)
+                x = activation(x)
+            with tf.variable_scope("B"):
+                c["conv_filters_out"] = filters_out
+                assert c["ksize"] == 3
+                assert c["stride"] == 1
+                x = conv(x, c)
+                x = bn(x, c)
+
+        with tf.variable_scope("shortcut"):
+            if filters_out != filters_int or c["block_stride"] != 1:
+                c["ksize"] = 1
+                c["stride"] = c["block_stride"]
+                c["conv_filters_out"] = filters_out
+                shortcut = conv(shortcut, c)
+                shortcut = bn(shortcut, c)
+
+            return activation(x + shortcut)
+
+    def conv(x, c):
+        ksize = c["ksize"]
+        stride = c["stride"]
+        filters_out = c["conv_filters_out"]
+        filters_in = x.get_shape()[-1] #Depth
+        shape = [ksize, ksize, filters_int, filters_out]
+        initializer = tf.truncated_normal_initializer(stddev=CONV_WEIGHT_STDDEV)
+        weights = _get_variable("weights", shape=shape, dtype="float", initializer=initializer, weight_decay=CONV_WEIGHT_DECAY)
+
+    def bn(x, c):
+        x_shape = x.get_shape()
+        params_shape = x_shape[-1:]
+        if c["use_bias"]:
+            bias = _get_variable("bias", params_shape, initializer=tf.zeros_initializer)
+            return x + bias
+        axis = list(range(len(x_shape) - 1))
+        beta = _get_variable("beta", params_shape, initializer=tf.zeros_initializer)
+        gamma = _get_variable("gamma", params_shape, initializer=tf.zeros_initializer)
+        moving_mean = get_variable("moving_mean", params_shape, initializer=tf.zeros_initializer, trainable=False)
+        moving_variance = _get_variable("moving_variance", params_shape, initializer=tf.zeros_initializer, trainable=False)
+        mean, variance = tf.nn.monents(x, axis)
+        update_moving_mean = moving_averages.assign_moving_average(moving_mean, mean, BN_DECAY)
+        update_moving_variance = moving_averages.assign_moving_average(moving_variance, variance, BN_DECAY)
+        tf.add_to_collection(UPDATE_OPS_COLLECTION, update_moving_mean)
+        tf.add_to_collection(UPDATE_OPS_COLLECTION, update_moving_variance)
+        mean, variance = control_flow_ops.cond(c["is_traning"], lambda: (mean, variance), lambda: (moving_mean, moving_variance))
+        x =tf.batch_normalization(x, mean, variance, beta, gamma, BN_EPSILON)
+        return x 
+
+    def _max_pool(x, ksize=3, stride=2):
+        return tf.nn.max_pool(x, ksize=[1, ksize, ksize, 1], strides=[1, stride, stride, 1], padding="SAME")
+
+    def fc(x, c):
+        num_units_in = x.get_shape()[-1]
+        num_units_out = c["fc_units_out"]
+        weights_initializer = tf.truncated_normal_initializer(stddev=FC_WEIGHT_STDDEV)
+        weights = _get_varianbe("weights", shape=[num_units_in, num_units_out], initializer=weights_initializer, weight_decay=FC_WEIGHT_DECAY)
+        x = tf.nn.xw_plus_b(x, weights, biases)
+        return x
+
+    def _get_variable(name, shape, initializer, weight_decay=0.0, dtype="float", trainable=True):
+        if weight_decay > 0:
+            regularizer = tf.contrib.layers.l2_regularizer(weight_decay)
+        else:
+            retularizer = None
+        collections = [tf.GraphKeys.VARIABLES, RESNET_VARIABLES]
+        return tf.get_variable(name, shape, initializer=initializer, dtype=dtype, regularizer=regularizer, collections=collections, trainable=trainable)
+
+    def loss(logits, labels):
+        cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits, labels)
+        cross_entropy_mean = tf.reduce_mean(cross_entropy)
+        regularization_losses = tf.get_collections(tf.GraphKeys.REGULARIZATION_LOSSES)
+        loss_ = tf.add_n([cross_entropy_mean] + regularization_losses)
+        tf.scalar_summary("loss", loss_)
+        return loss_
+class Inference():
+    def __init__(self, RawTensor):
+        print RawTensor
+        Depth_major = tf.reshape(RawTensor, [-1, DEPTH, HEIGHT, WIDTH])
+        print Depth_major
+        InputTensor = tf.transpose(Depth_major, [0, 2, 3, 1])
+        print InputTensor
+        self.model = Models()
+        self.inference = self.model.ResNet(InputTensor)
+        
 
     def loss(self, logits, labels):
         #labels = tf.cast(labels, tf.int64)
