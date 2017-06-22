@@ -5,9 +5,20 @@
 # Training The ResNet for Tensor Caller
 #=========================================================================
 
-from ResNet import * 
+import argparse
+from datetime import datetime
+import time
+import os
+from threading import Thread
+import numpy as np
 import tensorflow as tf
+from Input import *
+import sys
+import pysam
+from collections import deque
+from ResNet import * 
 
+sys.stdout = sys.stderr
 MOMENTUM = 0.9
 
 FLAGS = tf.app.flags.FLAGS
@@ -21,6 +32,51 @@ tf.app.flags.DEFINE_boolean('resume', False,
                             'resume from latest saved state')
 tf.app.flags.DEFINE_boolean('minimal_summaries', True,
                             'produce fewer summaries to save HD space')
+tf.app.flags.DEFINE_integer('max_steps', 1000000,
+                            """Number of batches to run.""")
+tf.app.flags.DEFINE_integer('num_gpus', 1,
+                            """How many GPUs to use.""")
+tf.app.flags.DEFINE_boolean('log_device_placement', False,
+                            """Whether to log device placement.""")
+
+GPUs = [0]
+available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
+os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
+print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
+init_lr = INITIAL_LEARNING_RATE
+#optimizer = 'RMSProp'
+optimizer = 'Adam'
+print "Optimizer is {}, init learning rate is {}. ConV weight loss is {}. FC weight loss is {}. DropoutKeepProp is {}.".format(optimizer, init_lr, Models.WEIGHT_DECAY, Models.WEIGHT_DECAY_2, Models.Keep_Prop)
+
+def enqueueInputData(
+        sess,
+        coord,
+        Reader,
+        enqueue_op,
+        queue_input_data,
+        queue_input_target):
+    try:
+        while True:
+            curr_data, curr_label = Reader.LoopRead()
+            sess.run(
+                enqueue_op,
+                feed_dict={
+                    queue_input_data: curr_data,
+                    queue_input_target: curr_label})
+    except Exception as e:
+        print e
+        print("finished enqueueing")
+        coord.request_stop(e)
+
+class LossQueue:
+    def __init__(self):
+        self.queue = deque([500] * 100, 100)
+    def enqueue(self, value):
+        self.queue.appendleft(value)
+        self.queue.pop()
+    def avgloss(self):
+        res = list(self.queue)
+        return float(sum(res))/len(res)
 
 
 class Train():
