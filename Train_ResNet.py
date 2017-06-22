@@ -1,3 +1,9 @@
+#!/home/yufengshen/anaconda2/bin/python
+# Author: jywang explorerwjy@gmail.com
+
+#=========================================================================
+# Training The ResNet for Tensor Caller
+#=========================================================================
 
 from ResNet import * 
 import tensorflow as tf
@@ -144,8 +150,6 @@ class Train():
         num_correct = tf.reduce_sum(in_top1)
         return (batch_size - num_correct) / batch_size
 
-
-
 def GetOptions():
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -153,7 +157,6 @@ def GetOptions():
         help="continue training from a checkpoint")
     args = parser.parse_args()
     return args.Continue
-
 
 def main(argv=None):  # pylint: disable=unused-argument
     Continue = GetOptions()
@@ -165,7 +168,6 @@ def main(argv=None):  # pylint: disable=unused-argument
         train.run(continueModel=ckpt)
     else:
         train.run()
-    
 
 if __name__ == '__main__':
     tf.app.run()
