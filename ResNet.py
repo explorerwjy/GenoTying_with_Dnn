@@ -5,6 +5,7 @@ import datetime
 import numpy as np
 import os
 import time
+from Input import *
 
 MOVING_AVERAGE_DECAY = 0.9997
 BN_DECAY = MOVING_AVERAGE_DECAY
@@ -16,6 +17,10 @@ FC_WEIGHT_STDDEV = 0.01
 RESNET_VARIABLES = 'resnet_variables'
 UPDATE_OPS_COLLECTION = 'resnet_update_ops'  # must be grouped with training op
 IMAGENET_MEAN_BGR = [103.062623801, 115.902882574, 123.151630838, ]
+
+WEIGHT_DECAY = 1
+WEIGHT_DECAY_2 = 1
+Keep_Prop = 0.5
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -93,7 +98,10 @@ class ResNet():
     def __init__(self):
         self.activation = tf.nn.relu
 
-    def Inference(self, x, is_training, num_class=3, num_blocks=[3, 4, 6, 3], use_bias=False, bottleneck=True):
+    def Inference(self, x, is_training=True, num_class=3, num_blocks=[3, 4, 6, 3], use_bias=False, bottleneck=True):
+        x = tf.reshape(x, [-1, DEPTH, HEIGHT, WIDTH])
+        x = tf.transpose(x, [0, 2, 3, 1])
+
         c = Config()
         c["bottleneck"] = bottleneck
         c["is_training"] = tf.convert_to_tensor(is_training, dtype="bool", name="is_training")
@@ -103,7 +111,7 @@ class ResNet():
         c["fc_units_out"] = num_class
         c["num_blocks"] = num_blocks
         c["stack_stride"] = 2
-
+        print x
         with tf.variable_scope("scale1"):
             c["conv_filters_out"] = 64
             c["ksize"] = 7
@@ -111,7 +119,7 @@ class ResNet():
             x = self.conv(x, c)
             x = self.bn(x, c)
             x = self.activation(x)
-
+        print x
         with tf.variable_scope("scale2"):
             x = self._max_pool(x, ksize=3, stride=2)
             c["num_blocks"] = num_blocks[0]
@@ -196,7 +204,7 @@ class ResNet():
                 x = self.bn(x, c)
 
         with tf.variable_scope("shortcut"):
-            if filters_out != filters_int or c["block_stride"] != 1:
+            if filters_out != filters_in or c["block_stride"] != 1:
                 c["ksize"] = 1
                 c["stride"] = c["block_stride"]
                 c["conv_filters_out"] = filters_out
@@ -210,9 +218,10 @@ class ResNet():
         stride = c["stride"]
         filters_out = c["conv_filters_out"]
         filters_in = x.get_shape()[-1] #Depth
-        shape = [ksize, ksize, filters_int, filters_out]
+        shape = [ksize, ksize, filters_in, filters_out]
         initializer = tf.truncated_normal_initializer(stddev=CONV_WEIGHT_STDDEV)
         weights = self._get_variable("weights", shape=shape, dtype="float", initializer=initializer, weight_decay=CONV_WEIGHT_DECAY)
+        return tf.nn.conv2d(x, weights, [1, stride, stride, 1], padding='SAME')
 
     def bn(self, x, c):
         x_shape = x.get_shape()
@@ -221,17 +230,17 @@ class ResNet():
             bias = self._get_variable("bias", params_shape, initializer=tf.zeros_initializer)
             return x + bias
         axis = list(range(len(x_shape) - 1))
-        beta = _get_variable("beta", params_shape, initializer=tf.zeros_initializer)
-        gamma = _get_variable("gamma", params_shape, initializer=tf.zeros_initializer)
-        moving_mean = get_variable("moving_mean", params_shape, initializer=tf.zeros_initializer, trainable=False)
-        moving_variance = _get_variable("moving_variance", params_shape, initializer=tf.zeros_initializer, trainable=False)
-        mean, variance = tf.nn.monents(x, axis)
+        beta = self._get_variable("beta", params_shape, initializer=tf.zeros_initializer)
+        gamma = self._get_variable("gamma", params_shape, initializer=tf.zeros_initializer)
+        moving_mean = self._get_variable("moving_mean", params_shape, initializer=tf.zeros_initializer, trainable=False)
+        moving_variance = self._get_variable("moving_variance", params_shape, initializer=tf.zeros_initializer, trainable=False)
+        mean, variance = tf.nn.moments(x, axis)
         update_moving_mean = moving_averages.assign_moving_average(moving_mean, mean, BN_DECAY)
         update_moving_variance = moving_averages.assign_moving_average(moving_variance, variance, BN_DECAY)
         tf.add_to_collection(UPDATE_OPS_COLLECTION, update_moving_mean)
         tf.add_to_collection(UPDATE_OPS_COLLECTION, update_moving_variance)
-        mean, variance = control_flow_ops.cond(c["is_traning"], lambda: (mean, variance), lambda: (moving_mean, moving_variance))
-        x =tf.batch_normalization(x, mean, variance, beta, gamma, BN_EPSILON)
+        mean, variance = control_flow_ops.cond(c["is_training"], lambda: (mean, variance), lambda: (moving_mean, moving_variance))
+        x =tf.nn.batch_normalization(x, mean, variance, beta, gamma, BN_EPSILON)
         return x 
 
     def _max_pool(self, x, ksize=3, stride=2):
@@ -241,24 +250,26 @@ class ResNet():
         num_units_in = x.get_shape()[-1]
         num_units_out = c["fc_units_out"]
         weights_initializer = tf.truncated_normal_initializer(stddev=FC_WEIGHT_STDDEV)
-        weights = _get_varianbe("weights", shape=[num_units_in, num_units_out], initializer=weights_initializer, weight_decay=FC_WEIGHT_DECAY)
+        weights = self._get_variable("weights", shape=[num_units_in, num_units_out], initializer=weights_initializer, weight_decay=FC_WEIGHT_DECAY)
+        biases = self._get_variable('biases', shape=[num_units_out], initializer=tf.zeros_initializer)
         x = tf.nn.xw_plus_b(x, weights, biases)
         return x
 
-    def _get_variable(self, name, shape, initializer, weight_decay=0.0, dtype="float", trainable=True):
+    def _get_variable(self, name, shape, initializer, weight_decay=0.0, dtype="float32", trainable=True):
         if weight_decay > 0:
             regularizer = tf.contrib.layers.l2_regularizer(weight_decay)
         else:
-            retularizer = None
-        collections = [tf.GraphKeys.VARIABLES, RESNET_VARIABLES]
+            regularizer = None
+        collections = [tf.GraphKeys.GLOBAL_VARIABLES, RESNET_VARIABLES]
         return tf.get_variable(name, shape, initializer=initializer, dtype=dtype, regularizer=regularizer, collections=collections, trainable=trainable)
 
     def loss(self, logits, labels):
-        cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits, labels)
+        #cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(logits, labels)
+        cross_entropy = tf.nn.sparse_softmax_cross_entropy_with_logits(labels=labels, logits=logits)
         cross_entropy_mean = tf.reduce_mean(cross_entropy)
-        regularization_losses = tf.get_collections(tf.GraphKeys.REGULARIZATION_LOSSES)
+        regularization_losses = tf.get_collection(tf.GraphKeys.REGULARIZATION_LOSSES)
         loss_ = tf.add_n([cross_entropy_mean] + regularization_losses)
-        tf.scalar_summary("loss", loss_)
+        tf.summary.scalar('loss', loss_)
         return loss_
 
     def add_loss_summaries(self, total_loss):
@@ -271,12 +282,12 @@ class ResNet():
             tf.summary.scalar(l.op.name, loss_averages.average(l))
         return loss_averages_op
 
-    def Train(self, total_loss, global_step, init_lr=FLAGS.learning_rate, optimizer='Adam'):
+    def Train(self, total_loss, global_step, init_lr, optimizer='Adam'):
         #num_batches_per_epoch = NUM_EXAMPLES_PER_EPOCH_FOR_TRAIN / FLAGS.batch_size
         #decay_steps = int(num_batches_per_epoch * NUM_EPOCHS_PER_DECAY)
         decay_steps = LEARNING_RATE_DECAY_STEP
-        lr = tf.train.exponential_decay(init_lr , global_step, decay_steps, LEARNING_RATE_DECAY_FACTOR, staircase=True)
-        #lr = tf.constant(init_lr)
+        #lr = tf.train.exponential_decay(init_lr , global_step, decay_steps, LEARNING_RATE_DECAY_FACTOR, staircase=True)
+        lr = tf.constant(init_lr)
         tf.summary.scalar('learning_rate', lr)
         loss_averages_op = self.add_loss_summaries(total_loss)
 

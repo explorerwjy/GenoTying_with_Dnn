@@ -36,8 +36,8 @@ INITIAL_LEARNING_RATE = 1e-4       # Initial learning rate.
 FLAGS = tf.app.flags.FLAGS
 
 
-tf.app.flags.DEFINE_integer('batch_size', 64,
-    """Number of WindowTensor to process in a batch.""")
+#tf.app.flags.DEFINE_integer('batch_size', 64,
+#    """Number of WindowTensor to process in a batch.""")
 
 tf.app.flags.DEFINE_string('TrainingData', './Training.windows.txt.gz',
                            """Path to the Training Data.""")
