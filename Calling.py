@@ -19,17 +19,17 @@ import Models
 from threading import Thread
 sys.stdout = sys.stderr
 
-GPUs = [4]
-available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
-os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
-print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
 
 FLAGS = tf.app.flags.FLAGS
 
-#tf.app.flags.DEFINE_string('train_dir', './train_logs/train_0',
-#                          """Directory where to checkpoint.""")
-tf.app.flags.DEFINE_string('checkpoint_dir', './train_logs/train_0',
-                           """Directory where to read model checkpoints.""")
+#tf.app.flags.DEFINE_string('checkpoint_dir', '/share/shenlab/GTD/NA12878/HG001.30x/TensorCaller/train_logs/Multi_HG002', """Directory where to read model checkpoints.""")
+tf.app.flags.DEFINE_string('checkpoint_dir', '/share/shenlab/GTD/NA12878/HG001.30x/TensorCaller/train_logs/Single_HG002', """Directory where to read model checkpoints.""")
+tf.app.flags.DEFINE_string('GPU', '0', """Which GPU to use""")
+
+GPUs = [7]
+available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
+os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
+print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
 
 def enqueueInputData(sess, coord, Reader, enqueue_op, queue_input_data, queue_input_label, queue_input_chrom, queue_input_pos, queue_input_ref, queue_input_alt):
     try:

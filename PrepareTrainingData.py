@@ -68,6 +68,7 @@ def GetOptions():
 
 
 def Get_Positives(T_vcf):
+    print "Start Loading True Variants at {}".format(T_vcf)
     if T_vcf.endswith('.vcf.gz'):
         fin = gzip.open(T_vcf)
     else:
@@ -82,6 +83,7 @@ def Get_Positives(T_vcf):
                 res[k] = v
             else:
                 print "Multiple record in %s has same position: %s" % (T_vcf, p)
+    print "Finish Load True Variants"
     return res
 
 # Scan a candidate vcf file, generate window for the variant and mark
@@ -119,9 +121,10 @@ def VarScan(referenceGenome, bam, bamout, Candidate_vcf, Positive_vars, Nprocess
     process2.wait()
     print process1.returncode
     print process2.returncode
-    #process3 = subprocess.Popen('rm tmp.*.windows.txt', shell=True, stdout=subprocess.PIPE)
-    # process3.wait()
-    # print process3.returncode
+    print "Clean Up Tmp Files"
+    process3 = subprocess.Popen('rm -rf tmp*', shell=True, stdout=subprocess.PIPE)
+    process3.wait()
+    print process3.returncode
     print "Done!"
 
 
