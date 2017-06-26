@@ -1,4 +1,3 @@
-# TensorCaller
-Use Tensor Calling Variants
-Based on TF
-Based on CNN
+# GenoTying_with_Dnn
+Genotyping sequencing data by convolutional neural network.
+Inplemented by tensorflow.
