@@ -22,7 +22,7 @@ sys.stdout = sys.stderr
 MOMENTUM = 0.9
 
 FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_string('train_dir', './training_logs/resnet_train',
+tf.app.flags.DEFINE_string('train_dir', './training_logs/resnet_train_0',
         """Directory where to write event logs and checkpoint.""")
 tf.app.flags.DEFINE_float('learning_rate', 1e-4, "learning rate.")
 tf.app.flags.DEFINE_integer('batch_size', 64, "batch size")
@@ -48,8 +48,11 @@ print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
 init_lr = 1e-4
 #optimizer = 'RMSProp'
 optimizer = 'Adam'
+NUM_BLOCKS = [2, 2, 2, 2]
+USE_BIAS = True
+BOTTLENECK = True
 print "Optimizer is {}, init learning rate is {}. ConV weight loss is {}. FC weight loss is {}. DropoutKeepProp is {}.".format(optimizer, init_lr, CONV_WEIGHT_DECAY, FC_WEIGHT_DECAY, Keep_Prop)
-
+print "num_blocks:{}, use_bias:{}, bottleneck:{}".format(', '.join(map(str, NUM_BLOCKS)), str(USE_BIAS), str(BOTTLENECK))
 def enqueueInputData(
         sess,
         coord,
@@ -111,7 +114,8 @@ class Train():
             #data_batch_reshape = tf.transpose(data_batch, [0,2,3,1])
 
             global_step = tf.Variable(0, trainable=False, name='global_step')
-            logits = self.model.Inference(data_batch)
+            #logits = self.model.Inference(data_batch)
+            logits = self.model.Inference(data_batch, num_blocks=NUM_BLOCKS, use_bias=USE_BIAS, bottleneck=BOTTLENECK)
             loss = self.model.loss(logits, label_batch)
             #accuracy = self.model.Accuracy(logits, label_batch)
             train_op = self.model.Train(loss, global_step, FLAGS.learning_rate, optimizer)

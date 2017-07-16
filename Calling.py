@@ -16,9 +16,12 @@ import numpy as np
 import tensorflow as tf
 from Input import *
 import Models
+import ResNet
 from threading import Thread
 sys.stdout = sys.stderr
-
+NUM_BLOCKS = [2,2,2,2]
+USE_BIAS = True
+BOTTLENECK = True
 GPUs = [4]
 available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
@@ -28,8 +31,11 @@ FLAGS = tf.app.flags.FLAGS
 
 #tf.app.flags.DEFINE_string('train_dir', './train_logs/train_0',
 #                          """Directory where to checkpoint.""")
-tf.app.flags.DEFINE_string('checkpoint_dir', './train_logs/train_0',
+#tf.app.flags.DEFINE_string('checkpoint_dir', './train_logs/train_0',
+tf.app.flags.DEFINE_string('checkpoint_dir', './training_logs/resnet_train_0',
                            """Directory where to read model checkpoints.""")
+tf.app.flags.DEFINE_string('batch_size', 64,
+                           """batch size""")
 
 def enqueueInputData(sess, coord, Reader, enqueue_op, queue_input_data, queue_input_label, queue_input_chrom, queue_input_pos, queue_input_ref, queue_input_alt):
     try:
@@ -74,7 +80,8 @@ class TensorCaller:
             TensorPL = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, DEPTH * (HEIGHT) * WIDTH))
             LabelPL = tf.placeholder(tf.int32, shape=(FLAGS.batch_size, ))
 
-            logits = self.model.Inference(TensorPL)
+            #logits = self.model.Inference(TensorPL)
+            logits = self.model.Inference(TensorPL, num_blocks=NUM_BLOCKS, use_bias=USE_BIAS, bottleneck=BOTTLENECK)
             normed_logits = tf.nn.softmax(logits, dim=-1, name=None)
             prediction = tf.argmax(normed_logits, 1)
             loss = self.model.loss(logits, LabelPL)
@@ -287,7 +294,8 @@ def main(argv=None):  # pylint: disable=unused-argument
     for DataFile in DataFiles:
         try:
             OutName = 'Calling.' + FLAGS.checkpoint_dir.split('/')[-1]+ '.' +DataFile.strip().split('/')[-1].split('.')[0] + '.vcf'
-            model = Models.ConvNets()
+            #model = Models.ConvNets()
+            model = ResNet.ResNet()
             caller = TensorCaller(FLAGS.batch_size, model, DataFile, OutName)
             caller.run()
         except Exception as e:
