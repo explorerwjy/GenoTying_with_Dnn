@@ -22,10 +22,10 @@ sys.stdout = sys.stderr
 MOMENTUM = 0.9
 
 FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_string('train_dir', './training_logs/resnet_train_0',
+tf.app.flags.DEFINE_string('train_dir', './training_logs/resnet_train_2',
         """Directory where to write event logs and checkpoint.""")
 tf.app.flags.DEFINE_float('learning_rate', 1e-4, "learning rate.")
-tf.app.flags.DEFINE_integer('batch_size', 64, "batch size")
+tf.app.flags.DEFINE_integer('batch_size', 32, "batch size")
 tf.app.flags.DEFINE_integer('max_steps', 50000000, "max steps")
 tf.app.flags.DEFINE_boolean('resume', False,
                             'resume from latest saved state')
@@ -45,12 +45,13 @@ available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
 #init_lr = FLAGS.learning_rate
-EVAL_NUM = 1e5 # Num of training data to form a accuracy evaluation
+EVAL_NUM = 1000 # Num of training data to form a accuracy evaluation
+#EVAL_NUM = 320 # Num of training data to form a accuracy evaluation
 init_lr = 1e-4
 #optimizer = 'RMSProp'
 optimizer = 'Adam'
-NUM_BLOCKS = [3, 4, 6, 3] # This is the default 50-layer network
-NUM_BLOCKS = [2, 2, 2, 2] 
+#NUM_BLOCKS = [3, 4, 6, 3] # This is the default 50-layer network
+NUM_BLOCKS = [3, 4, 6, 3] 
 USE_BIAS = True
 BOTTLENECK = True
 print "Optimizer is {}, init learning rate is {}. ConV weight loss is {}. FC weight loss is {}. DropoutKeepProp is {}.".format(optimizer, init_lr, CONV_WEIGHT_DECAY, FC_WEIGHT_DECAY, Keep_Prop)
@@ -86,7 +87,7 @@ class LossQueue:
         return float(sum(res))/len(res)
 
 class AccuracyQueue:
-    def _init_(self, batch_size, batch_num):
+    def __init__(self, batch_size, batch_num):
         self.AccuracyQueue = deque([0] * 100, 100)
         self.batch_num = batch_num
         self.batch_size = batch_size
@@ -172,7 +173,7 @@ class Train():
             min_loss = loss_queue.avgloss()
             try:    
                 print "Start"
-                training_accuracy = AccuracyQueue(self.batch_size, EVAL_NUM/self.batch_size)
+                training_accuracy = AccuracyQueue(self.batch_size, EVAL_NUM)
                 if continueModel != None:
                     saver.restore(sess, continueModel)
                     print "Continue Train Mode. Start with step",sess.run(global_step) 
