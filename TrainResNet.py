@@ -45,10 +45,12 @@ available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
 #init_lr = FLAGS.learning_rate
+EVAL_NUM = 1e5 # Num of training data to form a accuracy evaluation
 init_lr = 1e-4
 #optimizer = 'RMSProp'
 optimizer = 'Adam'
-NUM_BLOCKS = [2, 2, 2, 2]
+NUM_BLOCKS = [3, 4, 6, 3] # This is the default 50-layer network
+NUM_BLOCKS = [2, 2, 2, 2] 
 USE_BIAS = True
 BOTTLENECK = True
 print "Optimizer is {}, init learning rate is {}. ConV weight loss is {}. FC weight loss is {}. DropoutKeepProp is {}.".format(optimizer, init_lr, CONV_WEIGHT_DECAY, FC_WEIGHT_DECAY, Keep_Prop)
@@ -82,6 +84,30 @@ class LossQueue:
     def avgloss(self):
         res = list(self.queue)
         return float(sum(res))/len(res)
+
+class AccuracyQueue:
+    def _init_(self, batch_size, batch_num):
+        self.AccuracyQueue = deque([0] * 100, 100)
+        self.batch_num = batch_num
+        self.batch_size = batch_size
+        self.Correct = 0.0
+        self.Total = 0.0
+        self.counter = 0
+    def update(self, correct, step):
+        if self.counter == self.batch_num:
+            Accuracy = self.Correct/self.Total
+            print '@ Step {}: \t {} in {} Correct, Batch precision @ 1 ={}'.format(step, self.Correct, self.Total, Accuracy)
+            tf.summary.scalar('TrainingAccuracy', Accuracy)
+            self.AccuracyQueue.appendleft(Accuracy)
+            self.AccuracyQueue.pop()
+            self.counter = 0
+            self.Total = 0
+            self.Correct = 0
+        self.Total += self.batch_size
+        self.Correct += correct
+        self.counter += 1
+    def checkQueue(self):
+        return (self.Accuracy[0] > self.Accuracy[-1])
 
 
 class Train():
@@ -146,6 +172,7 @@ class Train():
             min_loss = loss_queue.avgloss()
             try:    
                 print "Start"
+                training_accuracy = AccuracyQueue(self.batch_size, EVAL_NUM/self.batch_size)
                 if continueModel != None:
                     saver.restore(sess, continueModel)
                     print "Continue Train Mode. Start with step",sess.run(global_step) 
@@ -160,6 +187,11 @@ class Train():
 
                     assert not np.isnan(loss_value), 'Model diverged with loss = NaN'
 
+                    
+                    prediction = float((np.sum(sess.run(top_k_op))))
+                    training_accuracy.update(prediction, v_step)
+
+
                     if v_step % 10 == 0:
                         loss_queue.enqueue(loss_value)
                         #avgloss = loss_queue.avgloss()
@@ -172,8 +204,8 @@ class Train():
                                  examples_per_sec, sec_per_batch))
                     
                     if v_step % 100 == 0:
-                        prediction = float((np.sum(sess.run(top_k_op))))
-                        print '@ Step {}: \t {} in {} Correct, Batch precision @ 1 ={}'.format(v_step, prediction, self.batch_size, prediction/self.batch_size)
+                        #prediction = float((np.sum(sess.run(top_k_op))))
+                        #print '@ Step {}: \t {} in {} Correct, Batch precision @ 1 ={}'.format(v_step, prediction, self.batch_size, prediction/self.batch_size)
                         #print accuracy
                         summary_str = sess.run(summary_op)
                         summary_writer.add_summary(summary_str, v_step)
