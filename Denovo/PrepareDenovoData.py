@@ -19,7 +19,6 @@ import time
 import os
 import subprocess
 import sys
-import csv
 
 sys.stdout = sys.stderr
 
@@ -56,62 +55,36 @@ def GetOptions():
         type=str,
         required=True,
         help='True Positive Variant VCF. All candidate regions will be labeled according to this file')
-    parser.add_argument('-o', '--output', help='Output Name for pile up windows for candidate genes')
     parser.add_argument(
         '-p',
         '--process',
         type=int,
         default=1,
         help='Num of process used to produce result')
-    parser.add_argument('--split_training_testing', type=bool, default=False, help='Whether split data into training data (chr 1-19) and testing data (chr 20-22, X, Y)')
+
     args = parser.parse_args()
-    if args.output == None:
-        args.output = args.vcf.rstrip(".gz").rstrip(".vcf")
-    #return args.ref, args.bam, args.bamout, args.vcf, args.true, args.mode, args.process
-    return args
 
-class PrepareTrainingData:
-    def __init__(self, args):
-        self.mode = args.mode 
-        self.ReferenceGenome = args.ref
-        self.Bam = args.bam
-        self.Bamout = args.bamout
-        self.VCF = args.vcf
-        self.PositiveFil = args.true
-        self.split_training_testing = args.split_training_testing
-        self.output = args.output
-        self.Nprocess = args.process
-    def run():
-        s_time = time.time()
-        if self.mode == '2':
-            self.OneVar(self.bam)
+    return args.ref, args.bam, args.bamout, args.vcf, args.true, args.mode, args.process
+
+
+def Get_Positives(T_vcf):
+    print "Start Loading True Variants at {}".format(T_vcf)
+    if T_vcf.endswith('.vcf.gz'):
+        fin = gzip.open(T_vcf)
+    else:
+        fin = open(T_vcf)
+    res = {}
+    for l in fin:
+        if l.startswith('#'):
+            continue
         else:
-            self.PositiveVar = self.Get_Positives(T_vcf)
-            self.VarScan()
-        print "Total Running Time is %.3f"%(time.time()-s_time)
-
-    def Get_Positives(self, self.PositiveFil):
-        print "Start Loading True Variants at {}".format(self.PositiveFil)
-        # READ FROM VCF
-        if self.PositiveFil.endswith(".vcf.gz") or self.PositiveFil.endswith(".vcf"):
-            if self.PositiveFil.endswith('.vcf.gz'):
-                fin = gzip.open(self.PositiveFil)
+            k, p, v = var2kv2(l)
+            if k not in res:
+                res[k] = v
             else:
-                fin = open(self.PositiveFil)
-            res = {}
-            for l in fin:
-                if l.startswith('#'):
-                    continue
-                else:
-                    k, p, v = var2kv2(l)
-                    if k not in res:
-                        res[k] = v
-                    else:
-                        print "Multiple record in %s has same position: %s" % (self.PositiveFil, p)
-            print "Finish Load True Variants"
-            return res
-        elif self.PositiveFil.endswith("csv"):
-            
+                print "Multiple record in %s has same position: %s" % (T_vcf, p)
+    print "Finish Load True Variants"
+    return res
 
 # Scan a candidate vcf file, generate window for the variant and mark
 # genotype according to GIAB positives
@@ -138,14 +111,10 @@ def VarScan(referenceGenome, bam, bamout, Candidate_vcf, Positive_vars, Nprocess
     print "Merging Files together and bgzip"
     if not os.path.exists('./tmp_sort_training'):
         os.makedirs('./tmp_sort_training')
-    if not os.path.exists('./tmp_sort_testing'):
-        os.makedirs('./tmp_sort_testing')
-    command1 = 'cat tmp.train.*.windows.txt| sort -k1,1d -k2,2n -T ./tmp_sort_training > Training.windows.txt ;bgzip -f Training.windows.txt; tabix -f -s 1 -b 2 -e 3 Training.windows.txt.gz'
-    command2 = 'cat tmp.test.*.windows.txt| sort -k1,1d -k2,2n -T ./tmp_sort_testing > Testing.windows.txt ;bgzip -f Testing.windows.txt; tabix -f -s 1 -b 2 -e 3 Testing.windows.txt.gz'
+    command1 = 'cat tmp.train.*.windows.txt| sort -k1,1d -k2,2n -T ./tmp_sort_training > ALL.windows.txt ;gzip -f ALL.windows.txt;'
     process1 = subprocess.Popen(command1, shell=True, stdout=subprocess.PIPE)
-    process2 = subprocess.Popen(command2, shell=True, stdout=subprocess.PIPE)
     process1.wait()
-    process2.wait()
+
     print process1.returncode
     print process2.returncode
     print "Clean Up Tmp Files"
@@ -157,9 +126,7 @@ def VarScan(referenceGenome, bam, bamout, Candidate_vcf, Positive_vars, Nprocess
 
 def load_variants(VCF, Positive_vars, referenceGenome, bam, bamout, i, n):
     outname_train = 'tmp.train.' + str(i) + '.windows.txt'
-    outname_test = 'tmp.test.' + str(i) + '.windows.txt'
-    fout_train = open(outname_train, 'wb')
-    fout_test = open(outname_test, 'wb')
+    fout = open(outname_train, 'wb')
     window_generator = parse_tabix_file_subset(
         [VCF],
         Positive_vars,
@@ -170,15 +137,12 @@ def load_variants(VCF, Positive_vars, referenceGenome, bam, bamout, i, n):
         n,
         get_variants_from_sites_vcf)
     for record in window_generator:
-        if record.chrom not in ['20', '21', '22', 'X', 'Y']:
-            fout_train.write(record.write())
-        elif record.chrom in ['20', '21', '22', 'X', 'Y']:
-            fout_test.write(record.write())
+        fout.write(record.write())
 
 
 def parse_tabix_file_subset(
         tabix_filenames,
-        Positive_vars,
+        ,
         referenceGenome,
         bam,
         bamout,
@@ -222,31 +186,25 @@ def parse_tabix_file_subset(
 # The record_parser in parse_tabix_file_subset
 
 
-def get_variants_from_sites_vcf(sites_file, Positive_vars, RefFile, SamFile, BamoutFile):
+def get_variants_from_sites_vcf(sites_file, RefFile, SamFile, BamoutFile):
     for l in sites_file:
         # if l.startswith('##'):
         #	continue
         # elif l.startswith('#'):
         #	continue
         llist = l.strip().split('\t')
-        k, chrom, pos, ref, alt = var2kv(llist)
-        if k in Positive_vars:
-            try:
-                GT = get_Genotype(llist)
-            except:
-                continue
-            region = Region.CreateRegion(
-                RefFile,
-                SamFile,
-                BamoutFile,
-                chrom,
-                pos,
-                ref,
-                alt,
-                str(GT))  # Create a Region according to a site
-        else:
-            region = Region.CreateRegion(
-                RefFile, SamFile, BamoutFile, chrom, pos, ref, alt, '0')
+        #k, chrom, pos, ref, alt = var2kv(llist)
+        chrom, pos, ref, alt, sampleID, Label = ParseDenovoVCF(llist)
+        region = Region.CreateRegion(
+            RefFile,
+            SamFile,
+            BamoutFile,
+            chrom,
+            pos,
+            ref,
+            alt,
+            sampleID,
+            Label)  # Create a Region according to a site
         yield region
 
 
@@ -281,10 +239,16 @@ def Pulse(region):
 
 
 def main():
-    args = GetOptions()
-    ins = PrepareTrainingData(args)
-    ins.run()
-
+    s_time = time.time()
+    referenceGenome, bam, bamout, vcf, T_vcf, mode, Nprocess = GetOptions()
+    if mode == '2':
+        OneVar(bam)
+    else:
+        if T_vcf is None:
+            print "Please provide Positive Data"
+        Positives = Get_Positives(T_vcf)
+        VarScan(referenceGenome, bam, bamout, vcf, Positives, Nprocess)
+    print "Total Running Time is %.3f"%(time.time()-s_time)
 
 if __name__ == '__main__':
     main()
