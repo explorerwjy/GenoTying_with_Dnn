@@ -23,7 +23,8 @@ sys.stdout = sys.stderr
 FLAGS = tf.app.flags.FLAGS
 
 #tf.app.flags.DEFINE_string('checkpoint_dir', '/share/shenlab/GTD/NA12878/HG001.30x/TensorCaller/train_logs/Multi_HG002', """Directory where to read model checkpoints.""")
-tf.app.flags.DEFINE_string('checkpoint_dir', '/share/shenlab/GTD/NA12878/HG001.30x/TensorCaller/train_logs/Single_HG002', """Directory where to read model checkpoints.""")
+#tf.app.flags.DEFINE_string('checkpoint_dir', '/share/shenlab/GTD/NA12878/HG001.30x/TensorCaller/train_logs/Single_HG002', """Directory where to read model checkpoints.""")
+tf.app.flags.DEFINE_string('checkpoint_dir', './train_logs/train_4', """Directory where to read model checkpoints.""")
 tf.app.flags.DEFINE_string('GPU', '0', """Which GPU to use""")
 
 GPUs = [7]

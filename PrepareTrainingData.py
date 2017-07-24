@@ -64,7 +64,7 @@ def GetOptions():
     parser.add_argument('--split_training_testing', type=bool, default=False, help='Whether split data into training data (chr 1-19) and testing data (chr 20-22, X, Y)')
     args = parser.parse_args()
     if args.output == None:
-        args.output = args.vcf.rstrip(".gz").rstrip(".vcf")
+        args.output = args.vcf.split('/')[-1].rstrip(".gz").rstrip(".vcf")
     return args
 
 class PrepareTrainingData:
@@ -78,17 +78,26 @@ class PrepareTrainingData:
         self.split_training_testing = args.split_training_testing
         self.output = args.output
         self.Nprocess = args.process
+        print "Mode:",self.mode
+        print "ReferenceGenome:",self.ReferenceGenome
+        print "Bam:",self.Bam
+        print "Bamout:",self.Bamout
+        print "VCF:",self.VCF 
+        print "Labels from:",self.PositiveFil
+        print "split_training_testing:", self.split_training_testing
+        print "OutName:", self.output
+        print "Number of process:",self.Nprocess
 
-    def run():
+    def run(self):
         s_time = time.time()
         if self.mode == '2':
             self.OneVar(self.bam)
         else:
-            self.PositiveVar = self.Get_Positives(T_vcf)
+            self.PositiveVar = self.Get_Positives()
             self.VarScan()
         print "Total Running Time is %.3f"%(time.time()-s_time)
 
-    def Get_Positives(self, self.PositiveFil):
+    def Get_Positives(self):
         print "Start Loading True Variants at {}".format(self.PositiveFil)
         # READ FROM VCF
         if self.PositiveFil.endswith(".vcf.gz") or self.PositiveFil.endswith(".vcf"):
@@ -103,7 +112,7 @@ class PrepareTrainingData:
                 else:
                     k, p, v = var2kv2(l)
                     if k not in res:
-                        v = get_Genotype(v)
+                        v = get_Genotype(l.strip().split('\t'))
                         res[k] = v
                     else:
                         print "Multiple record in %s has same position: %s" % (self.PositiveFil, p)
@@ -192,9 +201,9 @@ class PrepareTrainingData:
                     fout_test.write(record.write())
         else:
             outname = 'tmp.{}.'.format(self.output) + str(i) + '.GtdRegion.txt'
-            fout = open(outname_train, 'wb')
+            fout = open(outname, 'wb')
             for record in window_generator:
-                fout_train.write(record.write())
+                fout.write(record.write())
 
     def parse_tabix_file_subset(self, subset_i, record_parser):
         start_time = time.time()
@@ -202,10 +211,10 @@ class PrepareTrainingData:
         open_tabix_files = [pysam.Tabixfile(tabix_filename) for tabix_filename in tabix_filenames]
         tabix_file_contig_pairs = [
             (tabix_file, contig) for tabix_file in open_tabix_files for contig in tabix_file.contigs]
-        tabix_file_contig_subset = tabix_file_contig_pairs[subset_i:: subset_n]
+        tabix_file_contig_subset = tabix_file_contig_pairs[subset_i:: self.Nprocess]
         short_filenames = ",".join(map(os.path.basename, tabix_filenames))
         num_file_contig_pairs = len(tabix_file_contig_subset)
-        print "Lodaing subset %d from %d" % (subset_i, subset_n)
+        print "Lodaing subset %d from %d" % (subset_i, self.Nprocess)
 
         RefFile = pysam.FastaFile(self.ReferenceGenome)
         SamFile = pysam.AlignmentFile(self.Bam, "rb")
@@ -222,7 +231,7 @@ class PrepareTrainingData:
             # for parsed_record in record_parser(itertools.chain(header_iterator,
             # records_iterator), Positive_vars, RefFile, SamFile ):
             for parsed_record in record_parser(
-                    records_iterator, Positive_vars, RefFile, SamFile, BamoutFile):
+                    records_iterator, RefFile, SamFile, BamoutFile):
                 counter += 1
                 yield parsed_record
 
@@ -233,7 +242,7 @@ class PrepareTrainingData:
     # The record_parser in parse_tabix_file_subset
 
 
-    def get_variants_from_sites_vcf(sites_file, RefFile, SamFile, BamoutFile):
+    def get_variants_from_sites_vcf(self, sites_file, RefFile, SamFile, BamoutFile):
         for l in sites_file:
             # if l.startswith('##'):
             #	continue
