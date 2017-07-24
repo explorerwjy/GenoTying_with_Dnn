@@ -27,7 +27,6 @@ def var2kv2(l):
     #gt = get_Genotype(llist)
     return k, p, l
 
-
 def var2kv(llist):
     chrom, pos = llist[0:2]
     ref, alt = llist[3:5]
