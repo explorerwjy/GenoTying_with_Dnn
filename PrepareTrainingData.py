@@ -132,8 +132,8 @@ class PrepareTrainingData:
             for row in reader:
                 tmp_dict = dict(zip(header ,row))
                 #key = tmp_dict('Chrom') + ":" + tmp_dict('Position')
-                key = get_xpos(tmp_dict('Chrom'), tmp_dict('Position'))
-                value = tmp_dict('Ref') + ":" +tmp_dict('Alt')
+                key = get_xpos(tmp_dict['Chrom'], tmp_dict['Position'])
+                value = tmp_dict['Ref'] + ":" +tmp_dict['Alt']
                 try:
                     res[key] = tmp_dict['GT']
                 except:
@@ -237,7 +237,7 @@ class PrepareTrainingData:
 
                 if counter % 10000 == 0:
                     seconds_elapsed = float(time.time() - start_time)
-                    print "Load %d records from subset %d of %d from %s in %f seconds" % (counter, subset_i, subset_n, short_filenames, seconds_elapsed)
+                    print "Load %d records from subset %d of %d from %s in %f seconds" % (counter, subset_i, self.Nprocess, short_filenames, seconds_elapsed)
 
     # The record_parser in parse_tabix_file_subset
 
