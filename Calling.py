@@ -19,10 +19,12 @@ import Models
 import ResNet
 from threading import Thread
 sys.stdout = sys.stderr
-NUM_BLOCKS = [2,2,2,2]
+#NUM_BLOCKS = [2,2,2,2]
+#NUM_BLOCKS = [3,3,4,3]
+NUM_BLOCKS = [3,4,6,3]
 USE_BIAS = True
 BOTTLENECK = True
-GPUs = [4]
+GPUs = [5]
 available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
@@ -32,9 +34,9 @@ FLAGS = tf.app.flags.FLAGS
 #tf.app.flags.DEFINE_string('train_dir', './train_logs/train_0',
 #                          """Directory where to checkpoint.""")
 #tf.app.flags.DEFINE_string('checkpoint_dir', './train_logs/train_0',
-tf.app.flags.DEFINE_string('checkpoint_dir', './training_logs/resnet_train_0',
+tf.app.flags.DEFINE_string('checkpoint_dir', './training_logs/resnet_train_3',
                            """Directory where to read model checkpoints.""")
-tf.app.flags.DEFINE_string('batch_size', 64,
+tf.app.flags.DEFINE_string('batch_size', 128,
                            """batch size""")
 
 def enqueueInputData(sess, coord, Reader, enqueue_op, queue_input_data, queue_input_label, queue_input_chrom, queue_input_pos, queue_input_ref, queue_input_alt):

@@ -22,10 +22,10 @@ sys.stdout = sys.stderr
 MOMENTUM = 0.9
 
 FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_string('train_dir', './training_logs/resnet_train_2',
+tf.app.flags.DEFINE_string('train_dir', './training_logs/resnet_train_3',
         """Directory where to write event logs and checkpoint.""")
-tf.app.flags.DEFINE_float('learning_rate', 1e-4, "learning rate.")
-tf.app.flags.DEFINE_integer('batch_size', 32, "batch size")
+tf.app.flags.DEFINE_float('learning_rate', 1e-6, "learning rate.")
+tf.app.flags.DEFINE_integer('batch_size', 64, "batch size")
 tf.app.flags.DEFINE_integer('max_steps', 50000000, "max steps")
 tf.app.flags.DEFINE_boolean('resume', False,
                             'resume from latest saved state')
@@ -40,14 +40,14 @@ tf.app.flags.DEFINE_integer('num_gpus', 1,
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             'Whether to log device placement.')
 
-GPUs = [1]
+GPUs = [2]
 available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
 #init_lr = FLAGS.learning_rate
 EVAL_NUM = 1000 # Num of training data to form a accuracy evaluation
 #EVAL_NUM = 320 # Num of training data to form a accuracy evaluation
-init_lr = 1e-4
+init_lr = 1e-6
 #optimizer = 'RMSProp'
 optimizer = 'Adam'
 #NUM_BLOCKS = [3, 4, 6, 3] # This is the default 50-layer network
