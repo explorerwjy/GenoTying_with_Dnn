@@ -132,8 +132,8 @@ class PrepareTrainingData:
             for row in reader:
                 tmp_dict = dict(zip(header ,row))
                 #key = tmp_dict('Chrom') + ":" + tmp_dict('Position')
-                key = get_xpos(tmp_dict('Chrom'), tmp_dict('Position'))
-                value = tmp_dict('Ref') + ":" +tmp_dict('Alt')
+                key = get_xpos(tmp_dict['Chrom'], tmp_dict['Position'])
+                value = tmp_dict['Ref'] + ":" +tmp_dict['Alt']
                 try:
                     res[key] = tmp_dict['GT']
                 except:
