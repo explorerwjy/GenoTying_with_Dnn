@@ -34,9 +34,9 @@ FLAGS = tf.app.flags.FLAGS
 #tf.app.flags.DEFINE_string('train_dir', './train_logs/train_0',
 #                          """Directory where to checkpoint.""")
 #tf.app.flags.DEFINE_string('checkpoint_dir', './train_logs/train_0',
-tf.app.flags.DEFINE_string('checkpoint_dir', './training_logs/resnet_train_3',
+tf.app.flags.DEFINE_string('checkpoint_dir', '/share/shenlab/GTD/Training/0805/Model.resnet',
                            """Directory where to read model checkpoints.""")
-tf.app.flags.DEFINE_string('batch_size', 128,
+tf.app.flags.DEFINE_string('batch_size', 64,
                            """batch size""")
 
 def enqueueInputData(sess, coord, Reader, enqueue_op, queue_input_data, queue_input_label, queue_input_chrom, queue_input_pos, queue_input_ref, queue_input_alt):
@@ -195,8 +195,9 @@ class TensorCaller:
         f = open(ckptfile, 'rb')
         ckpt = f.readline().split(':')[1].strip().strip('"')
         f.close()
-        prefix = os.path.abspath(FLAGS.checkpoint_dir)
-        ckpt = prefix + '/' + ckpt
+        #prefix = os.path.abspath(FLAGS.checkpoint_dir)
+        #ckpt = prefix + '/' + ckpt
+        #print prefix, ckpt
         return ckpt
 
     def run_2(self):
@@ -290,9 +291,12 @@ class TensorCaller:
 
 def main(argv=None):  # pylint: disable=unused-argument
     s_time = time.time()
+    print FLAGS.checkpoint_dir
     #DataFile = FLAGS.TestingData
     #DataFiles = [FLAGS.TrainingData, FLAGS.TestingData]
-    DataFiles = [FLAGS.TestingData, FLAGS.TrainingData]
+    #DataFiles = [FLAGS.TestingData, FLAGS.TrainingData]
+    #DataFiles = [FLAGS.TrainingData]
+    DataFiles = [FLAGS.TestingData]
     for DataFile in DataFiles:
         try:
             OutName = 'Calling.' + FLAGS.checkpoint_dir.split('/')[-1]+ '.' +DataFile.strip().split('/')[-1].split('.')[0] + '.vcf'

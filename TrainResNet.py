@@ -22,9 +22,7 @@ sys.stdout = sys.stderr
 MOMENTUM = 0.9
 
 FLAGS = tf.app.flags.FLAGS
-tf.app.flags.DEFINE_string('train_dir', './training_logs/resnet_train_3',
-        """Directory where to write event logs and checkpoint.""")
-tf.app.flags.DEFINE_float('learning_rate', 1e-6, "learning rate.")
+tf.app.flags.DEFINE_float('learning_rate', 1e-4, "learning rate.")
 tf.app.flags.DEFINE_integer('batch_size', 64, "batch size")
 tf.app.flags.DEFINE_integer('max_steps', 50000000, "max steps")
 tf.app.flags.DEFINE_boolean('resume', False,
@@ -234,8 +232,8 @@ class Train():
         f = open(ckptfile, 'rb')
         ckpt = f.readline().split(':')[1].strip().strip('"')
         f.close()
-        prefix = os.path.abspath(FLAGS.train_dir)
-        ckpt = prefix + '/' + ckpt
+        #prefix = os.path.abspath(FLAGS.train_dir)
+        #ckpt = prefix + '/' + ckpt
         return ckpt
 
     def top_k_error(self, predictions, labels, k):

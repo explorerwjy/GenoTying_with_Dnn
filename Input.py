@@ -39,13 +39,26 @@ FLAGS = tf.app.flags.FLAGS
 #tf.app.flags.DEFINE_integer('batch_size', 64,
 #    """Number of WindowTensor to process in a batch.""")
 
-tf.app.flags.DEFINE_string('TrainingData', './Training.windows.txt.gz',
-                           """Path to the Training Data.""")
+#tf.app.flags.DEFINE_string('train_dir', '/share/shenlab/GTD/Training/Model.resnet',
+#        """Directory where to write event logs and checkpoint.""")
+
+#tf.app.flags.DEFINE_string('train_dir', '/share/shenlab/GTD/Training/0803/Model.resnet',
+#        """Directory where to write event logs and checkpoint.""")
+
+tf.app.flags.DEFINE_string('train_dir', '/share/shenlab/GTD/Training/0805/Model.resnet',
+        """Directory where to write event logs and checkpoint.""")
+
+#tf.app.flags.DEFINE_string('TrainingData', '/share/shenlab/GTD/Training/0802/0802.HG002_GATK.Denovo_CHD.GtdRegion.txt.gz', """Path to the Training Data.""")
+
+#tf.app.flags.DEFINE_string('TrainingData', '/share/shenlab/GTD/Training/GIAB/HG002.GATK.GtdRegion.txt.gz', """Path to the Training Data.""")
+tf.app.flags.DEFINE_string('TrainingData', '/share/shenlab/GTD/Training/0805/shuf.0802.HG002_GATK.Denovo_CHD.GtdRegion.txt.gz', """Path to the Training Data.""")
 
 tf.app.flags.DEFINE_string('ValidationData', './Validation.windows.txt.gz',
                            """Path to the Validation Data.""")
 
-tf.app.flags.DEFINE_string('TestingData', 'Testing.windows.txt.gz',
+#tf.app.flags.DEFINE_string('TestingData', '/share/shenlab/GTD/Testing/HG001.GATK.GtdRegion.txt.gz',
+#                           """Path to the Testing Data.""")
+tf.app.flags.DEFINE_string('TestingData', '/share/shenlab/GTD/Training/GIAB/HG002.GATK.GtdRegion.txt.gz',
                            """Path to the Testing Data.""")
 
 tf.app.flags.DEFINE_boolean('use_fl16', False,
