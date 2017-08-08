@@ -45,7 +45,7 @@ print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
 #init_lr = FLAGS.learning_rate
 EVAL_NUM = 1000 # Num of training data to form a accuracy evaluation
 #EVAL_NUM = 320 # Num of training data to form a accuracy evaluation
-init_lr = 1e-6
+init_lr = 1e-4
 #optimizer = 'RMSProp'
 optimizer = 'Adam'
 #NUM_BLOCKS = [3, 4, 6, 3] # This is the default 50-layer network
@@ -243,19 +243,10 @@ class Train():
         num_correct = tf.reduce_sum(in_top1)
         return (batch_size - num_correct) / batch_size
 
-def GetOptions():
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "-c", "--Continue", action='store_true', default=False,
-        help="continue training from a checkpoint")
-    args = parser.parse_args()
-    return args.Continue
-
 def main(argv=None):  # pylint: disable=unused-argument
-    Continue = GetOptions()
     model = ResNet()
     train = Train(FLAGS.batch_size, model, FLAGS.TrainingData, FLAGS.TestingData)
-    if Continue:
+    if FLAGS.resume:
         ckpt = train.getCheckPoint()
         print "Train From a Check Point:", ckpt
         train.run(continueModel=ckpt)
