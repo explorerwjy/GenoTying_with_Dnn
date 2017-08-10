@@ -24,16 +24,29 @@ sys.stdout = sys.stderr
 
 FLAGS = tf.app.flags.FLAGS
 
-tf.app.flags.DEFINE_integer('GPU', 0 ,"""Which GPU to lunch""")
-tf.app.flags.DEFINE_string('train_dir', 'train_logs/train_0',
-                           """Directory where to write event logs and checkpoint.""")
-tf.app.flags.DEFINE_integer('max_steps', 1000000,
-                            """Number of batches to run.""")
+FLAGS = tf.app.flags.FLAGS
+tf.app.flags.DEFINE_string('train_dir', './Model.resnet',
+        """Directory where to write event logs and checkpoint.""")
+tf.app.flags.DEFINE_string('TrainingData', '', """Path to the Training Data.""")
+tf.app.flags.DEFINE_float('learning_rate', 1e-4, "learning rate.")
+tf.app.flags.DEFINE_integer('batch_size', 64, "batch size")
+tf.app.flags.DEFINE_integer('max_steps', 50000000, "max steps")
+tf.app.flags.DEFINE_boolean('resume', False,
+                            'resume from latest saved state')
+tf.app.flags.DEFINE_boolean('learning_rate_decay', False,
+                            'Whether decay learning rate')
+tf.app.flags.DEFINE_boolean('learning_rate_decay_step', 200000,
+                            'Frequency to decay the learning rate')
+tf.app.flags.DEFINE_boolean('minimal_summaries', True,
+                            'produce fewer summaries to save HD space')
+tf.app.flags.DEFINE_integer('gpu', 0,
+                            'Which GPU to use.')
 tf.app.flags.DEFINE_integer('num_gpus', 1,
-                            """How many GPUs to use.""")
+                            'How many GPUs to use.')
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
-                            """Whether to log device placement.""")
-GPUs = [0]
+                            'Whether to log device placement.')
+
+GPUs = [FLAGS.gpu]
 available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']

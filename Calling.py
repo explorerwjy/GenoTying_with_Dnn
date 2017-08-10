@@ -22,12 +22,13 @@ sys.stdout = sys.stderr
 
 FLAGS = tf.app.flags.FLAGS
 
-#tf.app.flags.DEFINE_string('checkpoint_dir', '/share/shenlab/GTD/NA12878/HG001.30x/TensorCaller/train_logs/Multi_HG002', """Directory where to read model checkpoints.""")
-#tf.app.flags.DEFINE_string('checkpoint_dir', '/share/shenlab/GTD/NA12878/HG001.30x/TensorCaller/train_logs/Single_HG002', """Directory where to read model checkpoints.""")
-tf.app.flags.DEFINE_string('checkpoint_dir', './train_logs/train_4', """Directory where to read model checkpoints.""")
-tf.app.flags.DEFINE_string('GPU', '0', """Which GPU to use""")
+tf.app.flags.DEFINE_string('checkpoint_dir', '', """Directory where to read model checkpoints.""")
+tf.app.flags.DEFINE_string('batch_size', 64,
+                           """batch size""")
+tf.app.flags.DEFINE_string('TestingData', "","Path to the Testing Data.")
+tf.app.flags.DEFINE_string('gpu', '4', """Which GPU to use""")
 
-GPUs = [7]
+GPUs = [FLAGS.gpu]
 available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']

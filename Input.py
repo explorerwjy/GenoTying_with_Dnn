@@ -33,28 +33,10 @@ INITIAL_LEARNING_RATE = 1e-4       # Initial learning rate.
 
 
 # Global constants describing the data set & Model.
-FLAGS = tf.app.flags.FLAGS
+#FLAGS = tf.app.flags.FLAGS
 
-
-tf.app.flags.DEFINE_integer('batch_size', 64,
-    """Number of WindowTensor to process in a batch.""")
-
-tf.app.flags.DEFINE_string('TrainingData', './Training.windows.txt.gz',
-                           """Path to the Training Data.""")
-
-tf.app.flags.DEFINE_string('ValidationData', './Validation.windows.txt.gz',
-                           """Path to the Validation Data.""")
-
-tf.app.flags.DEFINE_string('TestingData', 'Testing.windows.txt.gz',
-                           """Path to the Testing Data.""")
-
-tf.app.flags.DEFINE_boolean('use_fl16', False,
-                            """Train the model using fp16.""")
-
-tf.app.flags.DEFINE_boolean('numOfDecodingThreads', 4,
-                            """Whether to log device placement.""")
-
-npdtype = np.float16 if FLAGS.use_fl16 else np.float32
+#npdtype = np.float16 if FLAGS.use_fl16 else np.float32
+npdtype = np.float32
 
 
 class RecordReader():
