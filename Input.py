@@ -40,9 +40,9 @@ npdtype = np.float32
 
 
 class RecordReader():
-    def __init__(self, handle):
+    def __init__(self, handle, batch_size):
         self.hand = handle
-
+        self.batch_size = batch_size
     # Used for training, keep reading the data.
     def LoopRead(self):
         line = self.hand.readline()
@@ -71,7 +71,7 @@ class RecordReader():
 
     def read2(self):
         tensor, chroms, starts, refs, alts = [], [], [], [], []
-        for i in xrange(FLAGS.batch_size):
+        for i in xrange(self.batch_size):
             line = self.hand.readline()
             if line == '':
                 break
@@ -88,7 +88,7 @@ class RecordReader():
     # Batch Version of OnceReadWithInfo(). Currently Not Working because unsolved Queue issue.
     def read3(self):
         tensor, chroms, starts, refs, alts, labels = [], [], [], [], [], []
-        for i in xrange(FLAGS.batch_size):
+        for i in xrange(self.batch_size):
             line = self.hand.readline()
             if line == '': # Read up All Records. Compensate the rest to make complete record.
                 #fake_tensor, fake_chrom, fake_pos, fake_ref, fake_alt, fake_label = tensor[-1], chroms[-1], starts[-1], refs[-1], alts[-1], labels[-1]

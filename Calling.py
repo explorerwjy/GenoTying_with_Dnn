@@ -16,9 +16,10 @@ import numpy as np
 import tensorflow as tf
 from Input import *
 import Models
+import ResNet
 from threading import Thread
-sys.stdout = sys.stderr
 
+<<<<<<< HEAD
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -28,6 +29,25 @@ tf.app.flags.DEFINE_string('batch_size', 64,
 tf.app.flags.DEFINE_string('TestingData', "","Path to the Testing Data.")
 tf.app.flags.DEFINE_string('gpu', '4', """Which GPU to use""")
 
+=======
+sys.stdout = sys.stderr
+
+FLAGS = tf.app.flags.FLAGS
+
+tf.app.flags.DEFINE_string('model', '/share/shenlab/GTD/Training/0805/Model.resnet',
+                           """Directory where to read model checkpoints.""")
+tf.app.flags.DEFINE_string('batch_size', 64,
+                           """batch size""")
+tf.app.flags.DEFINE_string('Data', "","Path to the Testing Data.")
+tf.app.flags.DEFINE_integer('gpu', "4","Which GPU use")
+
+#NUM_BLOCKS = [2,2,2,2]
+#NUM_BLOCKS = [3,3,4,3]
+NUM_BLOCKS = [3,4,6,3]
+
+USE_BIAS = True
+BOTTLENECK = True
+>>>>>>> dev
 GPUs = [FLAGS.gpu]
 available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
@@ -67,16 +87,17 @@ class TensorCaller:
 
     def run(self):
         s_time = time.time()
-        dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
+        dtype = tf.float32
         Hand = gzip.open(self.DataFile, 'rb')
-        Reader = RecordReader(Hand)
+        Reader = RecordReader(Hand, self.batch_size)
         fout = open(self.OutName, 'wb')
         with tf.Graph().as_default():
             global_step = tf.Variable(0, trainable=False, name='global_step')
             TensorPL = tf.placeholder(tf.float32, shape=(FLAGS.batch_size, DEPTH * (HEIGHT) * WIDTH))
             LabelPL = tf.placeholder(tf.int32, shape=(FLAGS.batch_size, ))
 
-            logits = self.model.Inference(TensorPL)
+            #logits = self.model.Inference(TensorPL)
+            logits = self.model.Inference(TensorPL, num_blocks=NUM_BLOCKS, use_bias=USE_BIAS, bottleneck=BOTTLENECK)
             normed_logits = tf.nn.softmax(logits, dim=-1, name=None)
             prediction = tf.argmax(normed_logits, 1)
             loss = self.model.loss(logits, LabelPL)
@@ -184,12 +205,13 @@ class TensorCaller:
             print "Math Domain Error:", chrom, start, ref, alt, label, gt, gl
 
     def getCheckPoint(self):
-        ckptfile = FLAGS.checkpoint_dir + '/checkpoint'
+        ckptfile = FLAGS.model + '/checkpoint'
         f = open(ckptfile, 'rb')
         ckpt = f.readline().split(':')[1].strip().strip('"')
         f.close()
-        prefix = os.path.abspath(FLAGS.checkpoint_dir)
-        ckpt = prefix + '/' + ckpt
+        prefix = os.path.abspath(FLAGS.model)
+        #ckpt = prefix + '/' + ckpt
+        #print prefix, ckpt
         return ckpt
 
     def run_2(self):
@@ -283,13 +305,17 @@ class TensorCaller:
 
 def main(argv=None):  # pylint: disable=unused-argument
     s_time = time.time()
+    print FLAGS.model
     #DataFile = FLAGS.TestingData
     #DataFiles = [FLAGS.TrainingData, FLAGS.TestingData]
-    DataFiles = [FLAGS.TestingData, FLAGS.TrainingData]
+    #DataFiles = [FLAGS.TestingData, FLAGS.TrainingData]
+    #DataFiles = [FLAGS.TrainingData]
+    DataFiles = [FLAGS.Data]
     for DataFile in DataFiles:
         try:
-            OutName = 'Calling.' + FLAGS.checkpoint_dir.split('/')[-1]+ '.' +DataFile.strip().split('/')[-1].split('.')[0] + '.vcf'
-            model = Models.ConvNets()
+            OutName = 'Calling.' + FLAGS.model.split('/')[-1]+ '.' +DataFile.strip().split('/')[-1].split('.')[0] + '.vcf'
+            #model = Models.ConvNets()
+            model = ResNet.ResNet()
             caller = TensorCaller(FLAGS.batch_size, model, DataFile, OutName)
             caller.run()
         except Exception as e:
