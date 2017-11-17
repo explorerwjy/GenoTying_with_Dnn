@@ -22,6 +22,9 @@ sys.stdout = sys.stderr
 MOMENTUM = 0.9
 
 FLAGS = tf.app.flags.FLAGS
+tf.app.flags.DEFINE_string('train_dir', './Model.resnet',
+        """Directory where to write event logs and checkpoint.""")
+tf.app.flags.DEFINE_string('TrainingData', '', """Path to the Training Data.""")
 tf.app.flags.DEFINE_float('learning_rate', 1e-4, "learning rate.")
 tf.app.flags.DEFINE_integer('batch_size', 64, "batch size")
 tf.app.flags.DEFINE_integer('max_steps', 50000000, "max steps")
@@ -33,12 +36,14 @@ tf.app.flags.DEFINE_boolean('learning_rate_decay_step', 200000,
                             'Frequency to decay the learning rate')
 tf.app.flags.DEFINE_boolean('minimal_summaries', True,
                             'produce fewer summaries to save HD space')
+tf.app.flags.DEFINE_integer('gpu', 0,
+                            'Which GPU to use.')
 tf.app.flags.DEFINE_integer('num_gpus', 1,
                             'How many GPUs to use.')
 tf.app.flags.DEFINE_boolean('log_device_placement', False,
                             'Whether to log device placement.')
 
-GPUs = [2]
+GPUs = [FLAGS.gpu]
 available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
@@ -50,6 +55,7 @@ init_lr = 1e-4
 optimizer = 'Adam'
 #NUM_BLOCKS = [3, 4, 6, 3] # This is the default 50-layer network
 NUM_BLOCKS = [3, 4, 6, 3] 
+#NUM_BLOCKS = [4, 6, 8, 4] 
 USE_BIAS = True
 BOTTLENECK = True
 print "Optimizer is {}, init learning rate is {}. ConV weight loss is {}. FC weight loss is {}. DropoutKeepProp is {}.".format(optimizer, init_lr, CONV_WEIGHT_DECAY, FC_WEIGHT_DECAY, Keep_Prop)
@@ -110,9 +116,9 @@ class AccuracyQueue:
 
 
 class Train():
-    def __init__(self, batch_size, model, TrainingDataFile, TestingDataFile):
+    def __init__(self, batch_size, model, TrainingDataFile):
         self.TrainingDataFile = TrainingDataFile
-        self.TestingDataFile = TestingDataFile
+        #self.TestingDataFile = TestingDataFile
         self.batch_size = batch_size
         self.model = model
         print "TrainingData:", TrainingDataFile
@@ -120,9 +126,10 @@ class Train():
         print "Train/Log Dir", FLAGS.train_dir
 
     def run(self, continueModel=None):
-        dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
+        #dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
+        dtype = tf.float32
         TrainingHand = gzip.open(self.TrainingDataFile, 'rb')
-        TrainingReader = RecordReader(TrainingHand)
+        TrainingReader = RecordReader(TrainingHand, self.batch_size)
         with tf.Graph().as_default():
             queue_input_data = tf.placeholder(dtype, shape=[DEPTH * (HEIGHT) * WIDTH])
             queue_input_label = tf.placeholder(tf.int32, shape=[])
@@ -232,8 +239,8 @@ class Train():
         f = open(ckptfile, 'rb')
         ckpt = f.readline().split(':')[1].strip().strip('"')
         f.close()
-        #prefix = os.path.abspath(FLAGS.train_dir)
-        #ckpt = prefix + '/' + ckpt
+        prefix = os.path.abspath(FLAGS.train_dir)
+        ckpt = prefix + '/' + ckpt
         return ckpt
 
     def top_k_error(self, predictions, labels, k):
@@ -245,7 +252,7 @@ class Train():
 
 def main(argv=None):  # pylint: disable=unused-argument
     model = ResNet()
-    train = Train(FLAGS.batch_size, model, FLAGS.TrainingData, FLAGS.TestingData)
+    train = Train(FLAGS.batch_size, model, FLAGS.TrainingData)
     if FLAGS.resume:
         ckpt = train.getCheckPoint()
         print "Train From a Check Point:", ckpt

@@ -33,47 +33,16 @@ INITIAL_LEARNING_RATE = 1e-4       # Initial learning rate.
 
 
 # Global constants describing the data set & Model.
-FLAGS = tf.app.flags.FLAGS
+#FLAGS = tf.app.flags.FLAGS
 
-
-#tf.app.flags.DEFINE_integer('batch_size', 64,
-#    """Number of WindowTensor to process in a batch.""")
-
-#tf.app.flags.DEFINE_string('train_dir', '/share/shenlab/GTD/Training/Model.resnet',
-#        """Directory where to write event logs and checkpoint.""")
-
-#tf.app.flags.DEFINE_string('train_dir', '/share/shenlab/GTD/Training/0803/Model.resnet',
-#        """Directory where to write event logs and checkpoint.""")
-
-#tf.app.flags.DEFINE_string('train_dir', '/share/shenlab/GTD/Training/0805/Model.resnet',
-#        """Directory where to write event logs and checkpoint.""")
-
-#tf.app.flags.DEFINE_string('TrainingData', '/share/shenlab/GTD/Training/0802/0802.HG002_GATK.Denovo_CHD.GtdRegion.txt.gz', """Path to the Training Data.""")
-
-#tf.app.flags.DEFINE_string('TrainingData', '/share/shenlab/GTD/Training/GIAB/HG002.GATK.GtdRegion.txt.gz', """Path to the Training Data.""")
-#tf.app.flags.DEFINE_string('TrainingData', '/share/shenlab/GTD/Training/0805/shuf.0802.HG002_GATK.Denovo_CHD.GtdRegion.txt.gz', """Path to the Training Data.""")
-
-#tf.app.flags.DEFINE_string('ValidationData', './Validation.windows.txt.gz',
-#                           """Path to the Validation Data.""")
-
-#tf.app.flags.DEFINE_string('TestingData', '/share/shenlab/GTD/Testing/HG001.GATK.GtdRegion.txt.gz',
-#                           """Path to the Testing Data.""")
-#tf.app.flags.DEFINE_string('TestingData', '/share/shenlab/GTD/Training/GIAB/HG002.GATK.GtdRegion.txt.gz',
-#                           """Path to the Testing Data.""")
-
-f.app.flags.DEFINE_boolean('use_fl16', False,
-                            """Train the model using fp16.""")
-
-tf.app.flags.DEFINE_boolean('numOfDecodingThreads', 4,
-                            """Whether to log device placement.""")
-
-npdtype = np.float16 if FLAGS.use_fl16 else np.float32
+#npdtype = np.float16 if FLAGS.use_fl16 else np.float32
+npdtype = np.float32
 
 
 class RecordReader():
-    def __init__(self, handle):
+    def __init__(self, handle, batch_size):
         self.hand = handle
-
+        self.batch_size = batch_size
     # Used for training, keep reading the data.
     def LoopRead(self):
         line = self.hand.readline()
@@ -102,7 +71,7 @@ class RecordReader():
 
     def read2(self):
         tensor, chroms, starts, refs, alts = [], [], [], [], []
-        for i in xrange(FLAGS.batch_size):
+        for i in xrange(self.batch_size):
             line = self.hand.readline()
             if line == '':
                 break
@@ -119,7 +88,7 @@ class RecordReader():
     # Batch Version of OnceReadWithInfo(). Currently Not Working because unsolved Queue issue.
     def read3(self):
         tensor, chroms, starts, refs, alts, labels = [], [], [], [], [], []
-        for i in xrange(FLAGS.batch_size):
+        for i in xrange(self.batch_size):
             line = self.hand.readline()
             if line == '': # Read up All Records. Compensate the rest to make complete record.
                 #fake_tensor, fake_chrom, fake_pos, fake_ref, fake_alt, fake_label = tensor[-1], chroms[-1], starts[-1], refs[-1], alts[-1], labels[-1]

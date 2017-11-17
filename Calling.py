@@ -23,14 +23,12 @@ sys.stdout = sys.stderr
 
 FLAGS = tf.app.flags.FLAGS
 
-#tf.app.flags.DEFINE_string('train_dir', './train_logs/train_0',
-#                          """Directory where to checkpoint.""")
-#tf.app.flags.DEFINE_string('checkpoint_dir', './train_logs/train_0',
-tf.app.flags.DEFINE_string('checkpoint_dir', '/share/shenlab/GTD/Training/0805/Model.resnet',
+tf.app.flags.DEFINE_string('model', '/share/shenlab/GTD/Training/0805/Model.resnet',
                            """Directory where to read model checkpoints.""")
 tf.app.flags.DEFINE_string('batch_size', 64,
                            """batch size""")
-tf.app.flags.DEFINE_string('TestingData', require=True,help="Path to the Testing Data.")
+tf.app.flags.DEFINE_string('Data', "","Path to the Testing Data.")
+tf.app.flags.DEFINE_integer('gpu', "4","Which GPU use")
 
 #NUM_BLOCKS = [2,2,2,2]
 #NUM_BLOCKS = [3,3,4,3]
@@ -38,7 +36,7 @@ NUM_BLOCKS = [3,4,6,3]
 
 USE_BIAS = True
 BOTTLENECK = True
-GPUs = [5]
+GPUs = [FLAGS.gpu]
 available_devices = os.environ['CUDA_VISIBLE_DEVICES'].split(',')
 os.environ['CUDA_VISIBLE_DEVICES'] = ','.join([ available_devices[x] for x in GPUs])
 print "Using GPU ",os.environ['CUDA_VISIBLE_DEVICES']
@@ -77,9 +75,9 @@ class TensorCaller:
 
     def run(self):
         s_time = time.time()
-        dtype = tf.float16 if FLAGS.use_fl16 else tf.float32
+        dtype = tf.float32
         Hand = gzip.open(self.DataFile, 'rb')
-        Reader = RecordReader(Hand)
+        Reader = RecordReader(Hand, self.batch_size)
         fout = open(self.OutName, 'wb')
         with tf.Graph().as_default():
             global_step = tf.Variable(0, trainable=False, name='global_step')
@@ -195,11 +193,11 @@ class TensorCaller:
             print "Math Domain Error:", chrom, start, ref, alt, label, gt, gl
 
     def getCheckPoint(self):
-        ckptfile = FLAGS.checkpoint_dir + '/checkpoint'
+        ckptfile = FLAGS.model + '/checkpoint'
         f = open(ckptfile, 'rb')
         ckpt = f.readline().split(':')[1].strip().strip('"')
         f.close()
-        #prefix = os.path.abspath(FLAGS.checkpoint_dir)
+        prefix = os.path.abspath(FLAGS.model)
         #ckpt = prefix + '/' + ckpt
         #print prefix, ckpt
         return ckpt
@@ -295,15 +293,15 @@ class TensorCaller:
 
 def main(argv=None):  # pylint: disable=unused-argument
     s_time = time.time()
-    print FLAGS.checkpoint_dir
+    print FLAGS.model
     #DataFile = FLAGS.TestingData
     #DataFiles = [FLAGS.TrainingData, FLAGS.TestingData]
     #DataFiles = [FLAGS.TestingData, FLAGS.TrainingData]
     #DataFiles = [FLAGS.TrainingData]
-    DataFiles = [FLAGS.TestingData]
+    DataFiles = [FLAGS.Data]
     for DataFile in DataFiles:
         try:
-            OutName = 'Calling.' + FLAGS.checkpoint_dir.split('/')[-1]+ '.' +DataFile.strip().split('/')[-1].split('.')[0] + '.vcf'
+            OutName = 'Calling.' + FLAGS.model.split('/')[-1]+ '.' +DataFile.strip().split('/')[-1].split('.')[0] + '.vcf'
             #model = Models.ConvNets()
             model = ResNet.ResNet()
             caller = TensorCaller(FLAGS.batch_size, model, DataFile, OutName)
