@@ -19,6 +19,8 @@ Procedure:
 
 Training Data:
 
+	The Training Data should have a complete and uniform coverage across genome and large enough to fit DNN model.
+
 	True:
 	
 		1. True De novo variants from our previous study.
