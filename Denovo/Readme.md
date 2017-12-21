@@ -1,4 +1,5 @@
 #GTD Denovo Vesrion.
+
 Input: 
 
 	1. 3 bams (parents bams and kid's bam.)
