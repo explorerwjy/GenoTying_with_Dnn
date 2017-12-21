@@ -1,5 +1,5 @@
 #GTD Denovo Vesrion.
-Input: 
+Input: \n
 	1. 3 bams (parents bams and kid's bam.)
 	2. List of location of de novo variants to be evaluated.
 
