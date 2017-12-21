@@ -1,16 +1,16 @@
-#GTD Denovo Vesrion.
+# GTD Denovo Vesrion.
 
-Input: 
+## Input: 
 
 	1. 3 bams (parents bams and kid's bam.)
 	
 	2. List of location of de novo variants to be evaluated.
 
-Output: 
+## Output: 
 
 	A Score of how confident this variant is a de novo variant for each locus.
 
-Procedure:
+## Procedure:
 
 	1. If Active Region: Assembly three samples together and re-alignment. 
 	
@@ -18,7 +18,7 @@ Procedure:
 	
 	3. Put the Tensor into the Model And Get Score.
 
-Training Data:
+## Training Data:
 
 	The Training Data should have a complete and uniform coverage across genome and large enough to fit DNN model.
 
@@ -38,7 +38,7 @@ Training Data:
 		
 
 	
-Questions:
+## uestions:
 
 	1. How to train the model? How to use previous model?
 	
